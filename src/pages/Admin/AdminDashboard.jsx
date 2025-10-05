@@ -1,14 +1,15 @@
 import { useEffect } from "react";
 
 export default function AdminDashboard() {
-  // 🔐 Auth check (redirect if not logged in)
+  // 🔐 Admin authentication guard
   useEffect(() => {
     const isAdmin = localStorage.getItem("isAdmin");
     if (isAdmin !== "true") {
-      window.location.href = "/admin"; // Redirect to login
+      window.location.href = "/admin"; // redirect if not logged in
     }
   }, []);
 
+  // 🧱 Render Dashboard
   return (
     <div className="min-h-screen bg-pjh-charcoal text-pjh-light p-10">
       {/* === HEADER === */}
@@ -22,7 +23,7 @@ export default function AdminDashboard() {
           </p>
         </div>
 
-        {/* Logout Button */}
+        {/* 🔴 Logout */}
         <button
           onClick={() => {
             localStorage.removeItem("isAdmin");
@@ -34,13 +35,13 @@ export default function AdminDashboard() {
         </button>
       </header>
 
-      {/* === ADMIN LINKS === */}
+      {/* === ADMIN SECTIONS === */}
       <ul className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Customers */}
-        <li className="h-full">
+        <li>
           <a
             href="/admin/customers"
-            className="block h-full p-6 rounded-xl bg-pjh-gray hover:bg-pjh-blue/10 border border-white/10 transition flex flex-col justify-between"
+            className="block h-full p-6 rounded-xl bg-pjh-gray hover:bg-pjh-blue/10 border border-white/10 transition flex flex-col justify-between shadow-sm hover:shadow-pjh-blue/20"
           >
             <div>
               <h2 className="text-lg font-semibold text-pjh-blue mb-2">
@@ -54,27 +55,27 @@ export default function AdminDashboard() {
         </li>
 
         {/* Quotes */}
-        <li className="h-full">
+        <li>
           <a
             href="/admin/quotes"
-            className="block h-full p-6 rounded-xl bg-pjh-gray hover:bg-pjh-blue/10 border border-white/10 transition flex flex-col justify-between"
+            className="block h-full p-6 rounded-xl bg-pjh-gray hover:bg-pjh-blue/10 border border-white/10 transition flex flex-col justify-between shadow-sm hover:shadow-pjh-blue/20"
           >
             <div>
               <h2 className="text-lg font-semibold text-pjh-blue mb-2">
                 💬 Manage Quotes
               </h2>
               <p className="text-sm text-pjh-muted">
-                Create and track customer quotes and revisions.
+                Create, send, and track customer quotes.
               </p>
             </div>
           </a>
         </li>
 
         {/* Orders */}
-        <li className="h-full">
+        <li>
           <a
             href="/admin/orders"
-            className="block h-full p-6 rounded-xl bg-pjh-gray hover:bg-pjh-blue/10 border border-white/10 transition flex flex-col justify-between"
+            className="block h-full p-6 rounded-xl bg-pjh-gray hover:bg-pjh-blue/10 border border-white/10 transition flex flex-col justify-between shadow-sm hover:shadow-pjh-blue/20"
           >
             <div>
               <h2 className="text-lg font-semibold text-pjh-blue mb-2">
@@ -88,17 +89,17 @@ export default function AdminDashboard() {
         </li>
 
         {/* Invoices */}
-        <li className="h-full">
+        <li>
           <a
             href="/admin/invoices"
-            className="block h-full p-6 rounded-xl bg-pjh-gray hover:bg-pjh-blue/10 border border-white/10 transition flex flex-col justify-between"
+            className="block h-full p-6 rounded-xl bg-pjh-gray hover:bg-pjh-blue/10 border border-white/10 transition flex flex-col justify-between shadow-sm hover:shadow-pjh-blue/20"
           >
             <div>
               <h2 className="text-lg font-semibold text-pjh-blue mb-2">
                 💰 Manage Invoices
               </h2>
               <p className="text-sm text-pjh-muted">
-                Generate, send, and view all customer invoices.
+                Generate, send, and view customer invoices.
               </p>
             </div>
           </a>

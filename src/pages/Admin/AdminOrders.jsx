@@ -7,14 +7,19 @@ export default function AdminOrders() {
   const [payments, setPayments] = useState(null);
   const [error, setError] = useState("");
 
-  // 🔐 Protect route access
+  // 🌍 Use Vercel/Render environment-aware backend
+  const API_BASE =
+    import.meta.env.VITE_API_URL ||
+    "https://pjh-web-backend.onrender.com"; // fallback if .env not configured
+
+  // 🔐 Protect admin route
   useEffect(() => {
     if (localStorage.getItem("isAdmin") !== "true") {
       window.location.href = "/admin";
     }
   }, []);
 
-  // 🧠 Load all orders on page load
+  // 🧠 Load all orders on mount
   useEffect(() => {
     loadOrders();
   }, []);
@@ -25,9 +30,8 @@ export default function AdminOrders() {
   async function loadOrders() {
     setLoading(true);
     setError("");
-
     try {
-      const res = await fetch("http://localhost:5000/api/orders");
+      const res = await fetch(`${API_BASE}/api/orders`);
       const data = await res.json();
 
       if (Array.isArray(data)) {
@@ -51,14 +55,11 @@ export default function AdminOrders() {
   // ==========================
   async function toggleTask(orderId, task) {
     try {
-      const res = await fetch(
-        `http://localhost:5000/api/orders/${orderId}/tasks`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ task }),
-        }
-      );
+      const res = await fetch(`${API_BASE}/api/orders/${orderId}/tasks`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ task }),
+      });
 
       if (!res.ok) throw new Error("Failed to update tasks");
       await loadOrders();
@@ -74,10 +75,9 @@ export default function AdminOrders() {
   async function loadPayments(orderId) {
     setPayments(null);
     try {
-      const res = await fetch(
-        `http://localhost:5000/api/orders/${orderId}/payments`
-      );
+      const res = await fetch(`${API_BASE}/api/orders/${orderId}/payments`);
       const data = await res.json();
+
       if (data && data.payments) {
         setPayments(data);
         setSelectedOrder(orderId);
@@ -98,11 +98,11 @@ export default function AdminOrders() {
     if (!confirm(`Send ${type} invoice to customer?`)) return;
     try {
       const res = await fetch(
-        `http://localhost:5000/api/orders/${orderId}/invoice/${type}`,
+        `${API_BASE}/api/orders/${orderId}/invoice/${type}`,
         { method: "POST" }
       );
       if (!res.ok) throw new Error("Failed to send invoice");
-      alert(`✅ ${type} invoice sent successfully.`);
+      alert(`✅ ${type.toUpperCase()} invoice sent successfully.`);
     } catch (err) {
       console.error("❌ Error sending invoice:", err);
       alert("❌ Failed to send invoice.");
@@ -113,12 +113,12 @@ export default function AdminOrders() {
   // 👁️ PREVIEW INVOICE
   // ==========================
   function previewInvoice(orderId, type) {
-    window.open(
-      `http://localhost:5000/api/orders/${orderId}/invoice/${type}`,
-      "_blank"
-    );
+    window.open(`${API_BASE}/api/orders/${orderId}/invoice/${type}`, "_blank");
   }
 
+  // ==========================
+  // 🕓 RENDER
+  // ==========================
   return (
     <div className="min-h-screen bg-pjh-charcoal text-pjh-light p-10">
       {/* === HEADER === */}
@@ -163,7 +163,7 @@ export default function AdminOrders() {
               {orders.map((o) => (
                 <tr key={o.id} className="border-t border-white/5">
                   <td className="p-3">{o.id}</td>
-                  <td className="p-3">{o.title}</td>
+                  <td className="p-3">{o.title || "Untitled"}</td>
                   <td className="p-3">
                     {o.customer_business || o.customer_name || "Unknown"}
                   </td>

@@ -9,6 +9,10 @@ export default function Contact() {
   });
   const [status, setStatus] = useState("");
 
+  // ✅ Use environment variable for API URL (Render in production)
+  const API_BASE =
+    import.meta.env.VITE_API_URL || "https://pjh-web-backend.onrender.com";
+
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
 
@@ -17,7 +21,7 @@ export default function Contact() {
     setStatus("Sending...");
 
     try {
-      const res = await fetch("http://localhost:5000/api/contact", {
+      const res = await fetch(`${API_BASE}/api/contact`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
@@ -25,14 +29,14 @@ export default function Contact() {
 
       const data = await res.json();
 
-      if (data.success) {
+      if (res.ok && data.success) {
         // ✅ Redirect to thank-you page on success
         window.location.href = "/thank-you";
       } else {
         setStatus("❌ Failed to send message. Please try again.");
       }
     } catch (error) {
-      console.error(error);
+      console.error("❌ Contact form error:", error);
       setStatus("❌ Error sending message. Please try again later.");
     }
   };
@@ -51,8 +55,8 @@ export default function Contact() {
         Contact PJH Web Services
       </h1>
       <p className="text-pjh-muted mb-10 text-center max-w-lg leading-relaxed">
-        Have a project in mind? Let’s create something unique and fully
-        tailored to your business needs.
+        Have a project in mind? Let’s create something unique and fully tailored
+        to your business needs.
       </p>
 
       {/* === CONTACT FORM === */}
@@ -135,9 +139,10 @@ export default function Contact() {
         {/* Submit */}
         <button
           type="submit"
+          disabled={status === "Sending..."}
           className="w-full py-3 rounded-md bg-pjh-blue hover:bg-pjh-blue-dark transition font-semibold text-white tracking-wide shadow-md"
         >
-          Send Message
+          {status === "Sending..." ? "Sending..." : "Send Message"}
         </button>
       </form>
 

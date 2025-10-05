@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import { apiFetch } from "../../utils/api"; // ✅ centralised fetch helper
 
 export default function AdminCustomerRecord() {
   const { id } = useParams();
@@ -26,12 +27,9 @@ export default function AdminCustomerRecord() {
   async function loadCustomer() {
     console.log("🔄 Fetching customer record...");
     try {
-      const res = await fetch(`http://localhost:5000/api/customers/${id}`);
-      console.log("📡 Status:", res.status);
-      const data = await res.json();
+      const data = await apiFetch(`/api/customers/${id}`);
       console.log("✅ Raw data:", data);
 
-      // Handle all possible shapes
       const record =
         data.data && typeof data.data === "object"
           ? Array.isArray(data.data)
@@ -52,10 +50,7 @@ export default function AdminCustomerRecord() {
   async function loadQuotes() {
     console.log("🔄 Fetching quotes for customer", id);
     try {
-      const res = await fetch(
-        `http://localhost:5000/api/customers/${id}/quotes`
-      );
-      const data = await res.json();
+      const data = await apiFetch(`/api/customers/${id}/quotes`);
       console.log("✅ Quotes response:", data);
 
       const list = Array.isArray(data)
@@ -74,12 +69,10 @@ export default function AdminCustomerRecord() {
   async function handleSave() {
     setSaving(true);
     try {
-      const res = await fetch(`http://localhost:5000/api/customers/${id}`, {
+      await apiFetch(`/api/customers/${id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(customer),
       });
-      console.log("📤 PUT response:", res.status);
       alert("✅ Customer updated successfully");
     } catch (err) {
       console.error("❌ Failed to update customer:", err);

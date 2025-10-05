@@ -5,18 +5,23 @@ export default function AdminQuoteRecord() {
   const { id: customerId, quoteId } = useParams();
   const navigate = useNavigate();
 
+  const API_BASE =
+    import.meta.env.VITE_API_URL ||
+    "https://pjh-web-backend.onrender.com"; // fallback for production
+
   const [quote, setQuote] = useState(null);
   const [saving, setSaving] = useState(false);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
 
-  // 🔐 Protect route
+  // 🔐 Auth protection
   useEffect(() => {
     if (localStorage.getItem("isAdmin") !== "true") {
       window.location.href = "/admin";
     }
   }, []);
 
+  // 🔄 Load quote
   useEffect(() => {
     if (quoteId) loadQuote();
   }, [quoteId]);
@@ -25,17 +30,17 @@ export default function AdminQuoteRecord() {
     console.log("🔄 Fetching quote", quoteId);
     try {
       const url = customerId
-        ? `http://localhost:5000/api/customers/${customerId}/quotes/${quoteId}`
-        : `http://localhost:5000/api/quotes/${quoteId}`;
+        ? `${API_BASE}/api/customers/${customerId}/quotes/${quoteId}`
+        : `${API_BASE}/api/quotes/${quoteId}`;
 
       const res = await fetch(url);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
 
-      let q = data.quote || data.data || data || null;
+      let q = data.quote || data.data || data;
       if (!q) return setError("Quote not found");
 
-      // Parse items safely
+      // Parse & normalize items
       q.items =
         typeof q.items === "string"
           ? JSON.parse(q.items || "[]")
@@ -65,13 +70,14 @@ export default function AdminQuoteRecord() {
     }
   }
 
+  // 💾 Save quote edits
   async function handleSave() {
     if (!quote) return;
     setSaving(true);
     try {
       const url = customerId
-        ? `http://localhost:5000/api/customers/${customerId}/quotes/${quoteId}`
-        : `http://localhost:5000/api/quotes/${quoteId}`;
+        ? `${API_BASE}/api/customers/${customerId}/quotes/${quoteId}`
+        : `${API_BASE}/api/quotes/${quoteId}`;
 
       const res = await fetch(url, {
         method: "PUT",
@@ -90,36 +96,37 @@ export default function AdminQuoteRecord() {
       alert("✅ Quote updated successfully");
       await loadQuote();
     } catch (err) {
-      console.error("❌ Failed to save quote:", err);
-      alert("❌ Failed to save quote — check console");
+      console.error("❌ Save error:", err);
+      alert("❌ Failed to save quote");
     } finally {
       setSaving(false);
     }
   }
 
+  // 🗑️ Delete quote
   async function handleDelete() {
     if (!confirm("Are you sure you want to delete this quote?")) return;
     try {
       const url = customerId
-        ? `http://localhost:5000/api/customers/${customerId}/quotes/${quoteId}`
-        : `http://localhost:5000/api/quotes/${quoteId}`;
-
+        ? `${API_BASE}/api/customers/${customerId}/quotes/${quoteId}`
+        : `${API_BASE}/api/quotes/${quoteId}`;
       const res = await fetch(url, { method: "DELETE" });
       if (!res.ok) throw new Error(`Delete failed (${res.status})`);
 
       alert("✅ Quote deleted successfully");
       navigate(customerId ? `/admin/customers/${customerId}` : "/admin/quotes");
     } catch (err) {
-      console.error("❌ Failed to delete quote:", err);
+      console.error("❌ Delete failed:", err);
       alert("❌ Could not delete quote — check console");
     }
   }
 
+  // ✉️ Email PDF
   async function handleEmail() {
     if (!quote) return;
     setWorking(true);
     try {
-      const res = await fetch(`http://localhost:5000/api/quotes/${quote.id}/email`, {
+      const res = await fetch(`${API_BASE}/api/quotes/${quote.id}/email`, {
         method: "POST",
       });
       const data = await res.json();
@@ -133,12 +140,12 @@ export default function AdminQuoteRecord() {
     }
   }
 
+  // ✅ Accept quote
   async function handleAccept() {
     setWorking(true);
     try {
-      const res = await fetch(`http://localhost:5000/api/quotes/${quoteId}/accept`, {
+      const res = await fetch(`${API_BASE}/api/quotes/${quoteId}/accept`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || data?.message || "Accept failed");
@@ -152,13 +159,13 @@ export default function AdminQuoteRecord() {
     }
   }
 
+  // ❌ Reject quote
   async function handleReject() {
     if (!confirm("Mark this quote as Rejected?")) return;
     setWorking(true);
     try {
-      const res = await fetch(`http://localhost:5000/api/quotes/${quoteId}/reject`, {
+      const res = await fetch(`${API_BASE}/api/quotes/${quoteId}/reject`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || data?.message || "Reject failed");
@@ -172,12 +179,12 @@ export default function AdminQuoteRecord() {
     }
   }
 
+  // 🧾 Create order from quote
   async function handleCreateOrder() {
     setWorking(true);
     try {
-      const res = await fetch(`http://localhost:5000/api/orders/from-quote/${quoteId}`, {
+      const res = await fetch(`${API_BASE}/api/orders/from-quote/${quoteId}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || data?.message || "Create order failed");
@@ -197,6 +204,7 @@ export default function AdminQuoteRecord() {
     }
   }
 
+  // 🎨 Status badge
   const statusBadge = (status) => {
     const map = {
       pending: "bg-yellow-500/20 text-yellow-300 border border-yellow-400/30",
@@ -237,58 +245,58 @@ export default function AdminQuoteRecord() {
         {statusBadge(quote.status)}
       </div>
 
-      {/* Actions */}
-<div className="mt-4 flex flex-wrap gap-3">
-  <button
-    onClick={handleAccept}
-    disabled={working || quote.status === "accepted"}
-    className="btn-primary"
-  >
-    ✅ Accept
-  </button>
+      {/* === ACTION BUTTONS === */}
+      <div className="mt-4 flex flex-wrap gap-3">
+        <button
+          onClick={handleAccept}
+          disabled={working || quote.status === "accepted"}
+          className="btn-primary"
+        >
+          ✅ Accept
+        </button>
 
-  <button
-    onClick={handleReject}
-    disabled={working || quote.status === "rejected"}
-    className="btn-danger"
-  >
-    ❌ Reject
-  </button>
+        <button
+          onClick={handleReject}
+          disabled={working || quote.status === "rejected"}
+          className="btn-danger"
+        >
+          ❌ Reject
+        </button>
 
-  {/* Show “Create Order” only if accepted and no linked order */}
-  {!quote.order_id && canCreateOrder && (
-    <button
-      onClick={handleCreateOrder}
-      disabled={working}
-      className="btn-secondary"
-    >
-      ➕ Create Order from Quote
-    </button>
-  )}
+        {!quote.order_id && canCreateOrder && (
+          <button
+            onClick={handleCreateOrder}
+            disabled={working}
+            className="btn-secondary"
+          >
+            ➕ Create Order from Quote
+          </button>
+        )}
 
-  {/* Show “View Linked Order” if one exists */}
-  {quote.order_id && (
-    <button
-      onClick={() => navigate(`/admin/orders/${quote.order_id}`)}
-      className="btn-secondary bg-green-600 hover:bg-green-700 text-white"
-    >
-      🔗 View Linked Order #{quote.order_id}
-    </button>
-  )}
+        {quote.order_id && (
+          <button
+            onClick={() => navigate(`/admin/orders/${quote.order_id}`)}
+            className="btn-secondary bg-green-600 hover:bg-green-700 text-white"
+          >
+            🔗 View Linked Order #{quote.order_id}
+          </button>
+        )}
 
-  <button
-    onClick={handleEmail}
-    disabled={working}
-    className="btn-secondary bg-pjh-blue hover:bg-pjh-blue/80 text-white"
-  >
-    ✉️ Email Quote (PDF)
-  </button>
-</div>
+        <button
+          onClick={handleEmail}
+          disabled={working}
+          className="btn-secondary bg-pjh-blue hover:bg-pjh-blue/80 text-white"
+        >
+          ✉️ Email Quote (PDF)
+        </button>
+      </div>
 
-      {/* --- DETAILS FORM --- */}
+      {/* === DETAILS FORM === */}
       <div className="bg-pjh-gray p-6 rounded-xl mt-6 mb-8 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {Object.entries(quote).map(([key, value]) => {
-          if (["id", "created_at", "updated_at", "customer_id", "history", "items", "subtotal", "balance"].includes(key))
+          if (
+            ["id", "created_at", "updated_at", "customer_id", "history", "items", "subtotal", "balance"].includes(key)
+          )
             return null;
           return (
             <div key={key}>
@@ -315,7 +323,7 @@ export default function AdminQuoteRecord() {
         </button>
       </div>
 
-      {/* --- ITEMS --- */}
+      {/* === LINE ITEMS === */}
       {Array.isArray(quote.items) && quote.items.length > 0 && (
         <div className="bg-pjh-slate p-6 rounded-xl">
           <h2 className="text-xl font-semibold mb-4 text-pjh-blue">Line Items</h2>

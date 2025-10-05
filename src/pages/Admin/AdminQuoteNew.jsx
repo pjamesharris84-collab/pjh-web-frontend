@@ -5,38 +5,42 @@ export default function AdminQuoteNew() {
   const { id: customerId } = useParams();
   const navigate = useNavigate();
 
+  const API_BASE =
+    import.meta.env.VITE_API_URL ||
+    "https://pjh-web-backend.onrender.com"; // fallback for production
+
   const [customer, setCustomer] = useState(null);
   const [form, setForm] = useState({
     title: "",
     description: "",
     notes: "",
   });
-  const [items, setItems] = useState([
-    { name: "", qty: 1, unit_price: 0, total: 0 },
-  ]);
+  const [items, setItems] = useState([{ name: "", qty: 1, unit_price: 0, total: 0 }]);
   const [subtotal, setSubtotal] = useState(0);
   const [deposit, setDeposit] = useState(0);
   const [balance, setBalance] = useState(0);
   const [saving, setSaving] = useState(false);
 
-  // 🔐 Auth
+  // 🔐 Auth check
   useEffect(() => {
     if (localStorage.getItem("isAdmin") !== "true") {
       window.location.href = "/admin";
     }
   }, []);
 
-  // 🧠 Load customer
+  // 🧠 Load customer details
   useEffect(() => {
-    if (customerId) {
-      fetch(`http://localhost:5000/api/customers/${customerId}`)
-        .then((res) => res.json())
-        .then((data) => {
-          const record = data.data || data;
-          setCustomer(record);
-        })
-        .catch((err) => console.error("❌ Failed to load customer:", err));
-    }
+    if (!customerId) return;
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/customers/${customerId}`);
+        const data = await res.json();
+        const record = data.data || data;
+        setCustomer(record);
+      } catch (err) {
+        console.error("❌ Failed to load customer:", err);
+      }
+    })();
   }, [customerId]);
 
   // 💰 Recalculate totals
@@ -51,26 +55,25 @@ export default function AdminQuoteNew() {
     setBalance(newSubtotal - newDeposit);
   }, [items]);
 
-  // ➕ Add new line item
+  // ➕ Add a line item
   function addItem() {
     setItems([...items, { name: "", qty: 1, unit_price: 0, total: 0 }]);
   }
 
-  // ❌ Remove line item
+  // ❌ Remove a line item
   function removeItem(index) {
     setItems(items.filter((_, i) => i !== index));
   }
 
-  // 🧾 Update line item
+  // ✏️ Update line item
   function updateItem(index, key, value) {
     const updated = [...items];
     updated[index][key] = value;
-    updated[index].total =
-      updated[index].qty * updated[index].unit_price || 0;
+    updated[index].total = updated[index].qty * updated[index].unit_price || 0;
     setItems(updated);
   }
 
-  // 💾 Save quote
+  // 💾 Save new quote
   async function handleSave(e) {
     e.preventDefault();
     setSaving(true);
@@ -85,30 +88,31 @@ export default function AdminQuoteNew() {
     };
 
     try {
-      const res = await fetch(
-        `http://localhost:5000/api/customers/${customerId}/quotes`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        }
-      );
+      const res = await fetch(`${API_BASE}/api/customers/${customerId}/quotes`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
       if (!res.ok) throw new Error("Failed to save quote");
+
       alert("✅ Quote created successfully!");
       navigate(`/admin/customers/${customerId}`);
     } catch (err) {
-      console.error(err);
-      alert("❌ Failed to create quote");
+      console.error("❌ Quote creation error:", err);
+      alert("❌ Failed to create quote — check console for details.");
     } finally {
       setSaving(false);
     }
   }
 
-  if (!customer)
+  if (!customer) {
     return (
-      <div className="p-10 text-pjh-muted">Loading customer details...</div>
+      <div className="p-10 text-pjh-muted animate-pulse">
+        Loading customer details...
+      </div>
     );
+  }
 
   return (
     <div className="min-h-screen bg-pjh-charcoal text-pjh-light p-10">
@@ -124,7 +128,7 @@ export default function AdminQuoteNew() {
       </h1>
 
       <form onSubmit={handleSave} className="space-y-8">
-        {/* Basic Info */}
+        {/* === Basic Info === */}
         <div className="bg-pjh-gray p-6 rounded-xl grid md:grid-cols-2 gap-4">
           <input
             type="text"
@@ -138,24 +142,19 @@ export default function AdminQuoteNew() {
             placeholder="Description"
             rows="3"
             value={form.description}
-            onChange={(e) =>
-              setForm({ ...form, description: e.target.value })
-            }
+            onChange={(e) => setForm({ ...form, description: e.target.value })}
             className="form-input md:col-span-2"
           />
         </div>
 
-        {/* Line Items */}
+        {/* === Line Items === */}
         <div className="bg-pjh-gray p-6 rounded-xl">
           <h2 className="text-xl font-semibold text-pjh-blue mb-4">
             Quote Items
           </h2>
 
           {items.map((item, index) => (
-            <div
-              key={index}
-              className="grid md:grid-cols-5 gap-4 items-center mb-4"
-            >
+            <div key={index} className="grid md:grid-cols-5 gap-4 items-center mb-4">
               <input
                 type="text"
                 placeholder="Service Name"
@@ -177,9 +176,7 @@ export default function AdminQuoteNew() {
                 placeholder="Unit Price (£)"
                 step="0.01"
                 value={item.unit_price}
-                onChange={(e) =>
-                  updateItem(index, "unit_price", +e.target.value)
-                }
+                onChange={(e) => updateItem(index, "unit_price", +e.target.value)}
                 className="form-input"
               />
               <div className="text-center text-pjh-light font-semibold">
@@ -204,7 +201,7 @@ export default function AdminQuoteNew() {
           </button>
         </div>
 
-        {/* Totals */}
+        {/* === Totals === */}
         <div className="bg-pjh-gray p-6 rounded-xl grid md:grid-cols-3 gap-6 text-lg font-medium">
           <div>
             <p className="text-pjh-muted">Subtotal</p>

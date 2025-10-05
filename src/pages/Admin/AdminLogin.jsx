@@ -4,27 +4,33 @@ export default function AdminLogin() {
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState(null);
 
+  // 🌍 Backend URL auto-switch
+  const API_BASE =
+    import.meta.env.VITE_API_URL ||
+    "https://pjh-web-backend.onrender.com"; // fallback for local dev or render
+
   async function handleSubmit(e) {
     e.preventDefault();
     setStatus("loading");
 
     try {
-      const res = await fetch("http://localhost:5000/api/auth/login", {
+      const res = await fetch(`${API_BASE}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password }),
       });
 
-      // Attempt to parse JSON safely
       const data = await res.json().catch(() => ({}));
 
       if (res.ok && data.success) {
-        // ✅ Successful login
+        // ✅ Store login state in localStorage
         localStorage.setItem("isAdmin", "true");
         setStatus("success");
 
-        // Redirect to dashboard
-        window.location.href = "/admin/dashboard";
+        // Small delay for UX
+        setTimeout(() => {
+          window.location.href = "/admin/dashboard";
+        }, 600);
       } else {
         setStatus("error");
       }
@@ -37,12 +43,16 @@ export default function AdminLogin() {
   return (
     <div className="min-h-screen bg-pjh-charcoal flex items-center justify-center px-6">
       <div className="bg-pjh-gray p-10 rounded-2xl shadow-lg w-full max-w-md border border-white/10">
-        <h1 className="text-2xl font-bold text-center text-pjh-blue mb-6">
+        {/* === HEADER === */}
+        <h1 className="text-3xl font-bold text-center text-pjh-blue mb-2">
           Admin Login
         </h1>
+        <p className="text-center text-pjh-muted mb-6 text-sm">
+          Secure access to your PJH Web Services dashboard.
+        </p>
 
+        {/* === FORM === */}
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Password Input */}
           <input
             type="password"
             placeholder="Enter admin password"
@@ -51,7 +61,6 @@ export default function AdminLogin() {
             className="w-full px-4 py-3 rounded-lg bg-pjh-slate border border-white/20 text-pjh-light placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pjh-blue"
           />
 
-          {/* Submit Button */}
           <button
             type="submit"
             disabled={status === "loading"}
@@ -60,18 +69,19 @@ export default function AdminLogin() {
             {status === "loading" ? "Checking..." : "Login"}
           </button>
 
-          {/* Status Messages */}
           {status === "error" && (
             <p className="text-red-400 text-center mt-2">
               Invalid password. Please try again.
             </p>
           )}
           {status === "success" && (
-            <p className="text-green-400 text-center mt-2">Login successful!</p>
+            <p className="text-green-400 text-center mt-2">
+              Login successful! Redirecting...
+            </p>
           )}
         </form>
 
-        {/* Optional Back Link */}
+        {/* === BACK LINK === */}
         <div className="text-center mt-6">
           <a
             href="/"

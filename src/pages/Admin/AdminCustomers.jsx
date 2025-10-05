@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { apiFetch } from "../../utils/api"; // ✅ centralised API helper
 
 export default function AdminCustomers() {
   const [customers, setCustomers] = useState([]);
@@ -27,15 +28,14 @@ export default function AdminCustomers() {
   // 🧠 Fetch customers
   async function loadCustomers() {
     try {
-      const res = await fetch("http://localhost:5000/api/customers");
-      const data = await res.json();
-      const normalizedData = Array.isArray(data)
+      const data = await apiFetch("/api/customers");
+      const normalized = Array.isArray(data)
         ? data
         : data.data || data.customers || [];
-      setCustomers(normalizedData);
+      setCustomers(normalized);
     } catch (err) {
       console.error("❌ Failed to load customers:", err);
-      setError("Failed to load customers");
+      setError("Failed to load customers.");
     } finally {
       setLoading(false);
     }
@@ -49,22 +49,23 @@ export default function AdminCustomers() {
   async function handleAddCustomer(e) {
     e.preventDefault();
     try {
-      const res = await fetch("http://localhost:5000/api/customers", {
+      const data = await apiFetch("/api/customers", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newCustomer),
       });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error("Failed to add customer");
       // ⏩ Redirect straight to new record
-      window.location.href = `/admin/customers/${data.id}`;
+      if (data?.id) {
+        window.location.href = `/admin/customers/${data.id}`;
+      } else {
+        alert("⚠️ Customer created but missing ID — check server logs.");
+      }
     } catch (err) {
       console.error("❌ Could not add customer:", err);
       alert("❌ Could not add customer — check console for details.");
     }
   }
 
+  // 🧱 UI
   return (
     <div className="min-h-screen bg-pjh-charcoal text-pjh-light p-10">
       <header className="flex items-center justify-between mb-8">
@@ -82,7 +83,7 @@ export default function AdminCustomers() {
         </a>
       </header>
 
-      {/* Add customer */}
+      {/* ➕ Add customer form */}
       <form
         onSubmit={handleAddCustomer}
         className="bg-pjh-gray p-6 rounded-xl mb-8 grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
@@ -148,7 +149,9 @@ export default function AdminCustomers() {
                 <tr
                   key={c.id}
                   className="border-t border-white/5 hover:bg-pjh-blue/10 cursor-pointer"
-                  onClick={() => (window.location.href = `/admin/customers/${c.id}`)}
+                  onClick={() =>
+                    (window.location.href = `/admin/customers/${c.id}`)
+                  }
                 >
                   <td className="p-3 text-pjh-blue font-semibold">
                     {c.business || "—"}

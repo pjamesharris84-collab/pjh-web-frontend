@@ -5,7 +5,12 @@ export default function AdminInvoices() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // 🔐 Protect access
+  // 🌍 Backend base (auto-switch for production)
+  const API_BASE =
+    import.meta.env.VITE_API_URL ||
+    "https://pjh-web-backend.onrender.com"; // fallback if .env not set
+
+  // 🔐 Protect route
   useEffect(() => {
     if (localStorage.getItem("isAdmin") !== "true") {
       window.location.href = "/admin";
@@ -21,12 +26,12 @@ export default function AdminInvoices() {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch("http://localhost:5000/api/orders");
+      const res = await fetch(`${API_BASE}/api/orders`);
       const data = await res.json();
 
       if (Array.isArray(data)) {
         setOrders(data);
-      } else if (data && Array.isArray(data.rows)) {
+      } else if (data?.rows && Array.isArray(data.rows)) {
         setOrders(data.rows);
       } else {
         console.warn("⚠️ Unexpected orders response:", data);
@@ -42,10 +47,7 @@ export default function AdminInvoices() {
 
   // 👁️ Preview invoice PDF
   function previewInvoice(orderId, type) {
-    window.open(
-      `http://localhost:5000/api/orders/${orderId}/invoice/${type}`,
-      "_blank"
-    );
+    window.open(`${API_BASE}/api/orders/${orderId}/invoice/${type}`, "_blank");
   }
 
   // 📤 Send invoice via email
@@ -53,24 +55,22 @@ export default function AdminInvoices() {
     if (!confirm(`Send ${type} invoice to this customer?`)) return;
     try {
       const res = await fetch(
-        `http://localhost:5000/api/orders/${orderId}/invoice/${type}`,
+        `${API_BASE}/api/orders/${orderId}/invoice/${type}`,
         { method: "POST" }
       );
       if (!res.ok) throw new Error("Failed to send invoice");
       alert(`✅ ${type.toUpperCase()} invoice sent successfully.`);
-      loadOrders(); // Refresh status flags after send
+      loadOrders();
     } catch (err) {
       console.error("❌ Error sending invoice:", err);
       alert(`❌ Failed to send ${type} invoice.`);
     }
   }
 
-  // 💰 View payments for context
+  // 💰 View payments
   async function viewPayments(orderId) {
     try {
-      const res = await fetch(
-        `http://localhost:5000/api/orders/${orderId}/payments`
-      );
+      const res = await fetch(`${API_BASE}/api/orders/${orderId}/payments`);
       const data = await res.json();
       if (!data || typeof data.paid !== "number") {
         throw new Error("Invalid payment data");
@@ -86,6 +86,7 @@ export default function AdminInvoices() {
     }
   }
 
+  // 🧱 RENDER
   return (
     <div className="min-h-screen bg-pjh-charcoal text-pjh-light p-10">
       {/* === HEADER === */}
@@ -129,7 +130,10 @@ export default function AdminInvoices() {
 
             <tbody>
               {orders.map((o) => (
-                <tr key={o.id} className="border-t border-white/5">
+                <tr
+                  key={o.id}
+                  className="border-t border-white/5 hover:bg-pjh-gray/40 transition"
+                >
                   <td className="p-3">{o.id}</td>
                   <td className="p-3">
                     {o.customer_business || o.customer_name || "—"}
@@ -137,6 +141,7 @@ export default function AdminInvoices() {
                   <td className="p-3">{o.title || "Untitled"}</td>
                   <td className="p-3">£{Number(o.deposit || 0).toFixed(2)}</td>
                   <td className="p-3">£{Number(o.balance || 0).toFixed(2)}</td>
+
                   <td className="p-3">
                     {o.deposit_invoiced ? (
                       <span className="text-green-400">✅ Yes</span>
@@ -144,6 +149,7 @@ export default function AdminInvoices() {
                       <span className="text-pjh-muted">❌ No</span>
                     )}
                   </td>
+
                   <td className="p-3">
                     {o.balance_invoiced ? (
                       <span className="text-green-400">✅ Yes</span>

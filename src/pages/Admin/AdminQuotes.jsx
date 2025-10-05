@@ -16,7 +16,11 @@ export default function AdminQuotes() {
 
   const navigate = useNavigate();
 
-  // 🔐 Protect route (redirect to login)
+  const API_BASE =
+    import.meta.env.VITE_API_URL ||
+    "https://pjh-web-backend.onrender.com"; // fallback for production
+
+  // 🔐 Auth protection
   useEffect(() => {
     if (localStorage.getItem("isAdmin") !== "true") {
       window.location.href = "/admin";
@@ -27,9 +31,8 @@ export default function AdminQuotes() {
   useEffect(() => {
     async function fetchCustomers() {
       try {
-        const res = await fetch("http://localhost:5000/api/customers");
+        const res = await fetch(`${API_BASE}/api/customers`);
         const data = await res.json();
-        console.log("🧾 Customers API response:", data);
 
         const normalized = Array.isArray(data)
           ? data
@@ -40,7 +43,6 @@ export default function AdminQuotes() {
         setCustomers([]);
       }
     }
-
     fetchCustomers();
   }, []);
 
@@ -49,11 +51,8 @@ export default function AdminQuotes() {
     if (!customerId) return;
     setLoading(true);
     try {
-      const res = await fetch(
-        `http://localhost:5000/api/customers/${customerId}/quotes`
-      );
+      const res = await fetch(`${API_BASE}/api/customers/${customerId}/quotes`);
       const data = await res.json();
-      console.log("📑 Quotes API response:", data);
 
       const normalized = Array.isArray(data)
         ? data
@@ -86,7 +85,7 @@ export default function AdminQuotes() {
 
     try {
       const res = await fetch(
-        `http://localhost:5000/api/customers/${selectedCustomer}/quotes`,
+        `${API_BASE}/api/customers/${selectedCustomer}/quotes`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -98,6 +97,7 @@ export default function AdminQuotes() {
 
       setForm({ title: "", description: "", deposit: "", notes: "", items: "" });
       loadQuotes(selectedCustomer);
+      alert("✅ Quote created successfully!");
     } catch (err) {
       console.error("❌ Error creating quote:", err);
       alert("❌ Could not create quote");
@@ -108,10 +108,11 @@ export default function AdminQuotes() {
   async function handleDeleteQuote(customerId, quoteId) {
     if (!confirm("Are you sure you want to delete this quote?")) return;
     try {
-      await fetch(
-        `http://localhost:5000/api/customers/${customerId}/quotes/${quoteId}`,
+      const res = await fetch(
+        `${API_BASE}/api/customers/${customerId}/quotes/${quoteId}`,
         { method: "DELETE" }
       );
+      if (!res.ok) throw new Error("Failed to delete quote");
       loadQuotes(customerId);
     } catch (err) {
       console.error("❌ Error deleting quote:", err);
@@ -126,7 +127,7 @@ export default function AdminQuotes() {
 
   return (
     <div className="min-h-screen bg-pjh-charcoal text-pjh-light p-10">
-      {/* HEADER */}
+      {/* === HEADER === */}
       <header className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold text-pjh-blue">Manage Quotes</h1>
@@ -142,7 +143,7 @@ export default function AdminQuotes() {
         </a>
       </header>
 
-      {/* SELECT CUSTOMER */}
+      {/* === SELECT CUSTOMER === */}
       <div className="bg-pjh-gray p-6 rounded-xl mb-6">
         <label className="block text-sm font-semibold mb-2">
           Select Customer
@@ -164,7 +165,7 @@ export default function AdminQuotes() {
         </select>
       </div>
 
-      {/* ADD QUOTE FORM */}
+      {/* === ADD QUOTE FORM === */}
       {selectedCustomer && (
         <form
           onSubmit={handleAddQuote}
@@ -189,7 +190,9 @@ export default function AdminQuotes() {
             placeholder="Description"
             rows="3"
             value={form.description}
-            onChange={(e) => setForm({ ...form, description: e.target.value })}
+            onChange={(e) =>
+              setForm({ ...form, description: e.target.value })
+            }
             className="form-input md:col-span-2"
           />
           <textarea
@@ -212,7 +215,7 @@ export default function AdminQuotes() {
         </form>
       )}
 
-      {/* QUOTES TABLE */}
+      {/* === QUOTES TABLE === */}
       {loading ? (
         <p className="text-pjh-muted animate-pulse">Loading quotes...</p>
       ) : quotes.length === 0 ? (
@@ -242,16 +245,16 @@ export default function AdminQuotes() {
                     className="p-3 text-pjh-cyan hover:underline cursor-pointer"
                     onClick={() => openQuoteRecord(selectedCustomer, q.id)}
                   >
-                    {q.title}
+                    {q.title || "Untitled"}
                   </td>
-                  <td className="p-3 capitalize">{q.status}</td>
+                  <td className="p-3 capitalize">{q.status || "pending"}</td>
                   <td className="p-3">
-                    {q.deposit ? Number(q.deposit).toFixed(2) : "0.00"}
+                    £{Number(q.deposit || 0).toFixed(2)}
                   </td>
                   <td className="p-3">
                     {q.created_at
                       ? new Date(q.created_at).toLocaleDateString()
-                      : "-"}
+                      : "—"}
                   </td>
                   <td className="p-3 text-right">
                     <button
@@ -267,6 +270,11 @@ export default function AdminQuotes() {
           </table>
         </div>
       )}
+
+      {/* === FOOTER === */}
+      <footer className="mt-16 text-center text-sm text-pjh-muted border-t border-white/10 pt-6">
+        © {new Date().getFullYear()} PJH Web Services — Internal Dashboard
+      </footer>
     </div>
   );
 }

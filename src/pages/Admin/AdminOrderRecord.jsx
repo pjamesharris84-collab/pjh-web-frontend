@@ -11,7 +11,12 @@ export default function AdminOrderRecord() {
   const [newNote, setNewNote] = useState("");
   const [error, setError] = useState("");
 
-  // 🔐 Protect admin route
+  // 🌍 Use environment-aware API base
+  const API_BASE =
+    import.meta.env.VITE_API_URL ||
+    "https://pjh-web-backend.onrender.com"; // fallback to production Render backend
+
+  // 🔐 Protect route
   useEffect(() => {
     if (localStorage.getItem("isAdmin") !== "true") {
       window.location.href = "/admin";
@@ -22,10 +27,13 @@ export default function AdminOrderRecord() {
     if (id) loadOrder();
   }, [id]);
 
+  // ===============================
+  // 🔄 LOAD ORDER
+  // ===============================
   async function loadOrder() {
     console.log("🔄 Fetching order", id);
     try {
-      const res = await fetch(`http://localhost:5000/api/orders/${id}`);
+      const res = await fetch(`${API_BASE}/api/orders/${id}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       const o = data.data;
@@ -37,7 +45,7 @@ export default function AdminOrderRecord() {
       setOrder(o);
     } catch (err) {
       console.error("❌ Failed to load order:", err);
-      setError("Failed to load order");
+      setError("Failed to load order details.");
     }
   }
 
@@ -52,12 +60,14 @@ export default function AdminOrderRecord() {
     return Array.isArray(val) ? val : [];
   }
 
-  // 💾 Save changes (title, desc, status, etc.)
+  // ===============================
+  // 💾 SAVE ORDER
+  // ===============================
   async function handleSave() {
     if (!order) return;
     setSaving(true);
     try {
-      const res = await fetch(`http://localhost:5000/api/orders/${id}`, {
+      const res = await fetch(`${API_BASE}/api/orders/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(order),
@@ -67,17 +77,19 @@ export default function AdminOrderRecord() {
       await loadOrder();
     } catch (err) {
       console.error("❌ Save error:", err);
-      alert("❌ Failed to save order");
+      alert("❌ Failed to save order changes");
     } finally {
       setSaving(false);
     }
   }
 
-  // ✅ Toggle task completion
+  // ===============================
+  // ✅ TOGGLE TASK
+  // ===============================
   async function handleToggleTask(task) {
     setWorking(true);
     try {
-      const res = await fetch(`http://localhost:5000/api/orders/${id}/tasks`, {
+      const res = await fetch(`${API_BASE}/api/orders/${id}/tasks`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ task }),
@@ -93,11 +105,13 @@ export default function AdminOrderRecord() {
     }
   }
 
-  // 📝 Add diary note (save via backend)
+  // ===============================
+  // 📝 ADD DIARY NOTE
+  // ===============================
   async function handleAddNote() {
     if (!newNote.trim()) return;
     try {
-      const res = await fetch(`http://localhost:5000/api/orders/${id}/diary`, {
+      const res = await fetch(`${API_BASE}/api/orders/${id}/diary`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ note: newNote }),
@@ -112,11 +126,13 @@ export default function AdminOrderRecord() {
     }
   }
 
-  // 🧾 Email invoice (deposit/balance)
+  // ===============================
+  // 💰 SEND INVOICE (deposit/balance)
+  // ===============================
   async function handleSendInvoice(type) {
     setWorking(true);
     try {
-      const res = await fetch(`http://localhost:5000/api/orders/${id}/invoice/${type}`, {
+      const res = await fetch(`${API_BASE}/api/orders/${id}/invoice/${type}`, {
         method: "POST",
       });
       const data = await res.json();
@@ -133,9 +149,17 @@ export default function AdminOrderRecord() {
     }
   }
 
-  if (error) return <div className="p-10 text-red-400">❌ {error}</div>;
+  // ===============================
+  // 🕓 RENDER
+  // ===============================
+  if (error)
+    return <div className="p-10 text-red-400">❌ {error}</div>;
   if (!order)
-    return <div className="p-10 text-pjh-muted animate-pulse">Loading order details...</div>;
+    return (
+      <div className="p-10 text-pjh-muted animate-pulse">
+        Loading order details...
+      </div>
+    );
 
   return (
     <div className="min-h-screen bg-pjh-charcoal text-pjh-light p-10">
@@ -146,7 +170,7 @@ export default function AdminOrderRecord() {
         ← Back to Orders
       </a>
 
-      <div className="flex items-center justify-between mt-2">
+      <div className="flex items-center justify-between mt-2 flex-wrap gap-3">
         <h1 className="text-3xl font-bold text-pjh-blue">
           Order #{order.id} — {order.title}
         </h1>
@@ -185,11 +209,15 @@ export default function AdminOrderRecord() {
       <div className="bg-pjh-gray p-6 rounded-xl mt-6 mb-8 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {["title", "description", "status"].map((key) => (
           <div key={key}>
-            <label className="block text-sm text-pjh-muted mb-1 capitalize">{key}</label>
+            <label className="block text-sm text-pjh-muted mb-1 capitalize">
+              {key}
+            </label>
             <input
               type="text"
               value={order[key] ?? ""}
-              onChange={(e) => setOrder({ ...order, [key]: e.target.value })}
+              onChange={(e) =>
+                setOrder({ ...order, [key]: e.target.value })
+              }
               className="form-input w-full"
             />
           </div>
@@ -207,7 +235,9 @@ export default function AdminOrderRecord() {
       {/* Line Items */}
       {Array.isArray(order.items) && order.items.length > 0 && (
         <div className="bg-pjh-slate p-6 rounded-xl mb-8">
-          <h2 className="text-xl font-semibold mb-4 text-pjh-blue">Line Items</h2>
+          <h2 className="text-xl font-semibold mb-4 text-pjh-blue">
+            Line Items
+          </h2>
           <table className="min-w-full border border-white/10 rounded-lg mb-6">
             <thead className="bg-pjh-gray/60">
               <tr className="text-left text-sm text-pjh-muted">
@@ -222,9 +252,14 @@ export default function AdminOrderRecord() {
                 <tr key={i} className="border-t border-white/5">
                   <td className="p-3">{item.name}</td>
                   <td className="p-3">{item.qty}</td>
-                  <td className="p-3">{Number(item.unit_price || item.price).toFixed(2)}</td>
                   <td className="p-3">
-                    {(Number(item.qty) * Number(item.unit_price || item.price)).toFixed(2)}
+                    {Number(item.unit_price || item.price).toFixed(2)}
+                  </td>
+                  <td className="p-3">
+                    {(
+                      Number(item.qty) *
+                      Number(item.unit_price || item.price)
+                    ).toFixed(2)}
                   </td>
                 </tr>
               ))}
@@ -240,7 +275,9 @@ export default function AdminOrderRecord() {
 
       {/* Tasks */}
       <div className="bg-pjh-gray p-6 rounded-xl mb-8">
-        <h2 className="text-xl font-semibold mb-4 text-pjh-blue">Tasks</h2>
+        <h2 className="text-xl font-semibold mb-4 text-pjh-blue">
+          Tasks
+        </h2>
         {Array.isArray(order.tasks) && order.tasks.length > 0 ? (
           <ul className="space-y-2">
             {order.tasks.map((task, i) => (
@@ -264,7 +301,9 @@ export default function AdminOrderRecord() {
 
       {/* Diary / Notes */}
       <div className="bg-pjh-slate p-6 rounded-xl mb-8">
-        <h2 className="text-xl font-semibold mb-4 text-pjh-blue">Project Diary</h2>
+        <h2 className="text-xl font-semibold mb-4 text-pjh-blue">
+          Project Diary
+        </h2>
 
         {Array.isArray(order.diary) && order.diary.length > 0 ? (
           <ul className="space-y-2 mb-4">
@@ -278,7 +317,9 @@ export default function AdminOrderRecord() {
             ))}
           </ul>
         ) : (
-          <p className="text-sm text-pjh-muted mb-4">No diary entries yet.</p>
+          <p className="text-sm text-pjh-muted mb-4">
+            No diary entries yet.
+          </p>
         )}
 
         <div className="flex gap-2">
