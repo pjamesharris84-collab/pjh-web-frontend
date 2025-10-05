@@ -1,0 +1,108 @@
+/* =========================================
+   PJH Web Services — Global Tailwind Styles
+   ========================================= */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* === Base layer: set the global mood === */
+@layer base {
+  body {
+    @apply bg-pjh-charcoal text-pjh-light font-sans antialiased tracking-wide;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-extrabold text-pjh-light leading-tight;
+  }
+
+  a {
+    @apply text-pjh-blue hover:text-pjh-cyan transition-colors duration-200;
+  }
+
+  p {
+    @apply leading-relaxed text-pjh-muted;
+  }
+
+  ::selection {
+    background-color: theme('colors.pjh-blue');
+    color: white;
+  }
+}
+
+/* === Component layer: reusable UI blocks === */
+@layer components {
+  /* --- Sections --- */
+  .section {
+    @apply py-24 px-6 max-w-6xl mx-auto;
+  }
+
+  .section-heading {
+    @apply text-4xl md:text-5xl font-extrabold text-center mb-10 
+           bg-gradient-to-r from-pjh-blue to-pjh-cyan bg-clip-text text-transparent;
+  }
+
+  /* --- Cards --- */
+  .card {
+    @apply bg-pjh-gray rounded-2xl p-8 shadow-lg shadow-black/20 
+           border border-white/5 hover:border-pjh-blue/30 transition-all duration-300;
+  }
+
+  /* --- Buttons --- */
+  .btn {
+    @apply px-6 py-3 rounded-lg font-semibold transition-all duration-300 
+           shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-pjh-blue/50;
+  }
+
+  .btn-primary {
+    @apply btn bg-pjh-blue text-white hover:bg-pjh-blue-dark;
+  }
+
+  .btn-secondary {
+    @apply btn bg-pjh-gray text-pjh-light hover:bg-pjh-blue/20;
+  }
+
+  .btn-accent {
+    @apply btn bg-gradient-to-r from-pjh-blue to-pjh-cyan text-white 
+           hover:opacity-90 shadow-lg shadow-pjh-blue/40;
+  }
+
+  /* --- Forms --- */
+  .form-label {
+    @apply block mb-2 text-sm font-medium text-pjh-light;
+  }
+
+  .form-input {
+    @apply w-full p-3 rounded-lg bg-pjh-gray border border-white/10 text-pjh-light 
+           focus:outline-none focus:ring-2 focus:ring-pjh-blue focus:border-pjh-blue transition;
+  }
+
+  textarea.form-input {
+    @apply resize-none;
+  }
+
+  /* --- Navbar --- */
+  .navbar {
+    @apply bg-pjh-charcoal/90 backdrop-blur-md border-b border-white/10;
+  }
+
+  /* --- Footer --- */
+  .footer {
+    @apply border-t border-white/10 py-8 text-center text-sm text-pjh-muted;
+  }
+}
+
+/* === Utilities layer: special effects === */
+@layer utilities {
+  .text-glow {
+    text-shadow: 0 0 10px theme('colors.pjh-glow');
+  }
+
+  .bg-glass {
+    @apply bg-white/5 backdrop-blur-md border border-white/10;
+  }
+
+  .hover-glow:hover {
+    box-shadow: 0 0 15px theme('colors.pjh-blue');
+  }
+}
