@@ -1,4 +1,5 @@
 import Navbar from "./components/Navbar";
+import CookieBanner from "./components/CookieBanner";
 
 export default function App() {
   return (
@@ -6,7 +7,7 @@ export default function App() {
       <Navbar />
 
       {/* HERO SECTION */}
-      <section className="section text-center flex flex-col items-center">
+      <section className="section text-center flex flex-col items-center pt-28 sm:pt-32">
         <img
           src="/pjh-logo-light.png"
           alt="PJH Web Services logo"
@@ -101,6 +102,9 @@ export default function App() {
         </a>
       </section>
 
+      {/* ✅ COOKIE BANNER */}
+      <CookieBanner />
+
       {/* FOOTER */}
       <footer className="border-t border-white/10 py-6 text-center text-sm text-pjh-muted">
         © {new Date().getFullYear()} PJH Web Services — All rights reserved.
@@ -118,4 +122,3 @@ export default function App() {
 }
 
 console.log("✅ API URL:", import.meta.env.VITE_API_URL);
-
