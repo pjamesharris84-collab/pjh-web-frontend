@@ -1,17 +1,17 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { HelmetProvider } from "react-helmet-async"; // ✅ Add this
 
-// Public
+// Public Pages
 import App from "./App.jsx";
 import Contact from "./pages/Contact.jsx";
 import ThankYou from "./pages/ThankYou.jsx";
-import Cookies from "./pages/Cookies.jsx"; // ✅ Added
+import Cookies from "./pages/Cookies.jsx";
 import Privacy from "./pages/Privacy.jsx";
 import Terms from "./pages/Terms.jsx";
 
-
-// Admin
+// Admin Pages
 import AdminLogin from "./pages/Admin/AdminLogin.jsx";
 import AdminDashboard from "./pages/Admin/AdminDashboard.jsx";
 import AdminCustomers from "./pages/Admin/AdminCustomers.jsx";
@@ -27,41 +27,44 @@ import "./index.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <BrowserRouter>
-      <Routes>
-        {/* Public */}
-        <Route path="/" element={<App />} />
-        <Route path="/contact" element={<Contact />} />
-        <Route path="/thank-you" element={<ThankYou />} />
-        <Route path="/cookies" element={<Cookies />} /> {/* ✅ New Cookies Page */}
-        <Route path="/privacy" element={<Privacy />} />
-        <Route path="/terms" element={<Terms />} />        
+    {/* ✅ HelmetProvider ensures proper <head> rendering for SEO & social meta */}
+    <HelmetProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* Public */}
+          <Route path="/" element={<App />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/thank-you" element={<ThankYou />} />
+          <Route path="/cookies" element={<Cookies />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/terms" element={<Terms />} />
 
-        {/* Admin */}
-        <Route path="/admin" element={<AdminLogin />} />
-        <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          {/* Admin */}
+          <Route path="/admin" element={<AdminLogin />} />
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
 
-        {/* Customers */}
-        <Route path="/admin/customers" element={<AdminCustomers />} />
-        <Route path="/admin/customers/:id" element={<AdminCustomerRecord />} />
-        <Route
-          path="/admin/customers/:id/quotes/new"
-          element={<AdminQuoteNew />}
-        />
-        <Route
-          path="/admin/customers/:id/quotes/:quoteId"
-          element={<AdminQuoteRecord />}
-        />
+          {/* Customers */}
+          <Route path="/admin/customers" element={<AdminCustomers />} />
+          <Route path="/admin/customers/:id" element={<AdminCustomerRecord />} />
+          <Route
+            path="/admin/customers/:id/quotes/new"
+            element={<AdminQuoteNew />}
+          />
+          <Route
+            path="/admin/customers/:id/quotes/:quoteId"
+            element={<AdminQuoteRecord />}
+          />
 
-        {/* Quotes */}
-        <Route path="/admin/quotes" element={<AdminQuotes />} />
-        <Route path="/admin/quotes/:quoteId" element={<AdminQuoteRecord />} />
+          {/* Quotes */}
+          <Route path="/admin/quotes" element={<AdminQuotes />} />
+          <Route path="/admin/quotes/:quoteId" element={<AdminQuoteRecord />} />
 
-        {/* Orders & Invoices */}
-        <Route path="/admin/orders" element={<AdminOrders />} />
-        <Route path="/admin/orders/:id" element={<AdminOrderRecord />} /> {/* ✅ New Route */}
-        <Route path="/admin/invoices" element={<AdminInvoices />} />
-      </Routes>
-    </BrowserRouter>
+          {/* Orders & Invoices */}
+          <Route path="/admin/orders" element={<AdminOrders />} />
+          <Route path="/admin/orders/:id" element={<AdminOrderRecord />} />
+          <Route path="/admin/invoices" element={<AdminInvoices />} />
+        </Routes>
+      </BrowserRouter>
+    </HelmetProvider>
   </React.StrictMode>
 );
