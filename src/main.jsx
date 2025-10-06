@@ -1,7 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { HelmetProvider } from "react-helmet-async"; // ✅ Add this
 
 // Public Pages
 import App from "./App.jsx";
@@ -28,7 +27,6 @@ import "./index.css";
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     {/* ✅ HelmetProvider ensures proper <head> rendering for SEO & social meta */}
-    <HelmetProvider>
       <BrowserRouter>
         <Routes>
           {/* Public */}
@@ -65,6 +63,5 @@ ReactDOM.createRoot(document.getElementById("root")).render(
           <Route path="/admin/invoices" element={<AdminInvoices />} />
         </Routes>
       </BrowserRouter>
-    </HelmetProvider>
   </React.StrictMode>
 );
