@@ -1,19 +1,16 @@
-import { Head } from "react-head";
 import { Link } from "react-router-dom";
+import SEO from "../components/SEO";
 
 export default function Privacy() {
   return (
     <div className="min-h-screen bg-pjh-slate text-pjh-light font-outfit">
-      {/* SEO Metadata */}
-      <Head>
-        <title>Privacy Policy | PJH Web Services</title>
-        <meta
-          name="description"
-          content="Learn how PJH Web Services collects, uses, and protects your personal data in accordance with UK GDPR and data protection laws."
-        />
-        <meta name="robots" content="index, follow" />
-        <link rel="canonical" href="https://www.pjhwebservices.co.uk/privacy" />
-      </Head>
+      {/* ✅ SEO Metadata */}
+      <SEO
+        title="Privacy Policy | PJH Web Services"
+        description="Learn how PJH Web Services collects, uses, and protects your personal data in accordance with UK GDPR and data protection laws."
+        url="https://www.pjhwebservices.co.uk/privacy"
+        image="https://www.pjhwebservices.co.uk/pjh-logo-light.png"
+      />
 
       <div className="max-w-4xl mx-auto px-6 py-16">
         <div className="bg-pjh-gray p-8 rounded-2xl border border-white/10 shadow-lg space-y-8">
@@ -24,10 +21,9 @@ export default function Privacy() {
           <section>
             <h2 className="text-xl font-semibold text-pjh-blue mb-2">1. Introduction</h2>
             <p className="text-pjh-light/80">
-              At PJH Web Services, we respect your privacy and are committed to
-              protecting your personal data. This policy explains how we collect,
-              use, and safeguard information when you visit our website or use
-              our services.
+              At PJH Web Services, we respect your privacy and are committed to protecting your
+              personal data. This policy explains how we collect, use, and safeguard information
+              when you visit our website or use our services.
             </p>
           </section>
 
@@ -54,27 +50,26 @@ export default function Privacy() {
           <section>
             <h2 className="text-xl font-semibold text-pjh-blue mb-2">4. Cookies & Analytics</h2>
             <p className="text-pjh-light/80">
-              We use cookies and third-party analytics to understand how visitors use
-              our site. Cookies can be disabled in your browser, but this may affect
-              functionality. Google Analytics data is anonymised and used solely for
-              performance insights.
+              We use cookies and third-party analytics to understand how visitors use our site.
+              Cookies can be disabled in your browser, but this may affect functionality. Google
+              Analytics data is anonymised and used solely for performance insights.
             </p>
           </section>
 
           <section>
             <h2 className="text-xl font-semibold text-pjh-blue mb-2">5. Data Sharing</h2>
             <p className="text-pjh-light/80">
-              We never sell or rent personal data. Information may only be shared with
-              trusted partners (such as hosting providers or payment processors)
-              where necessary to provide our services securely.
+              We never sell or rent personal data. Information may only be shared with trusted
+              partners (such as hosting providers or payment processors) where necessary to provide
+              our services securely.
             </p>
           </section>
 
           <section>
             <h2 className="text-xl font-semibold text-pjh-blue mb-2">6. Data Retention</h2>
             <p className="text-pjh-light/80">
-              Personal data is retained only as long as needed to fulfil contractual
-              or legal obligations. Older data may be securely deleted or anonymised.
+              Personal data is retained only as long as needed to fulfil contractual or legal
+              obligations. Older data may be securely deleted or anonymised.
             </p>
           </section>
 
@@ -91,17 +86,17 @@ export default function Privacy() {
           <section>
             <h2 className="text-xl font-semibold text-pjh-blue mb-2">8. Security</h2>
             <p className="text-pjh-light/80">
-              We employ appropriate security measures, including SSL encryption and
-              secure databases. While no system is entirely risk-free, we strive to
-              protect your data with the highest standards available.
+              We employ appropriate security measures, including SSL encryption and secure
+              databases. While no system is entirely risk-free, we strive to protect your data
+              with the highest standards available.
             </p>
           </section>
 
           <section>
             <h2 className="text-xl font-semibold text-pjh-blue mb-2">9. Updates to This Policy</h2>
             <p className="text-pjh-light/80">
-              We may update this Privacy Policy periodically. Updates will appear on
-              this page with the new “Last Updated” date indicated above.
+              We may update this Privacy Policy periodically. Updates will appear on this page with
+              the new “Last Updated” date indicated above.
             </p>
           </section>
 
