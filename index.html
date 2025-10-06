@@ -1,13 +1,106 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <!-- Google Font: Outfit -->
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- ✅ Character encoding -->
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+
+    <!-- ✅ Viewport for responsiveness -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>client</title>
+
+    <!-- ✅ Page Title -->
+    <title>PJH Web Services | Bespoke Websites & CRM Systems</title>
+
+    <!-- ✅ SEO Meta -->
+    <meta
+      name="description"
+      content="PJH Web Services builds modern, responsive websites and custom CRM platforms for small businesses across Suffolk and beyond."
+    />
+    <meta
+      name="keywords"
+      content="PJH Web Services, web design Suffolk, custom CRM systems, business websites, digital branding, website development"
+    />
+    <link rel="canonical" href="https://www.pjhwebservices.co.uk/" />
+
+    <!-- ✅ Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="PJH Web Services | Bespoke Websites & CRM Systems" />
+    <meta
+      property="og:description"
+      content="Modern, responsive websites and tailored CRM systems for small businesses. Built by PJH Web Services, Suffolk."
+    />
+    <meta
+      property="og:image"
+      content="https://www.pjhwebservices.co.uk/pjh-logo-light.png"
+    />
+    <meta property="og:url" content="https://www.pjhwebservices.co.uk/" />
+    <meta property="og:site_name" content="PJH Web Services" />
+
+    <!-- ✅ Twitter Meta -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="PJH Web Services | Bespoke Websites & CRM Systems" />
+    <meta
+      name="twitter:description"
+      content="Professional digital services for small businesses — bespoke websites, CRM systems, and full brand support."
+    />
+    <meta
+      name="twitter:image"
+      content="https://www.pjhwebservices.co.uk/pjh-logo-light.png"
+    />
+
+<!-- ✅ Favicons & App Icons -->
+<link rel="icon" type="image/png" sizes="32x32" href="/pjh-logo-light.png" />
+<link rel="icon" type="image/png" sizes="16x16" href="/pjh-logo-light.png" />
+<link rel="apple-touch-icon" href="/pjh-logo-light.png" />
+<link rel="mask-icon" href="/pjh-logo-light.png" color="#007BFF" />
+<meta name="theme-color" content="#007BFF" />
+
+
+    <!-- ✅ Font Optimization -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- ✅ Schema.org LocalBusiness markup -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "LocalBusiness",
+  "name": "PJH Web Services",
+  "image": "https://www.pjhwebservices.co.uk/pjh-logo-light.png",
+  "@id": "https://www.pjhwebservices.co.uk",
+  "url": "https://www.pjhwebservices.co.uk",
+  "telephone": "+44 7587 707981",
+  "email": "info@pjhwebservices.co.uk",
+  "address": {
+    "@type": "PostalAddress",
+    "addressLocality": "Suffolk",
+    "addressCountry": "GB"
+  },
+  "description": "PJH Web Services builds bespoke websites and tailored CRM systems for small businesses across Suffolk and the UK.",
+  "sameAs": [
+    "https://www.pjhwebservices.co.uk"
+  ],
+  "logo": "https://www.pjhwebservices.co.uk/pjh-logo-light.png",
+  "priceRange": "££",
+  "openingHours": "Mo-Fr 09:00-17:00"
+}
+</script>
+
+    <!-- ✅ Google Analytics (replace G-XXXXXXXXXX with your real ID) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "G-XXXXXXXXXX");
+    </script>
   </head>
+
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>

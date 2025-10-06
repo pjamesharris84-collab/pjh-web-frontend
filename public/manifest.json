@@ -1,0 +1,22 @@
+{
+  "name": "PJH Web Services",
+  "short_name": "PJH Web",
+  "description": "PJH Web Services builds modern, responsive websites and bespoke CRM systems for small businesses across Suffolk and beyond.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#007BFF",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/pjh-logo-light.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/pjh-logo-light.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
