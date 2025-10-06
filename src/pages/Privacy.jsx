@@ -1,111 +1,117 @@
-// src/pages/Privacy.jsx
-import { Helmet } from "react-helmet-async"
-import { Link } from "react-router-dom"
+import { Head } from "react-head";
+import { Link } from "react-router-dom";
 
 export default function Privacy() {
   return (
-    <div className="admin-page font-sans">
-      <Helmet>
+    <div className="min-h-screen bg-pjh-slate text-pjh-light font-outfit">
+      {/* SEO Metadata */}
+      <Head>
         <title>Privacy Policy | PJH Web Services</title>
-      </Helmet>
+        <meta
+          name="description"
+          content="Learn how PJH Web Services collects, uses, and protects your personal data in accordance with UK GDPR and data protection laws."
+        />
+        <meta name="robots" content="index, follow" />
+        <link rel="canonical" href="https://www.pjhwebservices.co.uk/privacy" />
+      </Head>
 
       <div className="max-w-4xl mx-auto px-6 py-16">
-        <div className="admin-card space-y-8">
-          {/* Heading */}
-          <h1 className="admin-heading text-3xl">Privacy Policy</h1>
-          <p className="text-gray-300 text-sm">Last updated: [28/09/2025]</p>
+        <div className="bg-pjh-gray p-8 rounded-2xl border border-white/10 shadow-lg space-y-8">
+          <h1 className="text-3xl font-bold text-pjh-blue">Privacy Policy</h1>
+          <p className="text-sm text-pjh-muted">Last updated: 28/09/2025</p>
 
           {/* Sections */}
           <section>
-            <h2 className="text-xl font-bold text-blue-accent mb-2">1. Introduction</h2>
-            <p className="text-gray-300">
-              At PJH Web Services, we respect your privacy and are committed to protecting
-              your personal data. This policy explains how we collect, use, and safeguard
-              information when you visit our website or use our services.
+            <h2 className="text-xl font-semibold text-pjh-blue mb-2">1. Introduction</h2>
+            <p className="text-pjh-light/80">
+              At PJH Web Services, we respect your privacy and are committed to
+              protecting your personal data. This policy explains how we collect,
+              use, and safeguard information when you visit our website or use
+              our services.
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-blue-accent mb-2">2. Information We Collect</h2>
-            <ul className="list-disc ml-6 text-gray-300 space-y-1">
-              <li>Personal information provided via contact forms (e.g., name, email, phone).</li>
+            <h2 className="text-xl font-semibold text-pjh-blue mb-2">2. Information We Collect</h2>
+            <ul className="list-disc ml-6 text-pjh-light/80 space-y-1">
+              <li>Personal information you provide (e.g., name, email, phone).</li>
               <li>Business details shared when requesting quotes or services.</li>
-              <li>Technical information such as IP address, browser type, and cookies.</li>
-              <li>Analytics data (e.g., pages visited, time on site) collected via Google Analytics.</li>
+              <li>Technical data such as IP address, browser type, and cookies.</li>
+              <li>Analytics data like pages visited and time spent on site.</li>
             </ul>
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-blue-accent mb-2">3. How We Use Your Information</h2>
-            <ul className="list-disc ml-6 text-gray-300 space-y-1">
-              <li>To respond to enquiries and provide requested services.</li>
-              <li>To process orders, quotes, and customer agreements.</li>
-              <li>To improve our website, services, and customer experience.</li>
-              <li>To comply with legal obligations and regulatory requirements.</li>
+            <h2 className="text-xl font-semibold text-pjh-blue mb-2">3. How We Use Your Information</h2>
+            <ul className="list-disc ml-6 text-pjh-light/80 space-y-1">
+              <li>To respond to enquiries and deliver requested services.</li>
+              <li>To process quotes, invoices, and customer agreements.</li>
+              <li>To improve our website and user experience.</li>
+              <li>To comply with UK legal and regulatory obligations.</li>
             </ul>
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-blue-accent mb-2">4. Cookies & Analytics</h2>
-            <p className="text-gray-300">
-              We use cookies and third-party analytics tools to understand how visitors use
-              our website. Cookies can be disabled in your browser settings, but this may
-              affect functionality. Google Analytics data is anonymised and used only for
-              internal performance monitoring.
+            <h2 className="text-xl font-semibold text-pjh-blue mb-2">4. Cookies & Analytics</h2>
+            <p className="text-pjh-light/80">
+              We use cookies and third-party analytics to understand how visitors use
+              our site. Cookies can be disabled in your browser, but this may affect
+              functionality. Google Analytics data is anonymised and used solely for
+              performance insights.
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-blue-accent mb-2">5. Data Sharing</h2>
-            <p className="text-gray-300">
-              We do not sell or share your personal information with third parties for
-              marketing purposes. Data may be shared with trusted partners (such as payment
-              providers or hosting services) when necessary to deliver our services.
+            <h2 className="text-xl font-semibold text-pjh-blue mb-2">5. Data Sharing</h2>
+            <p className="text-pjh-light/80">
+              We never sell or rent personal data. Information may only be shared with
+              trusted partners (such as hosting providers or payment processors)
+              where necessary to provide our services securely.
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-blue-accent mb-2">6. Data Retention</h2>
-            <p className="text-gray-300">
-              We keep personal data only as long as necessary to fulfil the purposes outlined
-              in this policy, unless a longer retention period is required by law.
+            <h2 className="text-xl font-semibold text-pjh-blue mb-2">6. Data Retention</h2>
+            <p className="text-pjh-light/80">
+              Personal data is retained only as long as needed to fulfil contractual
+              or legal obligations. Older data may be securely deleted or anonymised.
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-blue-accent mb-2">7. Your Rights</h2>
-            <ul className="list-disc ml-6 text-gray-300 space-y-1">
-              <li>The right to access the personal data we hold about you.</li>
-              <li>The right to request corrections or updates.</li>
-              <li>The right to request deletion of your data (“right to be forgotten”).</li>
-              <li>The right to opt out of non-essential communications.</li>
+            <h2 className="text-xl font-semibold text-pjh-blue mb-2">7. Your Rights</h2>
+            <ul className="list-disc ml-6 text-pjh-light/80 space-y-1">
+              <li>Access the personal data we hold about you.</li>
+              <li>Request updates or corrections.</li>
+              <li>Request deletion of your information (“right to be forgotten”).</li>
+              <li>Opt out of non-essential communications at any time.</li>
             </ul>
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-blue-accent mb-2">8. Security</h2>
-            <p className="text-gray-300">
-              We use appropriate technical and organisational measures to safeguard your
-              information, including SSL encryption and secure servers. However, no system
-              is 100% secure, and we cannot guarantee absolute security of your data.
+            <h2 className="text-xl font-semibold text-pjh-blue mb-2">8. Security</h2>
+            <p className="text-pjh-light/80">
+              We employ appropriate security measures, including SSL encryption and
+              secure databases. While no system is entirely risk-free, we strive to
+              protect your data with the highest standards available.
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-blue-accent mb-2">9. Changes to this Policy</h2>
-            <p className="text-gray-300">
-              We may update this Privacy Policy from time to time. Updates will be posted
-              on this page with a new “last updated” date.
+            <h2 className="text-xl font-semibold text-pjh-blue mb-2">9. Updates to This Policy</h2>
+            <p className="text-pjh-light/80">
+              We may update this Privacy Policy periodically. Updates will appear on
+              this page with the new “Last Updated” date indicated above.
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-blue-accent mb-2">10. Contact Us</h2>
-            <p className="text-gray-300">
-              If you have any questions about this Privacy Policy, please contact us:
+            <h2 className="text-xl font-semibold text-pjh-blue mb-2">10. Contact Us</h2>
+            <p className="text-pjh-light/80">
+              Email: info@pjhwebservices.co.uk
+              <br />
+              Phone: 07587 707981
             </p>
-            <p className="text-gray-300">Email: info@pjhwebservices.com</p>
-            <p className="text-gray-300">Phone: 07587 707981</p>
           </section>
 
           {/* Back to Home */}
@@ -117,5 +123,5 @@ export default function Privacy() {
         </div>
       </div>
     </div>
-  )
+  );
 }

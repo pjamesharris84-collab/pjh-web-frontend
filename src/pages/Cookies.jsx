@@ -1,8 +1,20 @@
+import { Head } from "react-head";
 import { Link } from "react-router-dom";
 
 export default function Cookies() {
   return (
     <div className="min-h-screen bg-pjh-slate text-pjh-light font-outfit">
+      {/* SEO Metadata */}
+      <Head>
+        <title>Cookies Policy | PJH Web Services</title>
+        <meta
+          name="description"
+          content="Learn how PJH Web Services uses cookies to enhance your browsing experience, improve performance, and provide secure functionality."
+        />
+        <meta name="robots" content="index, follow" />
+        <link rel="canonical" href="https://www.pjhwebservices.co.uk/cookies" />
+      </Head>
+
       <div className="max-w-4xl mx-auto px-6 py-16">
         <div className="bg-pjh-gray p-8 rounded-2xl border border-white/10 shadow-lg space-y-8">
           <h1 className="text-3xl font-bold text-pjh-blue">Cookies Policy</h1>
