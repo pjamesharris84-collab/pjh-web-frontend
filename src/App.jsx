@@ -3,7 +3,7 @@ import CookieBanner from "./components/CookieBanner";
 
 export default function App() {
   return (
-    <div className="bg-pjh-slate text-pjh-light min-h-screen">
+    <div className="bg-pjh-slate text-pjh-light min-h-screen flex flex-col">
       <Navbar />
 
       {/* HERO SECTION */}
@@ -105,18 +105,37 @@ export default function App() {
       {/* ✅ COOKIE BANNER */}
       <CookieBanner />
 
-      {/* FOOTER */}
-      <footer className="border-t border-white/10 py-6 text-center text-sm text-pjh-muted">
-        © {new Date().getFullYear()} PJH Web Services — All rights reserved.
-        <div className="mt-2">
-          <a
-            href="/admin"
-            className="text-xs text-pjh-muted hover:text-pjh-blue transition underline underline-offset-2"
-          >
-            Admin Login
-          </a>
-        </div>
-      </footer>
+      {/* ✅ UPDATED FOOTER */}
+      <footer className="border-t border-white/10 py-6 text-center text-sm text-pjh-muted space-y-2">
+  <p>© {new Date().getFullYear()} PJH Web Services — All rights reserved.</p>
+
+  <div className="flex justify-center flex-wrap gap-4 text-xs">
+    <a
+      href="/privacy"
+      className="hover:text-pjh-blue transition underline underline-offset-2"
+    >
+      Privacy Policy
+    </a>
+    <a
+      href="/cookies"
+      className="hover:text-pjh-blue transition underline underline-offset-2"
+    >
+      Cookies Policy
+    </a>
+    <a
+      href="/terms"
+      className="hover:text-pjh-blue transition underline underline-offset-2"
+    >
+      Terms & Conditions
+    </a>
+    <a
+      href="/admin"
+      className="hover:text-pjh-blue transition underline underline-offset-2"
+    >
+      Admin Login
+    </a>
+  </div>
+</footer>
     </div>
   );
 }

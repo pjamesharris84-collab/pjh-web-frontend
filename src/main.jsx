@@ -7,6 +7,9 @@ import App from "./App.jsx";
 import Contact from "./pages/Contact.jsx";
 import ThankYou from "./pages/ThankYou.jsx";
 import Cookies from "./pages/Cookies.jsx"; // ✅ Added
+import Privacy from "./pages/Privacy.jsx";
+import Terms from "./pages/Terms.jsx";
+
 
 // Admin
 import AdminLogin from "./pages/Admin/AdminLogin.jsx";
@@ -31,6 +34,8 @@ ReactDOM.createRoot(document.getElementById("root")).render(
         <Route path="/contact" element={<Contact />} />
         <Route path="/thank-you" element={<ThankYou />} />
         <Route path="/cookies" element={<Cookies />} /> {/* ✅ New Cookies Page */}
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/terms" element={<Terms />} />        
 
         {/* Admin */}
         <Route path="/admin" element={<AdminLogin />} />
