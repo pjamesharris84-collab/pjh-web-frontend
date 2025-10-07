@@ -19,7 +19,7 @@ export default function PaymentSuccess() {
           className="mx-auto w-28 mb-6"
         />
         <h1 className="text-3xl font-bold text-pjh-blue mb-3">
-          Payment Successful 🎉
+          Payment Successful
         </h1>
         <p className="text-gray-300 mb-6 leading-relaxed">
           Thank you for your <span className="font-semibold">{type}</span>{" "}
