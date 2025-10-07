@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 
 export default function Contact() {
   const [form, setForm] = useState({
@@ -8,10 +9,33 @@ export default function Contact() {
     message: "",
   });
   const [status, setStatus] = useState("");
+  const [selectedPackage, setSelectedPackage] = useState(null);
 
-  // ✅ Use environment variable for API URL (Render in production)
+  const location = useLocation();
+
+  // ✅ Use environment variable for API URL (Render / Vercel in production)
   const API_BASE =
     import.meta.env.VITE_API_URL || "https://pjh-web-backend.onrender.com";
+
+  // 📨 Prefill message & show banner if package details exist
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const pkg = params.get("package");
+    const price = params.get("price");
+    const monthly = params.get("monthly");
+
+    if (pkg) {
+      const msg = `Hi PJH Web Services, I'm interested in your ${pkg} Package (£${price}${
+        monthly && monthly > 0 ? ` one-off or £${monthly}/month` : ""
+      }). Please contact me with more information.`;
+      setForm((prev) => ({ ...prev, message: msg }));
+      setSelectedPackage({
+        name: pkg,
+        price,
+        monthly,
+      });
+    }
+  }, [location.search]);
 
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -30,8 +54,7 @@ export default function Contact() {
       const data = await res.json();
 
       if (res.ok && data.success) {
-        // ✅ Redirect to thank-you page on success
-        window.location.href = "/thank-you";
+        window.location.href = "/thank-you"; // ✅ Redirect on success
       } else {
         setStatus("❌ Failed to send message. Please try again.");
       }
@@ -58,6 +81,18 @@ export default function Contact() {
         Have a project in mind? Let’s create something unique and fully tailored
         to your business needs.
       </p>
+
+      {/* === PACKAGE BANNER (if coming from Pricing) === */}
+      {selectedPackage && (
+        <div className="mb-6 px-5 py-3 bg-pjh-blue/10 border border-pjh-blue/30 rounded-lg text-sm text-pjh-blue text-center max-w-md shadow-sm">
+          <strong>Enquiring about:</strong> {selectedPackage.name} Package{" "}
+          (£{selectedPackage.price}
+          {selectedPackage.monthly > 0
+            ? ` or £${selectedPackage.monthly}/month`
+            : ""}
+          )
+        </div>
+      )}
 
       {/* === CONTACT FORM === */}
       <form

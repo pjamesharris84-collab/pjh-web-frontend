@@ -1,10 +1,15 @@
+// ============================================
+// PJH Web Services — Admin Customers Page
+// ============================================
+
 import { useEffect, useState } from "react";
-import { apiFetch } from "../../utils/api"; // ✅ centralised API helper
+import { apiFetch } from "../../utils/api"; // ✅ Centralised API helper
 
 export default function AdminCustomers() {
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const [newCustomer, setNewCustomer] = useState({
     business: "",
     name: "",
@@ -18,14 +23,14 @@ export default function AdminCustomers() {
     notes: "",
   });
 
-  // 🔐 Auth check
+  // 🔐 Ensure admin is logged in
   useEffect(() => {
     if (localStorage.getItem("isAdmin") !== "true") {
       window.location.href = "/admin";
     }
   }, []);
 
-  // 🧠 Fetch customers
+  // 🧠 Fetch all customers
   async function loadCustomers() {
     try {
       const data = await apiFetch("/api/customers");
@@ -48,20 +53,47 @@ export default function AdminCustomers() {
   // ➕ Add new customer
   async function handleAddCustomer(e) {
     e.preventDefault();
+    setSubmitting(true);
     try {
       const data = await apiFetch("/api/customers", {
         method: "POST",
         body: JSON.stringify(newCustomer),
       });
-      // ⏩ Redirect straight to new record
-      if (data?.id) {
-        window.location.href = `/admin/customers/${data.id}`;
+
+      const created = data?.customer || data;
+      if (created?.id) {
+        alert(`✅ Customer created successfully (${created.name})`);
+        window.location.href = `/admin/customers/${created.id}`;
       } else {
-        alert("⚠️ Customer created but missing ID — check server logs.");
+        console.warn("⚠️ Customer created but missing ID", data);
+        alert("⚠️ Customer created but missing ID — check backend logs.");
+        await loadCustomers();
       }
     } catch (err) {
       console.error("❌ Could not add customer:", err);
-      alert("❌ Could not add customer — check console for details.");
+      alert("❌ Could not add customer — please check console for details.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  // 🗑️ Delete customer
+  async function handleDeleteCustomer(e, id, name) {
+    e.stopPropagation();
+    if (!confirm(`Are you sure you want to delete ${name || "this customer"}?`))
+      return;
+
+    try {
+      const res = await apiFetch(`/api/customers/${id}`, { method: "DELETE" });
+      if (res.success || res.message) {
+        alert("✅ Customer deleted successfully");
+        setCustomers((prev) => prev.filter((c) => c.id !== id));
+      } else {
+        throw new Error("Deletion failed");
+      }
+    } catch (err) {
+      console.error("❌ Error deleting customer:", err);
+      alert("❌ Failed to delete customer — check console for details.");
     }
   }
 
@@ -72,7 +104,7 @@ export default function AdminCustomers() {
         <div>
           <h1 className="text-3xl font-bold text-pjh-blue">Customers</h1>
           <p className="text-pjh-muted">
-            View, add, or open customer records.
+            View, add, edit, or delete customer records.
           </p>
         </div>
         <a
@@ -111,6 +143,7 @@ export default function AdminCustomers() {
             required={["name", "email"].includes(key)}
           />
         ))}
+
         <textarea
           placeholder="Notes (optional)"
           value={newCustomer.notes}
@@ -120,8 +153,13 @@ export default function AdminCustomers() {
           className="form-input col-span-full"
           rows="2"
         />
-        <button type="submit" className="btn-primary col-span-full">
-          Add Customer
+
+        <button
+          type="submit"
+          disabled={submitting}
+          className="btn-primary col-span-full"
+        >
+          {submitting ? "Adding..." : "Add Customer"}
         </button>
       </form>
 
@@ -142,13 +180,14 @@ export default function AdminCustomers() {
                 <th className="p-3">Email</th>
                 <th className="p-3">Phone</th>
                 <th className="p-3">Address</th>
+                <th className="p-3">Actions</th>
               </tr>
             </thead>
             <tbody>
               {customers.map((c) => (
                 <tr
                   key={c.id}
-                  className="border-t border-white/5 hover:bg-pjh-blue/10 cursor-pointer"
+                  className="border-t border-white/5 hover:bg-pjh-blue/10 cursor-pointer transition"
                   onClick={() =>
                     (window.location.href = `/admin/customers/${c.id}`)
                   }
@@ -163,6 +202,16 @@ export default function AdminCustomers() {
                     {[c.address1, c.address2, c.city, c.county, c.postcode]
                       .filter(Boolean)
                       .join(", ") || "—"}
+                  </td>
+                  <td className="p-3">
+                    <button
+                      onClick={(e) =>
+                        handleDeleteCustomer(e, c.id, c.name || c.business)
+                      }
+                      className="text-red-400 hover:text-red-300 text-xs underline"
+                    >
+                      Delete
+                    </button>
                   </td>
                 </tr>
               ))}

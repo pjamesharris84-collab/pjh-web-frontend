@@ -15,57 +15,41 @@ export default function AdminCustomerRecord() {
     }
   }, []);
 
-  // 🔄 Load customer + quotes
   useEffect(() => {
     loadCustomer();
     loadQuotes();
   }, [id]);
 
-  // ===============================
-  // 🧠 LOAD CUSTOMER DETAILS
-  // ===============================
+  // 🧠 Load customer
   async function loadCustomer() {
-    console.log("🔄 Fetching customer record...");
     try {
       const data = await apiFetch(`/api/customers/${id}`);
-      console.log("✅ Raw data:", data);
-
       const record =
         data.data && typeof data.data === "object"
           ? Array.isArray(data.data)
             ? data.data[0]
             : data.data
           : data;
-
-      console.log("📋 Normalized customer object:", record);
       setCustomer(record);
     } catch (err) {
       console.error("❌ Failed to load customer:", err);
     }
   }
 
-  // ===============================
-  // 💬 LOAD QUOTES FOR CUSTOMER
-  // ===============================
+  // 💬 Load quotes
   async function loadQuotes() {
-    console.log("🔄 Fetching quotes for customer", id);
     try {
       const data = await apiFetch(`/api/customers/${id}/quotes`);
-      console.log("✅ Quotes response:", data);
-
       const list = Array.isArray(data)
         ? data
         : data.data || data.quotes || [];
-
       setQuotes(list);
     } catch (err) {
       console.error("❌ Failed to load quotes:", err);
     }
   }
 
-  // ===============================
-  // 💾 SAVE CUSTOMER EDITS
-  // ===============================
+  // 💾 Save edits
   async function handleSave() {
     setSaving(true);
     try {
@@ -82,9 +66,26 @@ export default function AdminCustomerRecord() {
     }
   }
 
-  // ===============================
-  // 🕓 RENDER
-  // ===============================
+  // 🗑️ Delete customer
+  async function handleDelete() {
+    if (
+      !confirm(
+        `Are you sure you want to permanently delete ${
+          customer.name || "this customer"
+        }?`
+      )
+    )
+      return;
+    try {
+      await apiFetch(`/api/customers/${id}`, { method: "DELETE" });
+      alert("✅ Customer deleted");
+      window.location.href = "/admin/customers";
+    } catch (err) {
+      console.error("❌ Failed to delete customer:", err);
+      alert("❌ Failed to delete customer — check console for details.");
+    }
+  }
+
   if (!customer) {
     return (
       <div className="p-10 text-pjh-muted animate-pulse">
@@ -102,9 +103,17 @@ export default function AdminCustomerRecord() {
         ← Back to Customers
       </a>
 
-      <h1 className="text-3xl font-bold text-pjh-blue mb-6">
-        {customer.business || customer.name || "Unnamed Customer"}
-      </h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-bold text-pjh-blue">
+          {customer.business || customer.name || "Unnamed Customer"}
+        </h1>
+        <button
+          onClick={handleDelete}
+          className="text-red-400 hover:text-red-300 text-sm underline"
+        >
+          Delete Customer
+        </button>
+      </div>
 
       {/* Editable Fields */}
       <div className="bg-pjh-gray p-6 rounded-xl mb-8 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -170,9 +179,7 @@ export default function AdminCustomerRecord() {
                 >
                   <td className="p-3">{q.quote_number || "—"}</td>
                   <td className="p-3">{q.title || "Untitled"}</td>
-                  <td className="p-3">
-                    £{Number(q.deposit || 0).toFixed(2)}
-                  </td>
+                  <td className="p-3">£{Number(q.deposit || 0).toFixed(2)}</td>
                   <td className="p-3 capitalize">{q.status || "draft"}</td>
                 </tr>
               ))}

@@ -4,12 +4,11 @@ import { useParams, useNavigate } from "react-router-dom";
 export default function AdminQuoteRecord() {
   const { id: customerId, quoteId } = useParams();
   const navigate = useNavigate();
-
   const API_BASE =
-    import.meta.env.VITE_API_URL ||
-    "https://pjh-web-backend.onrender.com"; // fallback for production
+    import.meta.env.VITE_API_URL || "https://pjh-web-backend.onrender.com";
 
   const [quote, setQuote] = useState(null);
+  const [packages, setPackages] = useState([]);
   const [saving, setSaving] = useState(false);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
@@ -21,10 +20,22 @@ export default function AdminQuoteRecord() {
     }
   }, []);
 
-  // 🔄 Load quote
+  // 🔄 Load quote & packages
   useEffect(() => {
     if (quoteId) loadQuote();
+    loadPackages();
   }, [quoteId]);
+
+  async function loadPackages() {
+    try {
+      const res = await fetch(`${API_BASE}/api/packages`);
+      const data = await res.json();
+      setPackages(Array.isArray(data) ? data : data.data || []);
+    } catch (err) {
+      console.error("❌ Failed to load packages:", err);
+      setPackages([]);
+    }
+  }
 
   async function loadQuote() {
     console.log("🔄 Fetching quote", quoteId);
@@ -89,6 +100,11 @@ export default function AdminQuoteRecord() {
           deposit: quote.deposit,
           notes: quote.notes,
           status: quote.status,
+          package_id: quote.package_id ? Number(quote.package_id) : null,
+          custom_price: quote.custom_price ? Number(quote.custom_price) : null,
+          discount_percent: quote.discount_percent
+            ? Number(quote.discount_percent)
+            : 0,
         }),
       });
 
@@ -140,7 +156,7 @@ export default function AdminQuoteRecord() {
     }
   }
 
-  // ✅ Accept quote
+  // ✅ Accept / ❌ Reject / ➕ Order creation handlers (unchanged)
   async function handleAccept() {
     setWorking(true);
     try {
@@ -148,7 +164,7 @@ export default function AdminQuoteRecord() {
         method: "POST",
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || data?.message || "Accept failed");
+      if (!res.ok) throw new Error(data?.error || "Accept failed");
       await loadQuote();
       alert("✅ Quote marked as accepted");
     } catch (err) {
@@ -159,7 +175,6 @@ export default function AdminQuoteRecord() {
     }
   }
 
-  // ❌ Reject quote
   async function handleReject() {
     if (!confirm("Mark this quote as Rejected?")) return;
     setWorking(true);
@@ -168,7 +183,7 @@ export default function AdminQuoteRecord() {
         method: "POST",
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || data?.message || "Reject failed");
+      if (!res.ok) throw new Error(data?.error || "Reject failed");
       await loadQuote();
       alert("✅ Quote marked as rejected");
     } catch (err) {
@@ -179,7 +194,6 @@ export default function AdminQuoteRecord() {
     }
   }
 
-  // 🧾 Create order from quote
   async function handleCreateOrder() {
     setWorking(true);
     try {
@@ -187,7 +201,7 @@ export default function AdminQuoteRecord() {
         method: "POST",
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || data?.message || "Create order failed");
+      if (!res.ok) throw new Error(data?.error || "Create order failed");
 
       const orderId = data?.data?.id || data?.order?.id;
       if (orderId) {
@@ -204,13 +218,13 @@ export default function AdminQuoteRecord() {
     }
   }
 
-  // 🎨 Status badge
   const statusBadge = (status) => {
     const map = {
       pending: "bg-yellow-500/20 text-yellow-300 border border-yellow-400/30",
       accepted: "bg-green-500/20 text-green-300 border border-green-400/30",
       rejected: "bg-red-500/20 text-red-300 border border-red-400/30",
-      amend_requested: "bg-blue-500/20 text-blue-300 border border-blue-400/30",
+      amend_requested:
+        "bg-blue-500/20 text-blue-300 border border-blue-400/30",
     };
     return (
       <span
@@ -225,7 +239,11 @@ export default function AdminQuoteRecord() {
 
   if (error) return <div className="p-10 text-red-400">❌ {error}</div>;
   if (!quote)
-    return <div className="p-10 text-pjh-muted animate-pulse">Loading quote details...</div>;
+    return (
+      <div className="p-10 text-pjh-muted animate-pulse">
+        Loading quote details...
+      </div>
+    );
 
   const canCreateOrder = quote.status === "accepted";
 
@@ -254,7 +272,6 @@ export default function AdminQuoteRecord() {
         >
           ✅ Accept
         </button>
-
         <button
           onClick={handleReject}
           disabled={working || quote.status === "rejected"}
@@ -262,17 +279,11 @@ export default function AdminQuoteRecord() {
         >
           ❌ Reject
         </button>
-
         {!quote.order_id && canCreateOrder && (
-          <button
-            onClick={handleCreateOrder}
-            disabled={working}
-            className="btn-secondary"
-          >
+          <button onClick={handleCreateOrder} disabled={working} className="btn-secondary">
             ➕ Create Order from Quote
           </button>
         )}
-
         {quote.order_id && (
           <button
             onClick={() => navigate(`/admin/orders/${quote.order_id}`)}
@@ -281,7 +292,6 @@ export default function AdminQuoteRecord() {
             🔗 View Linked Order #{quote.order_id}
           </button>
         )}
-
         <button
           onClick={handleEmail}
           disabled={working}
@@ -293,26 +303,44 @@ export default function AdminQuoteRecord() {
 
       {/* === DETAILS FORM === */}
       <div className="bg-pjh-gray p-6 rounded-xl mt-6 mb-8 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {Object.entries(quote).map(([key, value]) => {
-          if (
-            ["id", "created_at", "updated_at", "customer_id", "history", "items", "subtotal", "balance"].includes(key)
-          )
-            return null;
-          return (
-            <div key={key}>
-              <label className="block text-sm text-pjh-muted mb-1 capitalize">
-                {key.replace(/_/g, " ")}
-              </label>
-              <input
-                type="text"
-                value={value ?? ""}
-                onChange={(e) => setQuote({ ...quote, [key]: e.target.value })}
-                className="form-input w-full"
-              />
-            </div>
-          );
-        })}
-        <button onClick={handleSave} disabled={saving} className="btn-primary col-span-full">
+        <label className="block text-sm text-pjh-muted mb-1">Package</label>
+        <select
+          value={quote.package_id || ""}
+          onChange={(e) => setQuote({ ...quote, package_id: e.target.value })}
+          className="form-input w-full col-span-2"
+        >
+          <option value="">— None Selected —</option>
+          {packages.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name} (£{p.price_oneoff})
+            </option>
+          ))}
+        </select>
+
+        <label className="block text-sm text-pjh-muted mb-1">Custom Price (Override)</label>
+        <input
+          type="number"
+          value={quote.custom_price || ""}
+          onChange={(e) => setQuote({ ...quote, custom_price: e.target.value })}
+          className="form-input w-full"
+          placeholder="e.g. 2500"
+        />
+
+        <label className="block text-sm text-pjh-muted mb-1">Discount (%)</label>
+        <input
+          type="number"
+          value={quote.discount_percent || 0}
+          onChange={(e) =>
+            setQuote({ ...quote, discount_percent: e.target.value })
+          }
+          className="form-input w-full"
+        />
+
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="btn-primary col-span-full mt-2"
+        >
           {saving ? "Saving..." : "💾 Save Changes"}
         </button>
         <button
@@ -326,7 +354,9 @@ export default function AdminQuoteRecord() {
       {/* === LINE ITEMS === */}
       {Array.isArray(quote.items) && quote.items.length > 0 && (
         <div className="bg-pjh-slate p-6 rounded-xl">
-          <h2 className="text-xl font-semibold mb-4 text-pjh-blue">Line Items</h2>
+          <h2 className="text-xl font-semibold mb-4 text-pjh-blue">
+            Line Items
+          </h2>
           <table className="min-w-full border border-white/10 rounded-lg mb-6">
             <thead className="bg-pjh-gray/60">
               <tr className="text-left text-sm text-pjh-muted">
