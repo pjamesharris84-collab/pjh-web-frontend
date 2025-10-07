@@ -9,6 +9,9 @@ import ThankYou from "./pages/ThankYou.jsx";
 import Cookies from "./pages/Cookies.jsx";
 import Privacy from "./pages/Privacy.jsx";
 import Terms from "./pages/Terms.jsx";
+import PaymentSuccess from "./pages/PaymentSuccess";
+import PaymentCancelled from "./pages/PaymentCancelled";
+import PaymentFailed from "./pages/PaymentFailed";
 
 // Admin Pages
 import AdminLogin from "./pages/Admin/AdminLogin.jsx";
@@ -36,6 +39,9 @@ ReactDOM.createRoot(document.getElementById("root")).render(
           <Route path="/cookies" element={<Cookies />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
+          <Route path="/payment-success" element={<PaymentSuccess />} />
+<Route path="/payment-cancelled" element={<PaymentCancelled />} />
+<Route path="/payment-failed" element={<PaymentFailed />} />
 
           {/* Admin */}
           <Route path="/admin" element={<AdminLogin />} />

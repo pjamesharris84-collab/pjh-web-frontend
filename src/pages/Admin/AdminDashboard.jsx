@@ -1,6 +1,8 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export default function AdminDashboard() {
+  const [loading, setLoading] = useState(false);
+
   // 🔐 Admin authentication guard
   useEffect(() => {
     const isAdmin = localStorage.getItem("isAdmin");
@@ -8,6 +10,34 @@ export default function AdminDashboard() {
       window.location.href = "/admin"; // redirect if not logged in
     }
   }, []);
+
+  // 💳 Create Stripe payment session (Deposit or Balance)
+  const sendPaymentLink = async (orderId, type) => {
+    try {
+      setLoading(true);
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/payments/create-session`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ orderId, type }),
+        }
+      );
+
+      const data = await res.json();
+      if (data.success) {
+        alert(`✅ ${type} payment link created and emailed successfully!`);
+        console.log("Payment URL:", data.url);
+      } else {
+        alert(`⚠️ ${data.error || "Failed to create payment link."}`);
+      }
+    } catch (err) {
+      console.error("❌ Payment link error:", err);
+      alert("Error sending payment link.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // 🧱 Render Dashboard
   return (
@@ -19,7 +49,7 @@ export default function AdminDashboard() {
             Admin Dashboard
           </h1>
           <p className="text-pjh-muted">
-            Welcome back — manage customers, quotes, orders, and invoices.
+            Manage customers, quotes, orders, invoices & Stripe payments.
           </p>
         </div>
 
@@ -82,7 +112,7 @@ export default function AdminDashboard() {
                 📦 Manage Orders
               </h2>
               <p className="text-sm text-pjh-muted">
-                Track project progress, tasks, and order status.
+                Track progress, tasks, and order status.
               </p>
             </div>
           </a>
@@ -103,6 +133,36 @@ export default function AdminDashboard() {
               </p>
             </div>
           </a>
+        </li>
+
+        {/* Stripe Payments */}
+        <li>
+          <div className="block h-full p-6 rounded-xl bg-pjh-gray border border-white/10 transition flex flex-col justify-between shadow-sm hover:bg-pjh-blue/10 hover:shadow-pjh-blue/20">
+            <div>
+              <h2 className="text-lg font-semibold text-pjh-blue mb-2">
+                💳 Stripe Payments
+              </h2>
+              <p className="text-sm text-pjh-muted mb-4">
+                Create secure payment links for customers.
+              </p>
+              <div className="space-y-2">
+                <button
+                  disabled={loading}
+                  onClick={() => sendPaymentLink(prompt("Enter Order ID:"), "deposit")}
+                  className="w-full bg-pjh-blue hover:bg-pjh-blue/80 text-white rounded-md py-2 text-sm font-medium transition"
+                >
+                  🔗 Send Deposit Link
+                </button>
+                <button
+                  disabled={loading}
+                  onClick={() => sendPaymentLink(prompt("Enter Order ID:"), "balance")}
+                  className="w-full bg-green-600 hover:bg-green-700 text-white rounded-md py-2 text-sm font-medium transition"
+                >
+                  💸 Send Balance Link
+                </button>
+              </div>
+            </div>
+          </div>
         </li>
       </ul>
 
