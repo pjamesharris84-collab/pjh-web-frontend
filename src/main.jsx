@@ -24,6 +24,8 @@ import Pricing from "./pages/Pricing.jsx";
 import LegalMonthlyTerms from "./pages/legal/LegalMonthlyTerms.jsx";
 import PackageDetails from "./pages/PackageDetails.jsx";
 import DirectDebitPolicy from "./pages/legal/direct-debit-policy.jsx";
+import SetupComplete from "./pages/SetupComplete.jsx";
+import DirectDebitSetup from "./pages/DirectDebitSetup.jsx";
 
 
 // 💳 Payment Pages
@@ -89,7 +91,9 @@ ReactDOM.createRoot(document.getElementById("root")).render(
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/legal/monthly-terms" element={<LegalMonthlyTerms />} />
           <Route path="/packages/:name" element={<PackageDetails />} /> 
-          <Route path="/legal/direct-debit-policy" element={<DirectDebitPolicy />} />        
+          <Route path="/legal/direct-debit-policy" element={<DirectDebitPolicy />} />   
+          <Route path="/direct-debit-setup" element={<DirectDebitSetup />} />
+<Route path="/setup-complete" element={<SetupComplete />} />     
 
 
           {/* 💳 Payments */}
