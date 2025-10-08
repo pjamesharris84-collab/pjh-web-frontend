@@ -1,37 +1,48 @@
+/**
+ * ============================================================
+ * PJH Web Services — Admin Order Record
+ * ============================================================
+ * Full admin view of individual orders:
+ *  - Load, edit & save order details
+ *  - Send invoices (deposit/balance)
+ *  - Generate Stripe card payment links
+ *  - Initiate Direct Debit mandate setup
+ *  - Manage project tasks & diary notes
+ * ============================================================
+ */
+
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 
 export default function AdminOrderRecord() {
-  const { id } = useParams(); // orderId
-  const navigate = useNavigate();
-
+  const { id } = useParams(); // Order ID from URL
   const [order, setOrder] = useState(null);
   const [saving, setSaving] = useState(false);
   const [working, setWorking] = useState(false);
   const [newNote, setNewNote] = useState("");
   const [error, setError] = useState("");
 
-  // 🌍 Use environment-aware API base
+  // 🌍 Backend base URL (env-aware)
   const API_BASE =
     import.meta.env.VITE_API_URL ||
-    "https://pjh-web-backend.onrender.com"; // fallback to production Render backend
+    "https://pjh-web-backend.onrender.com"; // Fallback to production
 
-  // 🔐 Protect route
+  // 🔐 Protect admin route
   useEffect(() => {
     if (localStorage.getItem("isAdmin") !== "true") {
       window.location.href = "/admin";
     }
   }, []);
 
+  // Load order on mount or when ID changes
   useEffect(() => {
     if (id) loadOrder();
   }, [id]);
 
-  // ===============================
-  // 🔄 LOAD ORDER
-  // ===============================
+  /* ============================================================
+     🔄 Load Order
+  ============================================================ */
   async function loadOrder() {
-    console.log("🔄 Fetching order", id);
     try {
       const res = await fetch(`${API_BASE}/api/orders/${id}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -60,9 +71,9 @@ export default function AdminOrderRecord() {
     return Array.isArray(val) ? val : [];
   }
 
-  // ===============================
-  // 💾 SAVE ORDER
-  // ===============================
+  /* ============================================================
+     💾 Save Order
+  ============================================================ */
   async function handleSave() {
     if (!order) return;
     setSaving(true);
@@ -83,9 +94,9 @@ export default function AdminOrderRecord() {
     }
   }
 
-  // ===============================
-  // ✅ TOGGLE TASK
-  // ===============================
+  /* ============================================================
+     ✅ Toggle Task
+  ============================================================ */
   async function handleToggleTask(task) {
     setWorking(true);
     try {
@@ -105,9 +116,9 @@ export default function AdminOrderRecord() {
     }
   }
 
-  // ===============================
-  // 📝 ADD DIARY NOTE
-  // ===============================
+  /* ============================================================
+     📝 Add Diary Note
+  ============================================================ */
   async function handleAddNote() {
     if (!newNote.trim()) return;
     try {
@@ -126,9 +137,9 @@ export default function AdminOrderRecord() {
     }
   }
 
-  // ===============================
-  // 💰 SEND INVOICE (deposit/balance)
-  // ===============================
+  /* ============================================================
+     💰 Send Invoice (Deposit / Balance)
+  ============================================================ */
   async function handleSendInvoice(type) {
     setWorking(true);
     try {
@@ -149,11 +160,67 @@ export default function AdminOrderRecord() {
     }
   }
 
-  // ===============================
-  // 🕓 RENDER
-  // ===============================
+  /* ============================================================
+     💳 Create Stripe Payment Link
+  ============================================================ */
+  async function handleCreatePaymentLink(type) {
+    if (!order) return;
+    setWorking(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/payments/create-session`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId: order.id, type }),
+      });
+      const data = await res.json();
+      if (res.ok && data.url) {
+        alert(`✅ ${type.toUpperCase()} payment link created and emailed.`);
+        window.open(data.url, "_blank");
+      } else {
+        alert("❌ Failed to create payment link: " + data.error);
+      }
+    } catch (err) {
+      console.error("❌ Payment link error:", err);
+      alert("❌ Could not create Stripe payment link");
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  /* ============================================================
+     🧾 Setup Direct Debit Mandate (BACS)
+  ============================================================ */
+  async function initiateDirectDebitSetup(customerId) {
+    if (!customerId) return alert("Missing customer ID for this order.");
+    setWorking(true);
+    try {
+      const res = await fetch(
+        `${API_BASE}/api/payments/setup-direct-debit/${customerId}`,
+        { method: "POST" }
+      );
+      const data = await res.json();
+
+      if (data.success && data.client_secret) {
+        alert(
+          "✅ Direct Debit setup initiated.\n\nA secure Stripe-hosted form will now handle mandate setup. Once completed, you’ll receive webhook confirmation."
+        );
+      } else {
+        alert("❌ Failed to start Direct Debit setup: " + data.error);
+      }
+    } catch (err) {
+      console.error("❌ Direct Debit setup error:", err);
+      alert("❌ Could not initiate Direct Debit setup.");
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  /* ============================================================
+     🕓 Render UI
+  ============================================================ */
   if (error)
     return <div className="p-10 text-red-400">❌ {error}</div>;
+
   if (!order)
     return (
       <div className="p-10 text-pjh-muted animate-pulse">
@@ -170,6 +237,7 @@ export default function AdminOrderRecord() {
         ← Back to Orders
       </a>
 
+      {/* Header */}
       <div className="flex items-center justify-between mt-2 flex-wrap gap-3">
         <h1 className="text-3xl font-bold text-pjh-blue">
           Order #{order.id} — {order.title}
@@ -196,12 +264,37 @@ export default function AdminOrderRecord() {
         >
           💰 Send Deposit Invoice
         </button>
+
         <button
           onClick={() => handleSendInvoice("balance")}
           disabled={working}
           className="btn-secondary bg-pjh-blue hover:bg-pjh-blue/80 text-white"
         >
           💼 Send Balance Invoice
+        </button>
+
+        <button
+          onClick={() => handleCreatePaymentLink("deposit")}
+          disabled={working}
+          className="btn-secondary bg-pjh-green hover:bg-pjh-green/80 text-white"
+        >
+          🔗 Create Deposit Payment Link
+        </button>
+
+        <button
+          onClick={() => handleCreatePaymentLink("balance")}
+          disabled={working}
+          className="btn-secondary bg-pjh-green hover:bg-pjh-green/80 text-white"
+        >
+          🔗 Create Balance Payment Link
+        </button>
+
+        <button
+          onClick={() => initiateDirectDebitSetup(order.customer_id)}
+          disabled={working}
+          className="btn-accent bg-pjh-blue/90 hover:bg-pjh-blue text-white"
+        >
+          🧾 Setup Direct Debit Mandate
         </button>
       </div>
 
@@ -215,9 +308,7 @@ export default function AdminOrderRecord() {
             <input
               type="text"
               value={order[key] ?? ""}
-              onChange={(e) =>
-                setOrder({ ...order, [key]: e.target.value })
-              }
+              onChange={(e) => setOrder({ ...order, [key]: e.target.value })}
               className="form-input w-full"
             />
           </div>
@@ -256,10 +347,7 @@ export default function AdminOrderRecord() {
                     {Number(item.unit_price || item.price).toFixed(2)}
                   </td>
                   <td className="p-3">
-                    {(
-                      Number(item.qty) *
-                      Number(item.unit_price || item.price)
-                    ).toFixed(2)}
+                    {(Number(item.qty) * Number(item.unit_price || item.price)).toFixed(2)}
                   </td>
                 </tr>
               ))}
@@ -275,9 +363,7 @@ export default function AdminOrderRecord() {
 
       {/* Tasks */}
       <div className="bg-pjh-gray p-6 rounded-xl mb-8">
-        <h2 className="text-xl font-semibold mb-4 text-pjh-blue">
-          Tasks
-        </h2>
+        <h2 className="text-xl font-semibold mb-4 text-pjh-blue">Tasks</h2>
         {Array.isArray(order.tasks) && order.tasks.length > 0 ? (
           <ul className="space-y-2">
             {order.tasks.map((task, i) => (
@@ -317,9 +403,7 @@ export default function AdminOrderRecord() {
             ))}
           </ul>
         ) : (
-          <p className="text-sm text-pjh-muted mb-4">
-            No diary entries yet.
-          </p>
+          <p className="text-sm text-pjh-muted mb-4">No diary entries yet.</p>
         )}
 
         <div className="flex gap-2">

@@ -6,47 +6,53 @@ export default function AdminQuotes() {
   const [selectedCustomer, setSelectedCustomer] = useState("");
   const [quotes, setQuotes] = useState([]);
   const [loading, setLoading] = useState(false);
+
   const [form, setForm] = useState({
     title: "",
     description: "",
-    items: "",
     deposit: "",
     notes: "",
+    items: "",
   });
 
+  const API_BASE =
+    import.meta.env.VITE_API_URL || "https://pjh-web-backend.onrender.com";
   const navigate = useNavigate();
 
-  const API_BASE =
-    import.meta.env.VITE_API_URL ||
-    "https://pjh-web-backend.onrender.com"; // fallback for production
-
-  // 🔐 Auth protection
+  /* --------------------- Auth --------------------- */
   useEffect(() => {
     if (localStorage.getItem("isAdmin") !== "true") {
       window.location.href = "/admin";
     }
   }, []);
 
-  // 🧠 Load all customers on mount
+  /* --------------------- Load Customers --------------------- */
   useEffect(() => {
-    async function fetchCustomers() {
-      try {
-        const res = await fetch(`${API_BASE}/api/customers`);
-        const data = await res.json();
-
-        const normalized = Array.isArray(data)
-          ? data
-          : data.data || data.rows || [];
-        setCustomers(normalized);
-      } catch (err) {
-        console.error("❌ Failed to load customers:", err);
-        setCustomers([]);
-      }
-    }
-    fetchCustomers();
+    loadCustomers();
   }, []);
 
-  // 📋 Load quotes for selected customer
+  async function loadCustomers() {
+    try {
+      const res = await fetch(`${API_BASE}/api/customers`);
+      const data = await res.json();
+
+      let customersArray = [];
+      if (Array.isArray(data)) customersArray = data;
+      else if (Array.isArray(data.data)) customersArray = data.data;
+      else if (Array.isArray(data.rows)) customersArray = data.rows;
+      else if (typeof data === "object") {
+        const arr = Object.values(data).find((v) => Array.isArray(v));
+        customersArray = arr || [];
+      }
+
+      setCustomers(customersArray);
+    } catch (err) {
+      console.error("❌ Failed to load customers:", err);
+      setCustomers([]);
+    }
+  }
+
+  /* --------------------- Load Quotes --------------------- */
   async function loadQuotes(customerId) {
     if (!customerId) return;
     setLoading(true);
@@ -54,20 +60,18 @@ export default function AdminQuotes() {
       const res = await fetch(`${API_BASE}/api/customers/${customerId}/quotes`);
       const data = await res.json();
 
-      const normalized = Array.isArray(data)
-        ? data
-        : data.quotes || data.data || [];
-      setQuotes(normalized);
+      const quotesArray =
+        data.quotes || data.data || data.rows || (Array.isArray(data) ? data : []);
+      setQuotes(quotesArray);
     } catch (err) {
       console.error("❌ Failed to load quotes:", err);
-      alert("❌ Failed to load quotes");
       setQuotes([]);
     } finally {
       setLoading(false);
     }
   }
 
-  // ➕ Create new quote
+  /* --------------------- Create Quote --------------------- */
   async function handleAddQuote(e) {
     e.preventDefault();
     if (!selectedCustomer) return alert("Please select a customer first.");
@@ -92,62 +96,48 @@ export default function AdminQuotes() {
           body: JSON.stringify(payload),
         }
       );
+      if (!res.ok) throw new Error("Create failed");
 
-      if (!res.ok) throw new Error("Failed to add quote");
-
+      alert("✅ Quote created!");
       setForm({ title: "", description: "", deposit: "", notes: "", items: "" });
       loadQuotes(selectedCustomer);
-      alert("✅ Quote created successfully!");
     } catch (err) {
       console.error("❌ Error creating quote:", err);
-      alert("❌ Could not create quote");
+      alert("❌ Failed to create quote.");
     }
   }
 
-  // ❌ Delete quote
+  /* --------------------- Delete Quote --------------------- */
   async function handleDeleteQuote(customerId, quoteId) {
-    if (!confirm("Are you sure you want to delete this quote?")) return;
+    if (!confirm("Delete this quote?")) return;
     try {
       const res = await fetch(
         `${API_BASE}/api/customers/${customerId}/quotes/${quoteId}`,
         { method: "DELETE" }
       );
-      if (!res.ok) throw new Error("Failed to delete quote");
+      if (!res.ok) throw new Error("Delete failed");
       loadQuotes(customerId);
     } catch (err) {
-      console.error("❌ Error deleting quote:", err);
       alert("❌ Failed to delete quote");
     }
   }
 
-  // 📄 View / edit quote record
-  function openQuoteRecord(customerId, quoteId) {
-    navigate(`/admin/customers/${customerId}/quotes/${quoteId}`);
-  }
-
+  /* --------------------- Render --------------------- */
   return (
     <div className="min-h-screen bg-pjh-charcoal text-pjh-light p-10">
-      {/* === HEADER === */}
       <header className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold text-pjh-blue">Manage Quotes</h1>
-          <p className="text-pjh-muted">
-            Create, view, or manage quotes per customer.
-          </p>
+          <p className="text-pjh-muted">Create, view, or edit customer quotes.</p>
         </div>
-        <a
-          href="/admin/dashboard"
-          className="text-sm text-pjh-muted hover:text-pjh-blue transition"
-        >
-          ← Back to Dashboard
+        <a href="/admin/dashboard" className="text-sm text-pjh-muted hover:text-pjh-blue">
+          ← Dashboard
         </a>
       </header>
 
-      {/* === SELECT CUSTOMER === */}
+      {/* === CUSTOMER SELECT === */}
       <div className="bg-pjh-gray p-6 rounded-xl mb-6">
-        <label className="block text-sm font-semibold mb-2">
-          Select Customer
-        </label>
+        <label className="block text-sm font-semibold mb-2">Select Customer</label>
         <select
           value={selectedCustomer}
           onChange={(e) => {
@@ -156,16 +146,17 @@ export default function AdminQuotes() {
           }}
           className="form-input w-full sm:w-1/2"
         >
-          <option value="">-- Choose a Customer --</option>
-          {customers.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.business || c.name || "Unnamed"}
-            </option>
-          ))}
+          <option value="">— Choose Customer —</option>
+          {Array.isArray(customers) &&
+            customers.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.business || c.name || "Unnamed"}
+              </option>
+            ))}
         </select>
       </div>
 
-      {/* === ADD QUOTE FORM === */}
+      {/* === ADD FORM === */}
       {selectedCustomer && (
         <form
           onSubmit={handleAddQuote}
@@ -181,7 +172,7 @@ export default function AdminQuotes() {
           />
           <input
             type="number"
-            placeholder="Deposit Amount (£)"
+            placeholder="Deposit (£)"
             value={form.deposit}
             onChange={(e) => setForm({ ...form, deposit: e.target.value })}
             className="form-input"
@@ -190,9 +181,7 @@ export default function AdminQuotes() {
             placeholder="Description"
             rows="3"
             value={form.description}
-            onChange={(e) =>
-              setForm({ ...form, description: e.target.value })
-            }
+            onChange={(e) => setForm({ ...form, description: e.target.value })}
             className="form-input md:col-span-2"
           />
           <textarea
@@ -222,7 +211,7 @@ export default function AdminQuotes() {
         <p className="text-pjh-muted">
           {selectedCustomer
             ? "No quotes found for this customer."
-            : "Please select a customer to view quotes."}
+            : "Select a customer to view quotes."}
         </p>
       ) : (
         <div className="overflow-x-auto">
@@ -232,7 +221,7 @@ export default function AdminQuotes() {
                 <th className="p-3">Quote #</th>
                 <th className="p-3">Title</th>
                 <th className="p-3">Status</th>
-                <th className="p-3">Deposit (£)</th>
+                <th className="p-3">Deposit</th>
                 <th className="p-3">Created</th>
                 <th className="p-3 text-right">Actions</th>
               </tr>
@@ -243,14 +232,14 @@ export default function AdminQuotes() {
                   <td className="p-3">{q.quote_number}</td>
                   <td
                     className="p-3 text-pjh-cyan hover:underline cursor-pointer"
-                    onClick={() => openQuoteRecord(selectedCustomer, q.id)}
+                    onClick={() =>
+                      navigate(`/admin/customers/${selectedCustomer}/quotes/${q.id}`)
+                    }
                   >
                     {q.title || "Untitled"}
                   </td>
                   <td className="p-3 capitalize">{q.status || "pending"}</td>
-                  <td className="p-3">
-                    £{Number(q.deposit || 0).toFixed(2)}
-                  </td>
+                  <td className="p-3">£{Number(q.deposit || 0).toFixed(2)}</td>
                   <td className="p-3">
                     {q.created_at
                       ? new Date(q.created_at).toLocaleDateString()
@@ -270,11 +259,6 @@ export default function AdminQuotes() {
           </table>
         </div>
       )}
-
-      {/* === FOOTER === */}
-      <footer className="mt-16 text-center text-sm text-pjh-muted border-t border-white/10 pt-6">
-        © {new Date().getFullYear()} PJH Web Services — Internal Dashboard
-      </footer>
     </div>
   );
 }

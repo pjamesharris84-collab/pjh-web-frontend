@@ -2,6 +2,7 @@ import Navbar from "./components/Navbar";
 import CookieBanner from "./components/CookieBanner";
 import SEO from "./components/SEO";
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 
 export default function App() {
   const [packages, setPackages] = useState([]);
@@ -24,18 +25,19 @@ export default function App() {
           ? data.data
           : [];
 
-        // ✅ Always set an array
         setPackages(list);
       })
       .catch((err) => {
         console.error("❌ Failed to fetch packages:", err);
+
         // ✅ Fallback demo data
         setPackages([
           {
             id: 1,
-            name: "Starter Package – “Get Online”",
-            price_oneoff: "1200",
-            price_monthly: "80",
+            name: "Starter",
+            tagline: "Perfect for small business websites",
+            price_oneoff: 900,
+            price_monthly: 60,
             term_months: 24,
             features: [
               "5-page custom website",
@@ -47,9 +49,10 @@ export default function App() {
           },
           {
             id: 2,
-            name: "Business Package – “Grow Your Reach”",
-            price_oneoff: "3000",
-            price_monthly: "150",
+            name: "Business",
+            tagline: "For growing companies needing automation",
+            price_oneoff: 2600,
+            price_monthly: 140,
             term_months: 24,
             features: [
               "All Starter features",
@@ -61,10 +64,11 @@ export default function App() {
           },
           {
             id: 3,
-            name: "Premium Package – “Digital Business Suite”",
-            price_oneoff: "7000",
-            price_monthly: "300",
-            term_months: 36,
+            name: "Premium",
+            tagline: "Full bespoke CRM + integrations",
+            price_oneoff: 6000,
+            price_monthly: 300,
+            term_months: 24,
             features: [
               "All Business features",
               "Full bespoke CRM & booking systems",
@@ -118,9 +122,9 @@ export default function App() {
             <a href="#services" className="btn-secondary">
               View Services
             </a>
-            <a href="/pricing" className="btn-accent">
+            <Link to="/pricing" className="btn-accent">
               View Packages
-            </a>
+            </Link>
           </div>
         </section>
 
@@ -160,17 +164,14 @@ export default function App() {
           </div>
 
           <div className="text-center mt-10">
-            <a href="/pricing" className="btn-primary">
+            <Link to="/pricing" className="btn-primary">
               Explore Packages
-            </a>
+            </Link>
           </div>
         </section>
 
         {/* PACKAGES PREVIEW */}
-        <section
-          id="packages"
-          className="bg-pjh-gray/30 py-20 border-t border-white/10"
-        >
+        <section id="packages" className="bg-pjh-gray/30 py-20 border-t border-white/10">
           <h2 className="section-heading text-center mb-10">
             Our Most Popular Packages
           </h2>
@@ -186,27 +187,34 @@ export default function App() {
                     {pkg.name}
                   </h3>
                   <p className="text-pjh-muted mb-3 text-sm">
-                    From £{pkg.price_oneoff} or £{pkg.price_monthly}/mo
+                    £{pkg.price_oneoff} one-off<br />
+                    or £{pkg.price_monthly}/month (min {pkg.term_months || 24} months)
                   </p>
 
                   <ul className="text-sm text-pjh-muted mb-4 list-disc list-inside">
-                    {(pkg.features || []).map((f, i) => (
+                    {(pkg.features || []).slice(0, 4).map((f, i) => (
                       <li key={i}>{f}</li>
                     ))}
                   </ul>
 
-                  <a
-                    href={`/quote?package=${pkg.id || pkg.name}`}
+                  <Link
+                    to={`/packages/${encodeURIComponent(pkg.name.toLowerCase())}`}
                     className="btn-accent w-full block text-center"
                   >
                     Select Package
-                  </a>
+                  </Link>
                 </div>
               ))}
             </div>
           ) : (
             <p className="text-center text-pjh-muted">No packages available.</p>
           )}
+
+          <div className="text-center mt-10">
+            <Link to="/pricing" className="btn-secondary">
+              View Full Pricing →
+            </Link>
+          </div>
         </section>
 
         {/* ABOUT SECTION */}
@@ -220,17 +228,14 @@ export default function App() {
         </section>
 
         {/* CONTACT CTA */}
-        <section
-          id="contact"
-          className="bg-pjh-gray py-24 text-center border-t border-white/10"
-        >
+        <section id="contact" className="bg-pjh-gray py-24 text-center border-t border-white/10">
           <h2 className="section-heading">Ready to Get Started?</h2>
           <p className="text-pjh-muted mb-8 max-w-2xl mx-auto">
             Get in touch today and let’s create something unique together.
           </p>
-          <a href="/contact" className="btn-accent">
+          <Link to="/contact" className="btn-accent">
             Contact Us
-          </a>
+          </Link>
         </section>
       </main>
 
@@ -242,18 +247,24 @@ export default function App() {
         <p>© {new Date().getFullYear()} PJH Web Services — All rights reserved.</p>
 
         <div className="flex justify-center flex-wrap gap-4 text-xs">
-          <a href="/privacy" className="hover:text-pjh-blue underline underline-offset-2 transition">
+          <Link to="/legal/privacy" className="hover:text-pjh-blue underline underline-offset-2 transition">
             Privacy Policy
-          </a>
-          <a href="/cookies" className="hover:text-pjh-blue underline underline-offset-2 transition">
+          </Link>
+          <Link to="/legal/cookies" className="hover:text-pjh-blue underline underline-offset-2 transition">
             Cookies Policy
-          </a>
-          <a href="/terms" className="hover:text-pjh-blue underline underline-offset-2 transition">
+          </Link>
+          <Link to="/legal/terms" className="hover:text-pjh-blue underline underline-offset-2 transition">
             Terms & Conditions
-          </a>
-          <a href="/admin" className="hover:text-pjh-blue underline underline-offset-2 transition">
+          </Link>
+          <Link to="/legal/monthly-terms" className="hover:text-pjh-blue underline underline-offset-2 transition">
+            Monthly Plan Terms
+          </Link>
+          <Link to="/legal/direct-debit-policy" className="hover:text-pjh-blue underline underline-offset-2 transition">
+            Direct Debit Policy
+          </Link>
+          <Link to="/admin" className="hover:text-pjh-blue underline underline-offset-2 transition">
             Admin Login
-          </a>
+          </Link>
         </div>
       </footer>
     </div>

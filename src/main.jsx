@@ -17,10 +17,13 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import App from "./App.jsx";
 import Contact from "./pages/Contact.jsx";
 import ThankYou from "./pages/ThankYou.jsx";
-import Cookies from "./pages/Cookies.jsx";
-import Privacy from "./pages/Privacy.jsx";
-import Terms from "./pages/Terms.jsx";
+import Cookies from "./pages/legal/Cookies.jsx";
+import Privacy from "./pages/legal/Privacy.jsx";
+import Terms from "./pages/legal/Terms.jsx";
 import Pricing from "./pages/Pricing.jsx";
+import LegalMonthlyTerms from "./pages/legal/LegalMonthlyTerms.jsx";
+import PackageDetails from "./pages/PackageDetails.jsx";
+import DirectDebitPolicy from "./pages/legal/direct-debit-policy.jsx";
 
 
 // 💳 Payment Pages
@@ -80,10 +83,13 @@ ReactDOM.createRoot(document.getElementById("root")).render(
           <Route path="/" element={<App />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/thank-you" element={<ThankYou />} />
-          <Route path="/cookies" element={<Cookies />} />
-          <Route path="/privacy" element={<Privacy />} />
-          <Route path="/terms" element={<Terms />} />
+          <Route path="/legal/cookies" element={<Cookies />} />
+          <Route path="/legal/privacy" element={<Privacy />} />
+          <Route path="/legal/terms" element={<Terms />} />
           <Route path="/pricing" element={<Pricing />} />
+          <Route path="/legal/monthly-terms" element={<LegalMonthlyTerms />} />
+          <Route path="/packages/:name" element={<PackageDetails />} /> 
+          <Route path="/legal/direct-debit-policy" element={<DirectDebitPolicy />} />        
 
 
           {/* 💳 Payments */}

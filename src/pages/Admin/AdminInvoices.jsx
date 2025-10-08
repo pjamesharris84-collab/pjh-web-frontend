@@ -1,206 +1,174 @@
 import { useEffect, useState } from "react";
 
 export default function AdminInvoices() {
+  const [customers, setCustomers] = useState([]);
+  const [selectedCustomer, setSelectedCustomer] = useState("");
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
-  // 🌍 Backend base (auto-switch for production)
   const API_BASE =
-    import.meta.env.VITE_API_URL ||
-    "https://pjh-web-backend.onrender.com"; // fallback if .env not set
+    import.meta.env.VITE_API_URL || "https://pjh-web-backend.onrender.com";
 
-  // 🔐 Protect route
   useEffect(() => {
     if (localStorage.getItem("isAdmin") !== "true") {
       window.location.href = "/admin";
     }
   }, []);
 
-  // 🧾 Load all orders
   useEffect(() => {
-    loadOrders();
+    loadCustomers();
   }, []);
 
-  async function loadOrders() {
-    setLoading(true);
-    setError("");
+  async function loadCustomers() {
     try {
-      const res = await fetch(`${API_BASE}/api/orders`);
+      const res = await fetch(`${API_BASE}/api/customers`);
       const data = await res.json();
 
-      if (Array.isArray(data)) {
-        setOrders(data);
-      } else if (data?.rows && Array.isArray(data.rows)) {
-        setOrders(data.rows);
-      } else {
-        console.warn("⚠️ Unexpected orders response:", data);
-        setOrders([]);
+      let customersArray = [];
+      if (Array.isArray(data)) customersArray = data;
+      else if (Array.isArray(data.data)) customersArray = data.data;
+      else if (Array.isArray(data.rows)) customersArray = data.rows;
+      else if (typeof data === "object") {
+        const arr = Object.values(data).find((v) => Array.isArray(v));
+        customersArray = arr || [];
       }
+
+      setCustomers(customersArray);
     } catch (err) {
-      console.error("❌ Error fetching orders:", err);
-      setError("Failed to load invoices. Please try again later.");
+      console.error("❌ Failed to load customers:", err);
+      setCustomers([]);
+    }
+  }
+
+  async function loadOrders(customerId = "") {
+    setLoading(true);
+    try {
+      const url = customerId
+        ? `${API_BASE}/api/customers/${customerId}/orders`
+        : `${API_BASE}/api/orders`;
+      const res = await fetch(url);
+      const data = await res.json();
+
+      const ordersArray =
+        data.orders || data.data || data.rows || (Array.isArray(data) ? data : []);
+      setOrders(ordersArray);
+    } catch (err) {
+      console.error("❌ Failed to load orders:", err);
+      setOrders([]);
     } finally {
       setLoading(false);
     }
   }
 
-  // 👁️ Preview invoice PDF
   function previewInvoice(orderId, type) {
     window.open(`${API_BASE}/api/orders/${orderId}/invoice/${type}`, "_blank");
   }
 
-  // 📤 Send invoice via email
   async function sendInvoice(orderId, type) {
-    if (!confirm(`Send ${type} invoice to this customer?`)) return;
+    if (!confirm(`Send ${type} invoice?`)) return;
     try {
-      const res = await fetch(
-        `${API_BASE}/api/orders/${orderId}/invoice/${type}`,
-        { method: "POST" }
-      );
-      if (!res.ok) throw new Error("Failed to send invoice");
-      alert(`✅ ${type.toUpperCase()} invoice sent successfully.`);
-      loadOrders();
+      const res = await fetch(`${API_BASE}/api/orders/${orderId}/invoice/${type}`, {
+        method: "POST",
+      });
+      if (!res.ok) throw new Error("Send failed");
+      alert(`✅ ${type} invoice sent.`);
+      loadOrders(selectedCustomer);
     } catch (err) {
-      console.error("❌ Error sending invoice:", err);
-      alert(`❌ Failed to send ${type} invoice.`);
+      alert("❌ Failed to send invoice.");
     }
   }
 
-  // 💰 View payments
-  async function viewPayments(orderId) {
-    try {
-      const res = await fetch(`${API_BASE}/api/orders/${orderId}/payments`);
-      const data = await res.json();
-      if (!data || typeof data.paid !== "number") {
-        throw new Error("Invalid payment data");
-      }
-      alert(
-        `💳 Payments for Order #${orderId}\n\nPaid: £${data.paid.toFixed(
-          2
-        )}\nOutstanding: £${data.outstanding.toFixed(2)}`
-      );
-    } catch (err) {
-      console.error("❌ Error loading payments:", err);
-      alert("❌ Failed to fetch payments for this order.");
-    }
-  }
-
-  // 🧱 RENDER
   return (
     <div className="min-h-screen bg-pjh-charcoal text-pjh-light p-10">
-      {/* === HEADER === */}
       <header className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold text-pjh-blue">Invoices</h1>
           <p className="text-pjh-muted">
-            Manage and send deposit or balance invoices for all projects.
+            Filter invoices by customer and send deposit/balance statements.
           </p>
         </div>
-        <a
-          href="/admin/dashboard"
-          className="text-sm text-pjh-muted hover:text-pjh-blue transition"
-        >
-          ← Back to Dashboard
+        <a href="/admin/dashboard" className="text-sm text-pjh-muted hover:text-pjh-blue">
+          ← Dashboard
         </a>
       </header>
 
-      {/* === CONTENT === */}
+      {/* === CUSTOMER SELECT === */}
+      <div className="bg-pjh-gray p-6 rounded-xl mb-6">
+        <label className="block text-sm font-semibold mb-2">Select Customer</label>
+        <select
+          value={selectedCustomer}
+          onChange={(e) => {
+            setSelectedCustomer(e.target.value);
+            loadOrders(e.target.value);
+          }}
+          className="form-input w-full sm:w-1/2"
+        >
+          <option value="">— Show All Customers —</option>
+          {Array.isArray(customers) &&
+            customers.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.business || c.name || "Unnamed"}
+              </option>
+            ))}
+        </select>
+      </div>
+
+      {/* === TABLE === */}
       {loading ? (
         <p className="text-pjh-muted animate-pulse">Loading invoices...</p>
-      ) : error ? (
-        <p className="text-red-400">{error}</p>
       ) : orders.length === 0 ? (
-        <p className="text-pjh-muted">No orders with invoices yet.</p>
+        <p className="text-pjh-muted">No orders found for this customer.</p>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full border border-white/10 rounded-lg">
-            <thead className="bg-pjh-gray/60">
-              <tr className="text-left text-sm text-pjh-muted">
-                <th className="p-3">Order ID</th>
-                <th className="p-3">Customer</th>
-                <th className="p-3">Project</th>
-                <th className="p-3">Deposit</th>
-                <th className="p-3">Balance</th>
-                <th className="p-3">Deposit Invoiced</th>
-                <th className="p-3">Balance Invoiced</th>
-                <th className="p-3 text-right">Actions</th>
+        <table className="min-w-full border border-white/10 rounded-lg">
+          <thead className="bg-pjh-gray/60">
+            <tr className="text-left text-sm text-pjh-muted">
+              <th className="p-3">Order ID</th>
+              <th className="p-3">Customer</th>
+              <th className="p-3">Project</th>
+              <th className="p-3">Deposit</th>
+              <th className="p-3">Balance</th>
+              <th className="p-3 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {orders.map((o) => (
+              <tr key={o.id} className="border-t border-white/5">
+                <td className="p-3">{o.id}</td>
+                <td className="p-3">{o.customer_business || o.customer_name}</td>
+                <td className="p-3">{o.title}</td>
+                <td className="p-3">£{Number(o.deposit || 0).toFixed(2)}</td>
+                <td className="p-3">£{Number(o.balance || 0).toFixed(2)}</td>
+                <td className="p-3 text-right space-x-2">
+                  <button
+                    onClick={() => previewInvoice(o.id, "deposit")}
+                    className="text-pjh-cyan hover:underline"
+                  >
+                    View Deposit
+                  </button>
+                  <button
+                    onClick={() => previewInvoice(o.id, "balance")}
+                    className="text-pjh-cyan hover:underline"
+                  >
+                    View Balance
+                  </button>
+                  <button
+                    onClick={() => sendInvoice(o.id, "deposit")}
+                    className="text-green-400 hover:text-green-500"
+                  >
+                    Send Deposit
+                  </button>
+                  <button
+                    onClick={() => sendInvoice(o.id, "balance")}
+                    className="text-yellow-400 hover:text-yellow-500"
+                  >
+                    Send Balance
+                  </button>
+                </td>
               </tr>
-            </thead>
-
-            <tbody>
-              {orders.map((o) => (
-                <tr
-                  key={o.id}
-                  className="border-t border-white/5 hover:bg-pjh-gray/40 transition"
-                >
-                  <td className="p-3">{o.id}</td>
-                  <td className="p-3">
-                    {o.customer_business || o.customer_name || "—"}
-                  </td>
-                  <td className="p-3">{o.title || "Untitled"}</td>
-                  <td className="p-3">£{Number(o.deposit || 0).toFixed(2)}</td>
-                  <td className="p-3">£{Number(o.balance || 0).toFixed(2)}</td>
-
-                  <td className="p-3">
-                    {o.deposit_invoiced ? (
-                      <span className="text-green-400">✅ Yes</span>
-                    ) : (
-                      <span className="text-pjh-muted">❌ No</span>
-                    )}
-                  </td>
-
-                  <td className="p-3">
-                    {o.balance_invoiced ? (
-                      <span className="text-green-400">✅ Yes</span>
-                    ) : (
-                      <span className="text-pjh-muted">❌ No</span>
-                    )}
-                  </td>
-
-                  <td className="p-3 text-right flex flex-wrap justify-end gap-2">
-                    <button
-                      onClick={() => previewInvoice(o.id, "deposit")}
-                      className="text-pjh-cyan hover:underline"
-                    >
-                      View Deposit
-                    </button>
-                    <button
-                      onClick={() => previewInvoice(o.id, "balance")}
-                      className="text-pjh-cyan hover:underline"
-                    >
-                      View Balance
-                    </button>
-                    <button
-                      onClick={() => sendInvoice(o.id, "deposit")}
-                      className="text-green-400 hover:text-green-500 transition"
-                    >
-                      Send Deposit
-                    </button>
-                    <button
-                      onClick={() => sendInvoice(o.id, "balance")}
-                      className="text-yellow-400 hover:text-yellow-500 transition"
-                    >
-                      Send Balance
-                    </button>
-                    <button
-                      onClick={() => viewPayments(o.id)}
-                      className="text-pjh-blue hover:underline"
-                    >
-                      Payments
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </table>
       )}
-
-      {/* === FOOTER === */}
-      <footer className="mt-16 text-center text-sm text-pjh-muted border-t border-white/10 pt-6">
-        © {new Date().getFullYear()} PJH Web Services — Internal Dashboard
-      </footer>
     </div>
   );
 }
