@@ -25,7 +25,7 @@ import LegalMonthlyTerms from "./pages/legal/LegalMonthlyTerms.jsx";
 import PackageDetails from "./pages/PackageDetails.jsx";
 import DirectDebitPolicy from "./pages/legal/direct-debit-policy.jsx";
 import SetupComplete from "./pages/SetupComplete.jsx";
-import DirectDebitSetup from "./pages/DirectDebitSetup.jsx";
+import DirectDebitSetup from "./pages/direct-debit-setup.jsx";
 
 
 // 💳 Payment Pages
