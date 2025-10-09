@@ -66,16 +66,31 @@ export default function AdminOrders() {
   }
 
   /* --------------------- Load Payments --------------------- */
-  async function loadPayments(orderId) {
-    try {
-      const res = await fetch(`${API_BASE}/api/orders/${orderId}/payments`);
-      const data = await res.json();
-      setPayments(data);
-      setSelectedOrder(orderId);
-    } catch (err) {
-      alert("❌ Failed to load payments");
-    }
+ async function loadPayments(orderId) {
+  try {
+    const res = await fetch(`${API_BASE}/api/orders/${orderId}`);
+    const data = await res.json();
+
+    if (!data.success) throw new Error(data.error || "Failed to load order");
+
+    const order = data.data;
+    const paid = Number(order.total_paid || 0);
+    const due =
+      Number(order.deposit || 0) + Number(order.balance || 0) - paid;
+
+    setPayments({
+      payments: order.payments || [],
+      paid,
+      outstanding: Math.max(due, 0),
+    });
+
+    setSelectedOrder(orderId);
+  } catch (err) {
+    console.error("❌ Failed to load payments:", err);
+    alert("❌ Failed to load payments");
   }
+}
+
 
   /* --------------------- Render --------------------- */
   return (
