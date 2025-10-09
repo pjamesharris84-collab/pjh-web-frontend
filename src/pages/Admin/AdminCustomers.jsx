@@ -1,11 +1,11 @@
 /**
  * ============================================================
- * PJH Web Services — Admin Customer Record (Fixed)
+ * PJH Web Services — Admin Customer Record (Final Enhanced)
  * ============================================================
- * - Loads a single customer record
- * - Displays editable form fields for all details
+ * - Loads and edits a single customer record
+ * - Displays editable fields for all details
  * - Lists related quotes
- * - Handles update + delete actions
+ * - Handles updates, deletes, and robust error states
  * ============================================================
  */
 
@@ -18,6 +18,8 @@ export default function AdminCustomerRecord() {
   const [customer, setCustomer] = useState(null);
   const [quotes, setQuotes] = useState([]);
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   // 🔐 Admin auth guard
   useEffect(() => {
@@ -26,58 +28,55 @@ export default function AdminCustomerRecord() {
     }
   }, []);
 
-  // 🧠 Load data
+  // 🧠 Load customer + quotes on mount
   useEffect(() => {
-    if (id) {
-      loadCustomer();
-      loadQuotes();
-    }
+    if (!id) return;
+    setLoading(true);
+    Promise.all([loadCustomer(), loadQuotes()])
+      .catch((err) => {
+        console.error("❌ Error loading customer/quotes:", err);
+        setError("Failed to load customer data.");
+      })
+      .finally(() => setLoading(false));
   }, [id]);
 
   // 🧩 Load single customer
   async function loadCustomer() {
-    try {
-      const data = await apiFetch(`/api/customers/${id}`);
-      const record =
-        data.data ||
-        data.customer ||
-        (Array.isArray(data) ? data[0] : data) ||
-        {};
+    const data = await apiFetch(`/api/customers/${id}`);
+    const record =
+      data.data ||
+      data.customer ||
+      (Array.isArray(data) ? data[0] : data) ||
+      {};
 
-      // ✅ Ensure all expected fields exist
-      const normalised = {
-        id: record.id || id,
-        business: record.business || "",
-        name: record.name || "",
-        email: record.email || "",
-        phone: record.phone || "",
-        address1: record.address1 || "",
-        address2: record.address2 || "",
-        city: record.city || "",
-        county: record.county || "",
-        postcode: record.postcode || "",
-        notes: record.notes || "",
-        created_at: record.created_at || "",
-        updated_at: record.updated_at || "",
-      };
+    const normalised = {
+      id: record.id || id,
+      business: record.business || "",
+      name: record.name || "",
+      email: record.email || "",
+      phone: record.phone || "",
+      address1: record.address1 || "",
+      address2: record.address2 || "",
+      city: record.city || "",
+      county: record.county || "",
+      postcode: record.postcode || "",
+      notes: record.notes || "",
+      created_at: record.created_at || "",
+      updated_at: record.updated_at || "",
+    };
 
-      setCustomer(normalised);
-    } catch (err) {
-      console.error("❌ Failed to load customer:", err);
-    }
+    setCustomer(normalised);
   }
 
   // 🧾 Load quotes for this customer
   async function loadQuotes() {
-    try {
-      const data = await apiFetch(`/api/customers/${id}/quotes`);
-      const list = Array.isArray(data)
-        ? data
-        : data.data || data.quotes || [];
-      setQuotes(list);
-    } catch (err) {
-      console.error("❌ Failed to load quotes:", err);
-    }
+    const data = await apiFetch(`/api/customers/${id}/quotes`);
+    const list =
+      (Array.isArray(data) && data) ||
+      (Array.isArray(data.data) && data.data) ||
+      data.quotes ||
+      [];
+    setQuotes(list);
   }
 
   // 💾 Save edits
@@ -94,6 +93,7 @@ export default function AdminCustomerRecord() {
         method: "PUT",
         body: JSON.stringify(payload),
       });
+
       alert("✅ Customer updated successfully");
       await loadCustomer();
     } catch (err) {
@@ -124,11 +124,34 @@ export default function AdminCustomerRecord() {
     }
   }
 
-  if (!customer) {
+  // 🌀 Loading / error states
+  if (loading) {
     return (
       <div className="p-10 text-pjh-muted animate-pulse">
         Loading customer record...
       </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-10 text-red-400">
+        ❌ {error}
+        <div>
+          <button
+            className="underline mt-2 text-pjh-blue"
+            onClick={() => window.location.reload()}
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!customer) {
+    return (
+      <div className="p-10 text-red-400">❌ No customer record found.</div>
     );
   }
 
