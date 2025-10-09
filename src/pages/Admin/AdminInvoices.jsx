@@ -1,3 +1,14 @@
+/**
+ * ============================================================
+ * PJH Web Services — Admin Invoices (Enhanced)
+ * ============================================================
+ * - Lists all customers + related orders
+ * - Shows deposit, balance, paid-to-date, and balance due
+ * - Allows previewing or sending deposit/balance invoices
+ * - Pulls totals dynamically from backend
+ * ============================================================
+ */
+
 import { useEffect, useState } from "react";
 
 export default function AdminInvoices() {
@@ -7,14 +18,17 @@ export default function AdminInvoices() {
   const [loading, setLoading] = useState(false);
 
   const API_BASE =
-    import.meta.env.VITE_API_URL || "https://pjh-web-backend.onrender.com";
+    import.meta.env.VITE_API_URL ||
+    "https://pjh-web-backend-1.onrender.com";
 
+  // ✅ Auth guard
   useEffect(() => {
     if (localStorage.getItem("isAdmin") !== "true") {
       window.location.href = "/admin";
     }
   }, []);
 
+  // ✅ Load customers on mount
   useEffect(() => {
     loadCustomers();
   }, []);
@@ -40,6 +54,7 @@ export default function AdminInvoices() {
     }
   }
 
+  // ✅ Load all or filtered orders
   async function loadOrders(customerId = "") {
     setLoading(true);
     try {
@@ -51,7 +66,31 @@ export default function AdminInvoices() {
 
       const ordersArray =
         data.orders || data.data || data.rows || (Array.isArray(data) ? data : []);
-      setOrders(ordersArray);
+
+      // 🔁 Optionally fetch detailed totals for each order
+      const enriched = await Promise.all(
+        ordersArray.map(async (o) => {
+          try {
+            const r = await fetch(`${API_BASE}/api/orders/${o.id}`);
+            if (!r.ok) return o;
+            const d = await r.json();
+            const ord = d.data || d.order || o;
+            return {
+              ...o,
+              total_paid: ord.total_paid || 0,
+              deposit: ord.deposit || 0,
+              balance: ord.balance || 0,
+              balance_due:
+                (Number(ord.deposit || 0) + Number(ord.balance || 0)) -
+                Number(ord.total_paid || 0),
+            };
+          } catch {
+            return o;
+          }
+        })
+      );
+
+      setOrders(enriched);
     } catch (err) {
       console.error("❌ Failed to load orders:", err);
       setOrders([]);
@@ -60,6 +99,7 @@ export default function AdminInvoices() {
     }
   }
 
+  // === Invoice Actions ===
   function previewInvoice(orderId, type) {
     window.open(`${API_BASE}/api/orders/${orderId}/invoice/${type}`, "_blank");
   }
@@ -78,23 +118,30 @@ export default function AdminInvoices() {
     }
   }
 
+  // === UI ===
   return (
     <div className="min-h-screen bg-pjh-charcoal text-pjh-light p-10">
-      <header className="flex items-center justify-between mb-8">
+      {/* === HEADER === */}
+      <header className="flex items-center justify-between mb-8 flex-wrap gap-4">
         <div>
           <h1 className="text-3xl font-bold text-pjh-blue">Invoices</h1>
-          <p className="text-pjh-muted">
-            Filter invoices by customer and send deposit/balance statements.
+          <p className="text-pjh-muted text-sm">
+            Filter by customer and send deposit/balance invoices.
           </p>
         </div>
-        <a href="/admin/dashboard" className="text-sm text-pjh-muted hover:text-pjh-blue">
+        <a
+          href="/admin/dashboard"
+          className="text-sm text-pjh-muted hover:text-pjh-blue"
+        >
           ← Dashboard
         </a>
       </header>
 
       {/* === CUSTOMER SELECT === */}
-      <div className="bg-pjh-gray p-6 rounded-xl mb-6">
-        <label className="block text-sm font-semibold mb-2">Select Customer</label>
+      <div className="bg-pjh-gray p-6 rounded-xl mb-6 border border-white/10">
+        <label className="block text-sm font-semibold mb-2">
+          Select Customer
+        </label>
         <select
           value={selectedCustomer}
           onChange={(e) => {
@@ -113,61 +160,83 @@ export default function AdminInvoices() {
         </select>
       </div>
 
-      {/* === TABLE === */}
+      {/* === INVOICE TABLE === */}
       {loading ? (
         <p className="text-pjh-muted animate-pulse">Loading invoices...</p>
       ) : orders.length === 0 ? (
-        <p className="text-pjh-muted">No orders found for this customer.</p>
+        <p className="text-pjh-muted">No orders found.</p>
       ) : (
-        <table className="min-w-full border border-white/10 rounded-lg">
-          <thead className="bg-pjh-gray/60">
-            <tr className="text-left text-sm text-pjh-muted">
-              <th className="p-3">Order ID</th>
-              <th className="p-3">Customer</th>
-              <th className="p-3">Project</th>
-              <th className="p-3">Deposit</th>
-              <th className="p-3">Balance</th>
-              <th className="p-3 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {orders.map((o) => (
-              <tr key={o.id} className="border-t border-white/5">
-                <td className="p-3">{o.id}</td>
-                <td className="p-3">{o.customer_business || o.customer_name}</td>
-                <td className="p-3">{o.title}</td>
-                <td className="p-3">£{Number(o.deposit || 0).toFixed(2)}</td>
-                <td className="p-3">£{Number(o.balance || 0).toFixed(2)}</td>
-                <td className="p-3 text-right space-x-2">
-                  <button
-                    onClick={() => previewInvoice(o.id, "deposit")}
-                    className="text-pjh-cyan hover:underline"
-                  >
-                    View Deposit
-                  </button>
-                  <button
-                    onClick={() => previewInvoice(o.id, "balance")}
-                    className="text-pjh-cyan hover:underline"
-                  >
-                    View Balance
-                  </button>
-                  <button
-                    onClick={() => sendInvoice(o.id, "deposit")}
-                    className="text-green-400 hover:text-green-500"
-                  >
-                    Send Deposit
-                  </button>
-                  <button
-                    onClick={() => sendInvoice(o.id, "balance")}
-                    className="text-yellow-400 hover:text-yellow-500"
-                  >
-                    Send Balance
-                  </button>
-                </td>
+        <div className="overflow-x-auto">
+          <table className="min-w-full border border-white/10 rounded-lg">
+            <thead className="bg-pjh-gray/60">
+              <tr className="text-left text-sm text-pjh-muted">
+                <th className="p-3">Order #</th>
+                <th className="p-3">Customer</th>
+                <th className="p-3">Project</th>
+                <th className="p-3">Deposit (£)</th>
+                <th className="p-3">Balance (£)</th>
+                <th className="p-3">Paid to Date (£)</th>
+                <th className="p-3">Balance Due (£)</th>
+                <th className="p-3 text-right">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {orders.map((o) => {
+                const paid = Number(o.total_paid || 0);
+                const deposit = Number(o.deposit || 0);
+                const balance = Number(o.balance || 0);
+                const balanceDue = Math.max(deposit + balance - paid, 0);
+
+                return (
+                  <tr
+                    key={o.id}
+                    className="border-t border-white/5 hover:bg-pjh-gray/30 transition"
+                  >
+                    <td className="p-3">{o.id}</td>
+                    <td className="p-3">
+                      {o.customer_business || o.customer_name || "—"}
+                    </td>
+                    <td className="p-3">{o.title || "Untitled"}</td>
+                    <td className="p-3">£{deposit.toFixed(2)}</td>
+                    <td className="p-3">£{balance.toFixed(2)}</td>
+                    <td className="p-3 text-green-300 font-medium">
+                      £{paid.toFixed(2)}
+                    </td>
+                    <td className="p-3 text-amber-300 font-medium">
+                      £{balanceDue.toFixed(2)}
+                    </td>
+                    <td className="p-3 text-right space-x-3 whitespace-nowrap">
+                      <button
+                        onClick={() => previewInvoice(o.id, "deposit")}
+                        className="text-pjh-blue hover:underline text-sm"
+                      >
+                        View Deposit
+                      </button>
+                      <button
+                        onClick={() => previewInvoice(o.id, "balance")}
+                        className="text-pjh-blue hover:underline text-sm"
+                      >
+                        View Balance
+                      </button>
+                      <button
+                        onClick={() => sendInvoice(o.id, "deposit")}
+                        className="text-green-400 hover:text-green-500 text-sm"
+                      >
+                        Send Deposit
+                      </button>
+                      <button
+                        onClick={() => sendInvoice(o.id, "balance")}
+                        className="text-yellow-400 hover:text-yellow-500 text-sm"
+                      >
+                        Send Balance
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );

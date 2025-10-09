@@ -8,6 +8,13 @@ export default function PaymentSuccess() {
 
   useEffect(() => {
     console.log(`✅ Payment success for order ${orderId} (${type})`);
+
+    // Auto-refresh admin if logged in
+    if (localStorage.getItem("isAdmin") === "true" && orderId) {
+      setTimeout(() => {
+        window.location.href = `/admin/orders/${orderId}`;
+      }, 2500);
+    }
   }, [orderId, type]);
 
   return (

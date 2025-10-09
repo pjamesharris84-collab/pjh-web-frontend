@@ -1,11 +1,11 @@
 /**
  * ============================================================
- * PJH Web Services — Admin Order Record (Enhanced)
+ * PJH Web Services — Admin Order Record (Enhanced + Synced)
  * ============================================================
- * - Loads order + payments
- * - Displays deposit/balance payment status + method
- * - Displays DD setup indicator
- * - Shows live DD payment schedule (monthly billing)
+ * - Loads order & payments from backend
+ * - Reflects Stripe + manual payments in real-time
+ * - Displays deposit/balance/DD status
+ * - Supports triggering billing & checkout sessions
  * ============================================================
  */
 
@@ -21,9 +21,9 @@ export default function AdminOrderRecord() {
   const [error, setError] = useState("");
 
   const API_BASE =
-    import.meta.env.VITE_API_URL || "https://pjh-web-backend.onrender.com";
+    import.meta.env.VITE_API_URL ||
+    "https://pjh-web-backend-1.onrender.com";
 
-  // Auth guard + load
   useEffect(() => {
     if (localStorage.getItem("isAdmin") !== "true") {
       window.location.href = "/admin";
@@ -34,7 +34,6 @@ export default function AdminOrderRecord() {
       loadPayments();
       loadSchedule();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   async function loadOrder() {
@@ -43,7 +42,6 @@ export default function AdminOrderRecord() {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       const o = data.data || data.order || {};
-
       o.items = parseMaybeJSON(o.items);
       o.tasks = parseMaybeJSON(o.tasks);
       o.diary = parseMaybeJSON(o.diary);
@@ -56,10 +54,12 @@ export default function AdminOrderRecord() {
 
   async function loadPayments() {
     try {
-      const res = await fetch(`${API_BASE}/api/payments/order/${id}`);
+      const res = await fetch(`${API_BASE}/api/orders/${id}/payments`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      setPayments(Array.isArray(data.data) ? data.data : []);
+      const list =
+        data.payments || data.data || (Array.isArray(data) ? data : []);
+      setPayments(list);
     } catch (e) {
       console.warn("⚠️ Failed to load payments:", e.message);
     }
@@ -87,7 +87,7 @@ export default function AdminOrderRecord() {
     return Array.isArray(val) ? val : [];
   }
 
-  // Quick overall figures
+  // Computed figures
   const figures = useMemo(() => {
     if (!order)
       return { deposit: 0, balance: 0, total: 0, paid: 0, remaining: 0 };
@@ -99,12 +99,9 @@ export default function AdminOrderRecord() {
     return { deposit, balance, total, paid, remaining };
   }, [order]);
 
-  // Payment helpers
   const depositPayment = payments.find((p) => p.type === "deposit");
   const balancePayment = payments.find((p) => p.type === "balance");
-  const monthlyPayments = payments.filter((p) => p.type === "monthly");
 
-  // Create a Checkout session
   async function handleCreateCheckout(flow, type) {
     if (!order) return;
     setWorking(true);
@@ -156,7 +153,9 @@ export default function AdminOrderRecord() {
   if (error)
     return <div className="p-10 text-red-400">❌ {error}</div>;
   if (!order)
-    return <div className="p-10 text-pjh-muted animate-pulse">Loading order…</div>;
+    return (
+      <div className="p-10 text-pjh-muted animate-pulse">Loading order…</div>
+    );
 
   return (
     <div className="p-10 text-white bg-pjh-charcoal min-h-screen">
@@ -171,17 +170,12 @@ export default function AdminOrderRecord() {
         <h1 className="text-2xl md:text-3xl font-bold text-pjh-blue">
           Order #{order.id} — {order.title}
         </h1>
-        <span
-          className={`px-3 py-1 rounded text-xs font-semibold ${
-            order.status === "completed"
-              ? "bg-green-500/20 text-green-300 border border-green-400/30"
-              : order.status === "cancelled"
-              ? "bg-red-500/20 text-red-300 border border-red-400/30"
-              : "bg-blue-500/20 text-blue-300 border border-blue-400/30"
-          }`}
+        <button
+          onClick={() => window.location.reload()}
+          className="text-xs text-pjh-muted hover:text-pjh-blue"
         >
-          {order.status}
-        </span>
+          ↻ Refresh
+        </button>
       </div>
 
       {/* Totals */}
@@ -234,49 +228,6 @@ export default function AdminOrderRecord() {
         </div>
       </div>
 
-      {/* Direct Debit Schedule */}
-      {order.direct_debit_active && (
-        <div className="mt-8 bg-pjh-slate p-6 rounded-xl border border-white/10">
-          <h2 className="text-xl font-semibold text-pjh-blue mb-3">
-            🔁 Direct Debit Schedule
-          </h2>
-
-          {schedule.length === 0 ? (
-            <p className="text-pjh-muted text-sm">
-              No recurring payments yet. Use “Run Monthly Billing” to trigger the
-              first cycle.
-            </p>
-          ) : (
-            <table className="min-w-full border border-white/10 text-sm">
-              <thead className="bg-pjh-gray/60 text-pjh-muted">
-                <tr>
-                  <th className="p-2 text-left">Date</th>
-                  <th className="p-2 text-left">Amount (£)</th>
-                  <th className="p-2 text-left">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {schedule.map((s, i) => (
-                  <tr key={i} className="border-t border-white/10">
-                    <td className="p-2">
-                      {new Date(s.date).toLocaleDateString()}
-                    </td>
-                    <td className="p-2">{s.amount.toFixed(2)}</td>
-                    <td className="p-2">
-                      {s.paid ? (
-                        <span className="text-green-400">Paid</span>
-                      ) : (
-                        <span className="text-amber-300">Pending</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      )}
-
       {/* Actions */}
       <div className="mt-8 flex flex-wrap gap-3">
         <button
@@ -325,10 +276,6 @@ export default function AdminOrderRecord() {
     </div>
   );
 }
-
-/* ============================================================
-   Small components
-============================================================ */
 
 function SummaryCard({ label, value, accent }) {
   return (

@@ -1,250 +1,226 @@
-/**
- * ============================================================
- * PJH Web Services — Admin Customer Record (Final Enhanced)
- * ============================================================
- * - Loads and edits a single customer record
- * - Displays editable fields for all details
- * - Lists related quotes
- * - Handles updates, deletes, and robust error states
- * ============================================================
- */
+// ============================================
+// PJH Web Services — Admin Customers Page (Fixed)
+// ============================================
 
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import { apiFetch } from "../../utils/api";
+import { apiFetch } from "../../utils/api"; // ✅ Centralised API helper
 
-export default function AdminCustomerRecord() {
-  const { id } = useParams();
-  const [customer, setCustomer] = useState(null);
-  const [quotes, setQuotes] = useState([]);
-  const [saving, setSaving] = useState(false);
+export default function AdminCustomers() {
+  const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [newCustomer, setNewCustomer] = useState({
+    business: "",
+    name: "",
+    email: "",
+    phone: "",
+    address1: "",
+    address2: "",
+    city: "",
+    county: "",
+    postcode: "",
+    notes: "",
+  });
 
-  // 🔐 Admin auth guard
+  // 🔐 Ensure admin is logged in
   useEffect(() => {
     if (localStorage.getItem("isAdmin") !== "true") {
       window.location.href = "/admin";
     }
   }, []);
 
-  // 🧠 Load customer + quotes on mount
-  useEffect(() => {
-    if (!id) return;
-    setLoading(true);
-    Promise.all([loadCustomer(), loadQuotes()])
-      .catch((err) => {
-        console.error("❌ Error loading customer/quotes:", err);
-        setError("Failed to load customer data.");
-      })
-      .finally(() => setLoading(false));
-  }, [id]);
-
-  // 🧩 Load single customer
-  async function loadCustomer() {
-    const data = await apiFetch(`/api/customers/${id}`);
-    const record =
-      data.data ||
-      data.customer ||
-      (Array.isArray(data) ? data[0] : data) ||
-      {};
-
-    const normalised = {
-      id: record.id || id,
-      business: record.business || "",
-      name: record.name || "",
-      email: record.email || "",
-      phone: record.phone || "",
-      address1: record.address1 || "",
-      address2: record.address2 || "",
-      city: record.city || "",
-      county: record.county || "",
-      postcode: record.postcode || "",
-      notes: record.notes || "",
-      created_at: record.created_at || "",
-      updated_at: record.updated_at || "",
-    };
-
-    setCustomer(normalised);
-  }
-
-  // 🧾 Load quotes for this customer
-  async function loadQuotes() {
-    const data = await apiFetch(`/api/customers/${id}/quotes`);
-    const list =
-      (Array.isArray(data) && data) ||
-      (Array.isArray(data.data) && data.data) ||
-      data.quotes ||
-      [];
-    setQuotes(list);
-  }
-
-  // 💾 Save edits
-  async function handleSave() {
-    if (!customer) return;
-    setSaving(true);
+  // 🧠 Fetch all customers
+  async function loadCustomers() {
+    console.log("📡 Fetching customers...");
     try {
-      const payload = { ...customer };
-      delete payload.id;
-      delete payload.created_at;
-      delete payload.updated_at;
+      const data = await apiFetch("/api/customers");
+      console.log("✅ API Response:", data);
 
-      await apiFetch(`/api/customers/${id}`, {
-        method: "PUT",
-        body: JSON.stringify(payload),
+      // ✅ Safely handle all backend response formats
+      const list =
+        (Array.isArray(data) && data) ||
+        (Array.isArray(data.data) && data.data) ||
+        data.customers ||
+        data.results ||
+        [];
+
+      setCustomers(list);
+    } catch (err) {
+      console.error("❌ Failed to load customers:", err);
+      setError("Failed to load customers.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadCustomers();
+  }, []);
+
+  // ➕ Add new customer
+  async function handleAddCustomer(e) {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      const data = await apiFetch("/api/customers", {
+        method: "POST",
+        body: JSON.stringify(newCustomer),
       });
 
-      alert("✅ Customer updated successfully");
-      await loadCustomer();
+      const created = data?.customer || data?.data || null;
+      if (created?.id) {
+        alert(`✅ Customer created successfully (${created.name})`);
+        window.location.href = `/admin/customers/${created.id}`;
+      } else {
+        console.warn("⚠️ Customer created but missing ID", data);
+        alert("⚠️ Customer created but missing ID — check backend logs.");
+        await loadCustomers();
+      }
     } catch (err) {
-      console.error("❌ Failed to update customer:", err);
-      alert("❌ Failed to update customer");
+      console.error("❌ Could not add customer:", err);
+      alert("❌ Could not add customer — please check console for details.");
     } finally {
-      setSaving(false);
+      setSubmitting(false);
     }
   }
 
   // 🗑️ Delete customer
-  async function handleDelete() {
-    if (
-      !confirm(
-        `Are you sure you want to permanently delete ${
-          customer.name || customer.business || "this customer"
-        }?`
-      )
-    )
+  async function handleDeleteCustomer(e, id, name) {
+    e.stopPropagation();
+    if (!confirm(`Are you sure you want to delete ${name || "this customer"}?`))
       return;
+
     try {
-      await apiFetch(`/api/customers/${id}`, { method: "DELETE" });
-      alert("✅ Customer deleted");
-      window.location.href = "/admin/customers";
+      const res = await apiFetch(`/api/customers/${id}`, { method: "DELETE" });
+      if (res.success) {
+        alert("✅ Customer deleted successfully");
+        setCustomers((prev) => prev.filter((c) => c.id !== id));
+      } else {
+        throw new Error("Deletion failed");
+      }
     } catch (err) {
-      console.error("❌ Failed to delete customer:", err);
+      console.error("❌ Error deleting customer:", err);
       alert("❌ Failed to delete customer — check console for details.");
     }
   }
 
-  // 🌀 Loading / error states
-  if (loading) {
-    return (
-      <div className="p-10 text-pjh-muted animate-pulse">
-        Loading customer record...
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="p-10 text-red-400">
-        ❌ {error}
-        <div>
-          <button
-            className="underline mt-2 text-pjh-blue"
-            onClick={() => window.location.reload()}
-          >
-            Retry
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (!customer) {
-    return (
-      <div className="p-10 text-red-400">❌ No customer record found.</div>
-    );
-  }
-
-  // Editable fields excluding system fields
-  const editableFields = Object.entries(customer).filter(
-    ([key]) => !["id", "created_at", "updated_at"].includes(key)
-  );
-
+  // 🧱 UI
   return (
     <div className="min-h-screen bg-pjh-charcoal text-pjh-light p-10">
-      <a
-        href="/admin/customers"
-        className="text-sm text-pjh-muted hover:text-pjh-blue transition"
-      >
-        ← Back to Customers
-      </a>
-
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold text-pjh-blue">
-          {customer.business || customer.name || "Unnamed Customer"}
-        </h1>
-        <button
-          onClick={handleDelete}
-          className="text-red-400 hover:text-red-300 text-sm underline"
+      <header className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-pjh-blue">Customers</h1>
+          <p className="text-pjh-muted">
+            View, add, edit, or delete customer records.
+          </p>
+        </div>
+        <a
+          href="/admin/dashboard"
+          className="text-sm text-pjh-muted hover:text-pjh-blue transition"
         >
-          Delete Customer
-        </button>
-      </div>
+          ← Back to Dashboard
+        </a>
+      </header>
 
-      {/* Editable Fields */}
-      <div className="bg-pjh-gray p-6 rounded-xl mb-8 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {editableFields.map(([key, value]) => (
-          <div key={key} className="flex flex-col gap-1">
-            <label className="text-xs text-pjh-muted capitalize">{key}</label>
-            <input
-              type="text"
-              value={value || ""}
-              onChange={(e) =>
-                setCustomer({ ...customer, [key]: e.target.value })
-              }
-              className="form-input"
-            />
-          </div>
+      {/* ➕ Add customer form */}
+      <form
+        onSubmit={handleAddCustomer}
+        className="bg-pjh-gray p-6 rounded-xl mb-8 grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+      >
+        {Object.entries({
+          business: "Business",
+          name: "Name",
+          email: "Email",
+          phone: "Phone",
+          address1: "Address Line 1",
+          address2: "Address Line 2",
+          city: "City",
+          county: "County",
+          postcode: "Postcode",
+        }).map(([key, placeholder]) => (
+          <input
+            key={key}
+            type="text"
+            placeholder={placeholder}
+            value={newCustomer[key]}
+            onChange={(e) =>
+              setNewCustomer({ ...newCustomer, [key]: e.target.value })
+            }
+            className="form-input"
+            required={["name", "email"].includes(key)}
+          />
         ))}
 
+        <textarea
+          placeholder="Notes (optional)"
+          value={newCustomer.notes}
+          onChange={(e) =>
+            setNewCustomer({ ...newCustomer, notes: e.target.value })
+          }
+          className="form-input col-span-full"
+          rows="2"
+        />
+
         <button
-          onClick={handleSave}
-          disabled={saving}
+          type="submit"
+          disabled={submitting}
           className="btn-primary col-span-full"
         >
-          {saving ? "Saving..." : "Save Changes"}
+          {submitting ? "Adding..." : "Add Customer"}
         </button>
-      </div>
+      </form>
 
-      {/* Quotes Section */}
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-semibold text-pjh-blue">Quotes</h2>
-        <button
-          onClick={() =>
-            (window.location.href = `/admin/customers/${id}/quotes/new`)
-          }
-          className="px-4 py-2 bg-pjh-blue rounded-lg hover:bg-pjh-blue/80 transition text-white"
-        >
-          + New Quote
-        </button>
-      </div>
-
-      {!Array.isArray(quotes) || quotes.length === 0 ? (
-        <p className="text-pjh-muted">No quotes for this customer yet.</p>
+      {/* Customer list */}
+      {loading ? (
+        <p className="text-pjh-muted animate-pulse">Loading customers...</p>
+      ) : error ? (
+        <p className="text-red-400">{error}</p>
+      ) : customers.length === 0 ? (
+        <p className="text-pjh-muted">No customers found.</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="min-w-full border border-white/10 rounded-lg">
             <thead className="bg-pjh-gray/60">
               <tr className="text-left text-sm text-pjh-muted">
-                <th className="p-3">Quote #</th>
-                <th className="p-3">Title</th>
-                <th className="p-3">Deposit (£)</th>
-                <th className="p-3">Status</th>
+                <th className="p-3">Business</th>
+                <th className="p-3">Name</th>
+                <th className="p-3">Email</th>
+                <th className="p-3">Phone</th>
+                <th className="p-3">Address</th>
+                <th className="p-3">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {quotes.map((q) => (
+              {customers.map((c) => (
                 <tr
-                  key={q.id}
-                  className="border-t border-white/5 hover:bg-pjh-gray/40 cursor-pointer transition"
+                  key={c.id}
+                  className="border-t border-white/5 hover:bg-pjh-blue/10 cursor-pointer transition"
                   onClick={() =>
-                    (window.location.href = `/admin/quotes/${q.id}`)
+                    (window.location.href = `/admin/customers/${c.id}`)
                   }
                 >
-                  <td className="p-3">{q.quote_number || "—"}</td>
-                  <td className="p-3">{q.title || "Untitled"}</td>
-                  <td className="p-3">£{Number(q.deposit || 0).toFixed(2)}</td>
-                  <td className="p-3 capitalize">{q.status || "draft"}</td>
+                  <td className="p-3 text-pjh-blue font-semibold">
+                    {c.business || "—"}
+                  </td>
+                  <td className="p-3">{c.name || "—"}</td>
+                  <td className="p-3">{c.email || "—"}</td>
+                  <td className="p-3">{c.phone || "—"}</td>
+                  <td className="p-3">
+                    {[c.address1, c.address2, c.city, c.county, c.postcode]
+                      .filter(Boolean)
+                      .join(", ") || "—"}
+                  </td>
+                  <td className="p-3">
+                    <button
+                      onClick={(e) =>
+                        handleDeleteCustomer(e, c.id, c.name || c.business)
+                      }
+                      className="text-red-400 hover:text-red-300 text-xs underline"
+                    >
+                      Delete
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
