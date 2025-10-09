@@ -6,6 +6,7 @@
  * - Reflects Stripe + manual payments in real-time
  * - Displays deposit/balance/DD status
  * - Supports triggering billing & checkout sessions
+ * - Auto-refreshes after successful payment
  * ============================================================
  */
 
@@ -24,6 +25,9 @@ export default function AdminOrderRecord() {
     import.meta.env.VITE_API_URL ||
     "https://pjh-web-backend-1.onrender.com";
 
+  /* ============================================================
+     🔐 Admin Auth Guard + Initial Data Load
+  ============================================================ */
   useEffect(() => {
     if (localStorage.getItem("isAdmin") !== "true") {
       window.location.href = "/admin";
@@ -36,6 +40,19 @@ export default function AdminOrderRecord() {
     }
   }, [id]);
 
+  /* ============================================================
+     🌀 Auto-refresh after Stripe payment
+  ============================================================ */
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("payment") === "success") {
+      refreshOrder();
+    }
+  }, [id]);
+
+  /* ============================================================
+     🧱 Core Loaders
+  ============================================================ */
   async function loadOrder() {
     try {
       const res = await fetch(`${API_BASE}/api/orders/${id}`);
@@ -76,6 +93,19 @@ export default function AdminOrderRecord() {
     }
   }
 
+  async function refreshOrder() {
+    try {
+      const res = await fetch(`${API_BASE}/api/orders/${id}/refresh`);
+      if (!res.ok) throw new Error("Refresh failed");
+      const data = await res.json();
+      setOrder(data.data || {});
+      console.log("🔁 Order refreshed after payment");
+      await loadPayments();
+    } catch (err) {
+      console.error("❌ Failed to refresh order:", err);
+    }
+  }
+
   function parseMaybeJSON(val) {
     if (typeof val === "string") {
       try {
@@ -87,7 +117,9 @@ export default function AdminOrderRecord() {
     return Array.isArray(val) ? val : [];
   }
 
-  // Computed figures
+  /* ============================================================
+     🧮 Computed Figures
+  ============================================================ */
   const figures = useMemo(() => {
     if (!order)
       return { deposit: 0, balance: 0, total: 0, paid: 0, remaining: 0 };
@@ -102,6 +134,9 @@ export default function AdminOrderRecord() {
   const depositPayment = payments.find((p) => p.type === "deposit");
   const balancePayment = payments.find((p) => p.type === "balance");
 
+  /* ============================================================
+     💳 Checkout + Billing
+  ============================================================ */
   async function handleCreateCheckout(flow, type) {
     if (!order) return;
     setWorking(true);
@@ -150,6 +185,9 @@ export default function AdminOrderRecord() {
     }
   }
 
+  /* ============================================================
+     🖥️ Render
+  ============================================================ */
   if (error)
     return <div className="p-10 text-red-400">❌ {error}</div>;
   if (!order)
@@ -171,10 +209,10 @@ export default function AdminOrderRecord() {
           Order #{order.id} — {order.title}
         </h1>
         <button
-          onClick={() => window.location.reload()}
-          className="text-xs text-pjh-muted hover:text-pjh-blue"
+          onClick={refreshOrder}
+          className="text-xs text-pjh-muted hover:text-pjh-blue transition"
         >
-          ↻ Refresh
+          🔁 Refresh Order
         </button>
       </div>
 
@@ -196,7 +234,7 @@ export default function AdminOrderRecord() {
 
       {/* Payment Status */}
       <div className="mt-8 bg-pjh-slate p-6 rounded-xl border border-white/10 space-y-4">
-        <h2 className="text-xl font-semibold text-pjh-blue">
+        <h2 className="text-xl font-semibold text-pjh-blue flex items-center justify-between">
           💰 Payment Status
         </h2>
 
@@ -277,6 +315,9 @@ export default function AdminOrderRecord() {
   );
 }
 
+/* ============================================================
+   Subcomponents
+============================================================ */
 function SummaryCard({ label, value, accent }) {
   return (
     <div className="bg-pjh-gray rounded-xl p-4 border border-white/10">
