@@ -97,36 +97,37 @@ export default function App() {
       <main className="flex-grow">
         {/* HERO SECTION */}
         <section className="section text-center flex flex-col items-center pt-28 sm:pt-32">
-          <img
-            src="/pjh-logo-light.png"
-            alt="PJH Web Services logo"
-            className="w-56 sm:w-72 lg:w-80 mb-3 drop-shadow-lg"
-            loading="lazy"
-          />
+  <img
+    src="/pjh-logo-light.png"
+    alt="PJH Web Services logo"
+    className="w-72 sm:w-96 lg:w-[28rem] mb-6 drop-shadow-xl"
+    loading="lazy"
+  />
 
-          <p className="text-pjh-muted text-lg font-medium mb-10 tracking-wide">
-            Professional Digital Services
-          </p>
+  <p className="text-pjh-muted text-lg font-medium mb-10 tracking-wide">
+    Professional Digital Services
+  </p>
 
-          <h1 className="section-heading mb-4">
-            Bespoke Websites, CRMs & Booking Systems
-          </h1>
+  <h1 className="section-heading mb-10 leading-relaxed sm:leading-[1.3]">
+    Bespoke Websites, CRMs & Booking Systems
+  </h1>
 
-          <p className="max-w-2xl mx-auto text-pjh-muted text-lg">
-            PJH Web Services creates modern, responsive websites and bespoke CRM systems
-            that automate your workflow and bring your ideas to life — built around your exact
-            business needs.
-          </p>
+  <p className="max-w-2xl mx-auto text-pjh-muted text-lg">
+    PJH Web Services creates modern, responsive websites and bespoke CRM systems
+    that automate your workflow and bring your ideas to life — built around your
+    exact business needs.
+  </p>
 
-          <div className="mt-10 flex flex-wrap justify-center gap-4">
-            <a href="#services" className="btn-secondary">
-              View Services
-            </a>
-            <Link to="/pricing" className="btn-accent">
-              View Packages
-            </Link>
-          </div>
-        </section>
+  <div className="mt-10 flex flex-wrap justify-center gap-4">
+    <a href="#services" className="btn-secondary">
+      View Services
+    </a>
+    <Link to="/pricing" className="btn-accent">
+      View Packages
+    </Link>
+  </div>
+</section>
+
 
         {/* SERVICES SECTION */}
         <section id="services" className="section">

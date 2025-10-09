@@ -1,19 +1,22 @@
 /**
  * ============================================================
- * PJH Web Services — Admin Order Record
+ * PJH Web Services — Admin Order Record (Enhanced)
  * ============================================================
- * - Loads order
- * - Shows dynamic totals (overall remaining)
- * - Creates Checkout sessions (card/bacs + setup)
- * - Runs monthly billing (off-session)
+ * - Loads order + payments
+ * - Displays deposit/balance payment status + method
+ * - Displays DD setup indicator
+ * - Shows live DD payment schedule (monthly billing)
  * ============================================================
  */
+
 import { useEffect, useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
 
 export default function AdminOrderRecord() {
   const { id } = useParams();
   const [order, setOrder] = useState(null);
+  const [payments, setPayments] = useState([]);
+  const [schedule, setSchedule] = useState([]);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
 
@@ -26,7 +29,11 @@ export default function AdminOrderRecord() {
       window.location.href = "/admin";
       return;
     }
-    if (id) loadOrder();
+    if (id) {
+      loadOrder();
+      loadPayments();
+      loadSchedule();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
@@ -40,7 +47,6 @@ export default function AdminOrderRecord() {
       o.items = parseMaybeJSON(o.items);
       o.tasks = parseMaybeJSON(o.tasks);
       o.diary = parseMaybeJSON(o.diary);
-
       setOrder(o);
     } catch (e) {
       console.error("❌ Failed to load order:", e);
@@ -48,16 +54,43 @@ export default function AdminOrderRecord() {
     }
   }
 
+  async function loadPayments() {
+    try {
+      const res = await fetch(`${API_BASE}/api/payments/order/${id}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      setPayments(Array.isArray(data.data) ? data.data : []);
+    } catch (e) {
+      console.warn("⚠️ Failed to load payments:", e.message);
+    }
+  }
+
+  async function loadSchedule() {
+    try {
+      const res = await fetch(`${API_BASE}/api/payments/schedule/${id}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setSchedule(Array.isArray(data.schedule) ? data.schedule : []);
+    } catch {
+      /* ignore */
+    }
+  }
+
   function parseMaybeJSON(val) {
     if (typeof val === "string") {
-      try { return JSON.parse(val); } catch { return []; }
+      try {
+        return JSON.parse(val);
+      } catch {
+        return [];
+      }
     }
     return Array.isArray(val) ? val : [];
   }
 
-  // Quick overall figures for display only
+  // Quick overall figures
   const figures = useMemo(() => {
-    if (!order) return { deposit: 0, balance: 0, total: 0, paid: 0, remaining: 0 };
+    if (!order)
+      return { deposit: 0, balance: 0, total: 0, paid: 0, remaining: 0 };
     const deposit = Number(order.deposit || 0);
     const balance = Number(order.balance || 0);
     const total = deposit + balance;
@@ -66,7 +99,12 @@ export default function AdminOrderRecord() {
     return { deposit, balance, total, paid, remaining };
   }, [order]);
 
-  // Create a Checkout session (server dynamically calculates the correct amount)
+  // Payment helpers
+  const depositPayment = payments.find((p) => p.type === "deposit");
+  const balancePayment = payments.find((p) => p.type === "balance");
+  const monthlyPayments = payments.filter((p) => p.type === "monthly");
+
+  // Create a Checkout session
   async function handleCreateCheckout(flow, type) {
     if (!order) return;
     setWorking(true);
@@ -90,7 +128,6 @@ export default function AdminOrderRecord() {
     }
   }
 
-  // Trigger monthly billing run (Bacs off-session)
   async function handleRunBilling() {
     const amountStr = prompt("Enter monthly amount (£):", "50");
     if (!amountStr) return;
@@ -107,6 +144,7 @@ export default function AdminOrderRecord() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Billing failed");
       alert(data.message || "Billing run complete.");
+      loadPayments();
     } catch (e) {
       console.error("❌ Billing error:", e);
       alert("❌ Billing run failed.");
@@ -115,12 +153,17 @@ export default function AdminOrderRecord() {
     }
   }
 
-  if (error) return <div className="p-10 text-red-400">❌ {error}</div>;
-  if (!order) return <div className="p-10 text-pjh-muted animate-pulse">Loading order…</div>;
+  if (error)
+    return <div className="p-10 text-red-400">❌ {error}</div>;
+  if (!order)
+    return <div className="p-10 text-pjh-muted animate-pulse">Loading order…</div>;
 
   return (
     <div className="p-10 text-white bg-pjh-charcoal min-h-screen">
-      <a href="/admin/orders" className="text-sm text-pjh-muted hover:text-pjh-blue transition">
+      <a
+        href="/admin/orders"
+        className="text-sm text-pjh-muted hover:text-pjh-blue transition"
+      >
         ← Back to Orders
       </a>
 
@@ -141,28 +184,101 @@ export default function AdminOrderRecord() {
         </span>
       </div>
 
-      {/* Quick Summary */}
+      {/* Totals */}
       <div className="mt-4 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-pjh-gray rounded-xl p-4 border border-white/10">
-          <div className="text-pjh-muted text-xs">Deposit</div>
-          <div className="text-xl font-semibold">£{figures.deposit.toFixed(2)}</div>
-        </div>
-        <div className="bg-pjh-gray rounded-xl p-4 border border-white/10">
-          <div className="text-pjh-muted text-xs">Balance</div>
-          <div className="text-xl font-semibold">£{figures.balance.toFixed(2)}</div>
-        </div>
-        <div className="bg-pjh-gray rounded-xl p-4 border border-white/10">
-          <div className="text-pjh-muted text-xs">Paid</div>
-          <div className="text-xl font-semibold text-green-300">£{figures.paid.toFixed(2)}</div>
-        </div>
-        <div className="bg-pjh-gray rounded-xl p-4 border border-white/10">
-          <div className="text-pjh-muted text-xs">Remaining (overall)</div>
-          <div className="text-xl font-semibold text-amber-300">£{figures.remaining.toFixed(2)}</div>
+        <SummaryCard label="Deposit" value={`£${figures.deposit.toFixed(2)}`} />
+        <SummaryCard label="Balance" value={`£${figures.balance.toFixed(2)}`} />
+        <SummaryCard
+          label="Paid"
+          value={`£${figures.paid.toFixed(2)}`}
+          accent="text-green-300"
+        />
+        <SummaryCard
+          label="Remaining"
+          value={`£${figures.remaining.toFixed(2)}`}
+          accent="text-amber-300"
+        />
+      </div>
+
+      {/* Payment Status */}
+      <div className="mt-8 bg-pjh-slate p-6 rounded-xl border border-white/10 space-y-4">
+        <h2 className="text-xl font-semibold text-pjh-blue">
+          💰 Payment Status
+        </h2>
+
+        <StatusRow
+          title="Deposit"
+          paid={order.deposit_paid}
+          method={depositPayment?.method}
+          amount={depositPayment?.amount}
+        />
+
+        <StatusRow
+          title="Balance"
+          paid={order.balance_paid}
+          method={balancePayment?.method}
+          amount={balancePayment?.amount}
+        />
+
+        <div className="flex items-center gap-2 mt-3">
+          <span className="text-sm text-pjh-muted">Direct Debit:</span>
+          {order.direct_debit_active ? (
+            <span className="px-2 py-1 text-xs rounded bg-green-600/30 text-green-300 border border-green-500/20">
+              ✅ Setup
+            </span>
+          ) : (
+            <span className="px-2 py-1 text-xs rounded bg-red-600/30 text-red-300 border border-red-500/20">
+              ❌ Not setup
+            </span>
+          )}
         </div>
       </div>
 
-      {/* Quick Actions */}
-      <div className="mt-6 flex flex-wrap gap-3">
+      {/* Direct Debit Schedule */}
+      {order.direct_debit_active && (
+        <div className="mt-8 bg-pjh-slate p-6 rounded-xl border border-white/10">
+          <h2 className="text-xl font-semibold text-pjh-blue mb-3">
+            🔁 Direct Debit Schedule
+          </h2>
+
+          {schedule.length === 0 ? (
+            <p className="text-pjh-muted text-sm">
+              No recurring payments yet. Use “Run Monthly Billing” to trigger the
+              first cycle.
+            </p>
+          ) : (
+            <table className="min-w-full border border-white/10 text-sm">
+              <thead className="bg-pjh-gray/60 text-pjh-muted">
+                <tr>
+                  <th className="p-2 text-left">Date</th>
+                  <th className="p-2 text-left">Amount (£)</th>
+                  <th className="p-2 text-left">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {schedule.map((s, i) => (
+                  <tr key={i} className="border-t border-white/10">
+                    <td className="p-2">
+                      {new Date(s.date).toLocaleDateString()}
+                    </td>
+                    <td className="p-2">{s.amount.toFixed(2)}</td>
+                    <td className="p-2">
+                      {s.paid ? (
+                        <span className="text-green-400">Paid</span>
+                      ) : (
+                        <span className="text-amber-300">Pending</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+
+      {/* Actions */}
+      <div className="mt-8 flex flex-wrap gap-3">
         <button
           onClick={() => handleCreateCheckout("card_payment", "deposit")}
           disabled={working}
@@ -170,7 +286,6 @@ export default function AdminOrderRecord() {
         >
           💳 Card — Deposit
         </button>
-
         <button
           onClick={() => handleCreateCheckout("card_payment", "balance")}
           disabled={working}
@@ -178,7 +293,6 @@ export default function AdminOrderRecord() {
         >
           💳 Card — Balance
         </button>
-
         <button
           onClick={() => handleCreateCheckout("bacs_payment", "deposit")}
           disabled={working}
@@ -186,7 +300,6 @@ export default function AdminOrderRecord() {
         >
           🏦 Bacs — Deposit
         </button>
-
         <button
           onClick={() => handleCreateCheckout("bacs_payment", "balance")}
           disabled={working}
@@ -194,15 +307,13 @@ export default function AdminOrderRecord() {
         >
           🏦 Bacs — Balance
         </button>
-
         <button
           onClick={() => handleCreateCheckout("bacs_setup")}
           disabled={working}
           className="btn bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50"
         >
-          🧾 Setup Direct Debit Mandate
+          🧾 Setup Direct Debit
         </button>
-
         <button
           onClick={handleRunBilling}
           disabled={working}
@@ -211,49 +322,39 @@ export default function AdminOrderRecord() {
           🔁 Run Monthly Billing
         </button>
       </div>
+    </div>
+  );
+}
 
-      {/* Minimal order fields */}
-      <div className="mt-6 bg-pjh-slate p-6 rounded-xl">
-        <h2 className="text-xl font-semibold text-pjh-blue mb-3">Customer</h2>
-        <p>Name: {order.customer_name}</p>
-        <p>Email: {order.email}</p>
+/* ============================================================
+   Small components
+============================================================ */
+
+function SummaryCard({ label, value, accent }) {
+  return (
+    <div className="bg-pjh-gray rounded-xl p-4 border border-white/10">
+      <div className="text-pjh-muted text-xs">{label}</div>
+      <div className={`text-xl font-semibold ${accent || ""}`}>{value}</div>
+    </div>
+  );
+}
+
+function StatusRow({ title, paid, method, amount }) {
+  return (
+    <div className="flex justify-between items-center border-t border-white/10 pt-2 text-sm">
+      <div className="text-pjh-muted">{title}</div>
+      <div>
+        {paid ? (
+          <span className="text-green-400 font-medium">Paid</span>
+        ) : (
+          <span className="text-amber-300">Pending</span>
+        )}
+        {method && (
+          <span className="ml-2 text-pjh-muted text-xs">
+            ({method} {amount ? `£${Number(amount).toFixed(2)}` : ""})
+          </span>
+        )}
       </div>
-
-      {/* Items */}
-      {Array.isArray(order.items) && order.items.length > 0 && (
-        <div className="bg-pjh-slate p-6 rounded-xl mt-6">
-          <h2 className="text-xl font-semibold text-pjh-blue mb-3">Line Items</h2>
-          <table className="min-w-full border border-white/10 rounded-lg mb-3">
-            <thead className="bg-pjh-gray/60">
-              <tr className="text-left text-sm text-pjh-muted">
-                <th className="p-3">Item</th>
-                <th className="p-3">Qty</th>
-                <th className="p-3">Unit (£)</th>
-                <th className="p-3">Total (£)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {order.items.map((it, i) => {
-                const unit = Number(it.unit_price ?? it.price ?? 0);
-                const rowTotal = Number(it.qty ?? 1) * unit;
-                return (
-                  <tr key={i} className="border-t border-white/5">
-                    <td className="p-3">{it.name}</td>
-                    <td className="p-3">{it.qty}</td>
-                    <td className="p-3">{unit.toFixed(2)}</td>
-                    <td className="p-3">{rowTotal.toFixed(2)}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-
-          <div className="text-right text-lg font-semibold space-y-1">
-            <p>Deposit: £{Number(order.deposit || 0).toFixed(2)}</p>
-            <p>Balance: £{Number(order.balance || 0).toFixed(2)}</p>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
