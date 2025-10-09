@@ -235,7 +235,7 @@ export default function AdminOrderRecord() {
       {/* Payment Status */}
       <div className="mt-8 bg-pjh-slate p-6 rounded-xl border border-white/10 space-y-4">
         <h2 className="text-xl font-semibold text-pjh-blue flex items-center justify-between">
-          💰 Payment Status
+          Payment Status
         </h2>
 
         <StatusRow
