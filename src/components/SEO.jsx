@@ -1,21 +1,30 @@
-import React from "react";
+/**
+ * ============================================================
+ * PJH Web Services — Global SEO Component (React 19 + Vite)
+ * ============================================================
+ * Provides dynamic meta tags, OpenGraph, and JSON-LD schemas
+ * for business + FAQ data. Fully compatible with react-helmet-async.
+ * ============================================================
+ */
+
 import { Helmet } from "react-helmet-async";
 
 export default function SEO({
   title = "PJH Web Services | Bespoke Websites & CRM Systems",
-  description = "PJH Web Services builds modern, responsive websites and custom CRM platforms for small businesses across Suffolk and beyond.",
+  description = "PJH Web Services builds fast, modern websites and custom CRM systems for small businesses across Suffolk and the UK.",
   image = "https://www.pjhwebservices.co.uk/pjh-logo-light.png",
   url = "https://www.pjhwebservices.co.uk",
 }) {
+  // --- Schema: Business Profile ---
   const businessSchema = {
     "@context": "https://schema.org",
     "@type": "ProfessionalService",
     name: "PJH Web Services",
-    url: "https://www.pjhwebservices.co.uk",
-    logo: "https://www.pjhwebservices.co.uk/pjh-logo-light.png",
-    image: "https://www.pjhwebservices.co.uk/pjh-logo-light.png",
+    url,
+    logo: image,
+    image,
     description:
-      "Modern, fast, SEO-optimised websites and digital solutions for small businesses across the UK. Built and maintained by PJH Web Services in Suffolk.",
+      "Modern, SEO-optimised websites, CRMs, and maintenance plans for small and medium-sized businesses across the UK.",
     telephone: "+44-7587-707981",
     email: "info@pjhwebservices.co.uk",
     address: {
@@ -32,6 +41,7 @@ export default function SEO({
     ],
   };
 
+  // --- Schema: FAQ for AI & Search ---
   const faqSchema = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -41,15 +51,15 @@ export default function SEO({
         name: "What does PJH Web Services offer?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "We design, build, and maintain modern, SEO-optimised websites and CRM systems for small and medium-sized businesses across the UK.",
+          text: "We design, build, and maintain modern, SEO-optimised websites and CRM systems tailored for UK businesses.",
         },
       },
       {
         "@type": "Question",
-        name: "Do you provide website care plans?",
+        name: "Do you provide ongoing maintenance?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Yes. We offer optional Care Plans that include updates, backups, monitoring, and priority support for all websites we build.",
+          text: "Yes. We offer WebCare maintenance plans that include backups, updates, monitoring, and dedicated support for PJH-built sites.",
         },
       },
       {
@@ -57,20 +67,20 @@ export default function SEO({
         name: "Where is PJH Web Services based?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "We’re based in Suffolk, UK, and work with clients nationwide.",
+          text: "We are based in Suffolk, England, serving clients locally and nationwide.",
         },
       },
     ],
   };
 
   return (
-    <Helmet>
-      {/* ✅ Core SEO */}
+    <Helmet prioritizeSeoTags>
+      {/* Core Meta */}
       <title>{title}</title>
       <meta name="description" content={description} />
       <link rel="canonical" href={url} />
 
-      {/* ✅ OpenGraph / Facebook */}
+      {/* OpenGraph */}
       <meta property="og:type" content="website" />
       <meta property="og:title" content={title} />
       <meta property="og:description" content={description} />
@@ -78,17 +88,17 @@ export default function SEO({
       <meta property="og:url" content={url} />
       <meta property="og:site_name" content="PJH Web Services" />
 
-      {/* ✅ Twitter */}
+      {/* Twitter */}
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={title} />
       <meta name="twitter:description" content={description} />
       <meta name="twitter:image" content={image} />
 
-      {/* ✅ Theme & Icons */}
-      <meta name="theme-color" content="#007BFF" />
+      {/* Theme & Favicon */}
+      <meta name="theme-color" content="#0f172a" />
       <link rel="icon" href="/favicon.ico" />
 
-      {/* ✅ Structured Data for AI Crawlers */}
+      {/* JSON-LD Structured Data */}
       <script type="application/ld+json">
         {JSON.stringify(businessSchema)}
       </script>
