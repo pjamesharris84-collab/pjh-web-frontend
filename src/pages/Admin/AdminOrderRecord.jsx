@@ -3,7 +3,9 @@
  * PJH Web Services — Admin Order Record (Final Unified 2025)
  * ============================================================
  * Features:
- *  ✅ Syncs with linked quote in real-time (deposit/balance/total)
+ *  ✅ Accurate 5-key financials (Total, Deposit, Paid, Refunds, Balance)
+ *  ✅ Syncs with linked quote in real-time
+ *  ✅ Stripe & BACS checkout actions
  *  ✅ Full refund + payment awareness
  *  ✅ Delete order button
  *  ✅ Refresh + dynamic recalculation
@@ -109,34 +111,32 @@ export default function AdminOrderRecord() {
   }
 
   /* ============================================================
-     💰 Calculated Figures (Refund + Quote Sync)
+     💰 Corrected Financial Logic
   ============================================================ */
   const figures = useMemo(() => {
-    if (!order) return { deposit: 0, balance: 0, total: 0, paid: 0, refunded: 0, remaining: 0 };
+    if (!linkedQuote)
+      return { total: 0, deposit: 0, paid: 0, refunded: 0, balance: 0 };
 
-    const quoteDeposit = Number(linkedQuote?.deposit || 0);
-    const quoteTotal =
-      Number(linkedQuote?.custom_price || linkedQuote?.total_after_discount || 0);
+    // 1️⃣ From linked quote
+    const total = Number(
+      linkedQuote.custom_price || linkedQuote.total_after_discount || 0
+    );
+    const deposit = Number(linkedQuote.deposit || 0);
 
-    const deposit = quoteDeposit || Number(order.deposit || 0);
-    const balance = quoteTotal
-      ? Math.max(quoteTotal - deposit, 0)
-      : Number(order.balance || 0);
-    const total = deposit + balance;
-
-    const paidAmount = payments
+    // 2️⃣ From backend
+    const paid = payments
       .filter((p) => p.status === "paid" && p.amount > 0)
       .reduce((sum, p) => sum + Number(p.amount), 0);
 
-    const refundedAmount = payments
+    const refunded = payments
       .filter((p) => p.status === "refunded" || p.amount < 0)
       .reduce((sum, p) => sum + Math.abs(Number(p.amount)), 0);
 
-    const netPaid = paidAmount - refundedAmount;
-    const remaining = Math.max(total - netPaid, 0);
+    // 3️⃣ Balance = Order Total - (Payments - Refunds)
+    const balance = Math.max(total - (paid - refunded), 0);
 
-    return { deposit, balance, total, paid: netPaid, refunded: refundedAmount, remaining };
-  }, [order, linkedQuote, payments]);
+    return { total, deposit, paid, refunded, balance };
+  }, [linkedQuote, payments]);
 
   /* ============================================================
      💳 Stripe Actions + Refunds
@@ -233,14 +233,13 @@ export default function AdminOrderRecord() {
         </p>
       )}
 
-      {/* Totals */}
-      <div className="mt-5 grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-        <SummaryCard label="Deposit" value={`£${figures.deposit.toFixed(2)}`} />
-        <SummaryCard label="Balance" value={`£${figures.balance.toFixed(2)}`} />
-        <SummaryCard label="Paid" value={`£${figures.paid.toFixed(2)}`} accent="text-green-300" />
-        <SummaryCard label="Refunded" value={`£${figures.refunded.toFixed(2)}`} accent="text-red-300" />
-        <SummaryCard label="Remaining" value={`£${figures.remaining.toFixed(2)}`} accent="text-amber-300" />
-        <SummaryCard label="Total" value={`£${figures.total.toFixed(2)}`} />
+      {/* Corrected Totals */}
+      <div className="mt-5 grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+        <SummaryCard label="Total Order Value" value={`£${figures.total.toFixed(2)}`} />
+        <SummaryCard label="Deposit Required" value={`£${figures.deposit.toFixed(2)}`} />
+        <SummaryCard label="Payments Made" value={`£${figures.paid.toFixed(2)}`} accent="text-green-300" />
+        <SummaryCard label="Refunds" value={`£${figures.refunded.toFixed(2)}`} accent="text-red-300" />
+        <SummaryCard label="Balance Remaining" value={`£${figures.balance.toFixed(2)}`} accent="text-amber-300" />
       </div>
 
       {/* Direct Debit */}
@@ -262,7 +261,7 @@ export default function AdminOrderRecord() {
 
       {/* Actions */}
       <div className="mt-10 space-y-6">
-        {/* Checkout */}
+        {/* Checkout Buttons */}
         <div className="flex flex-wrap gap-3">
           <button
             onClick={() => handleCreateCheckout("card_payment", "deposit")}
@@ -301,7 +300,7 @@ export default function AdminOrderRecord() {
           </button>
         </div>
 
-        {/* Refunds */}
+        {/* Refund Buttons */}
         {payments.length > 0 && (
           <div className="border-t border-white/10 pt-4 flex flex-wrap gap-3">
             <h3 className="text-sm text-pjh-muted w-full">Refunds</h3>
