@@ -3,10 +3,11 @@
  * PJH Web Services — Main App (Public Frontend)
  * ============================================================
  * Homepage layout for PJH Web Services.
- * Updated with unified button styling:
- *   → White text on deep blue backgrounds
- *   → Subtle glow & hover transitions
- *   → Clean minimalist layout for premium look
+ * Updated to include:
+ *   • Customer-first messaging
+ *   • Visible Security Policy link
+ *   • SEO-optimised trust and navigation
+ *   • Unified premium button styling
  * ============================================================
  */
 
@@ -96,8 +97,8 @@ export default function App() {
   return (
     <div className="bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white min-h-screen flex flex-col font-inter">
       <SEO
-        title="PJH Web Services | Websites, CRMs & Maintenance Packages"
-        description="PJH Web Services builds responsive websites, custom CRM systems, and professional maintenance packages that keep your business running smoothly across Suffolk and beyond."
+        title="PJH Web Services | Modern Websites, CRMs & Maintenance Plans"
+        description="PJH Web Services builds customer-first, AI-ready websites and CRM systems designed around your goals. Fully responsive, SEO-optimised, and built for the modern generation of technology."
         url="https://www.pjhwebservices.co.uk"
         image="https://www.pjhwebservices.co.uk/pjh-logo-light.png"
       />
@@ -115,17 +116,18 @@ export default function App() {
           />
 
           <p className="text-gray-400 uppercase tracking-[0.25em] text-sm mb-8">
-            Professional Digital Services
+            Customer-First Web Design
           </p>
 
           <h1 className="text-5xl sm:text-6xl font-bold leading-tight mb-8 tracking-tight">
-            Bespoke Websites, CRMs & Maintenance Packages
+            Bespoke Websites & CRMs <br className="hidden sm:block" /> Built for
+            the AI Generation
           </h1>
 
           <p className="max-w-2xl text-gray-300 text-lg mb-12 leading-relaxed">
-            PJH Web Services creates modern, responsive websites, bespoke CRM
-            systems, and ongoing maintenance solutions — built around your exact
-            business needs.
+            We design and build modern, responsive websites and CRM platforms
+            crafted around your vision, business goals, and brand identity —
+            keeping your digital presence one step ahead of the curve.
           </p>
 
           <div className="flex flex-wrap justify-center gap-4">
@@ -151,15 +153,15 @@ export default function App() {
             {[
               {
                 title: "Website Design",
-                desc: "Modern, responsive websites built to your exact vision — whether you bring your own design or we start fresh.",
+                desc: "We turn your business goals and ideas into a visual experience — fully responsive, SEO-ready, and optimised for the modern web.",
               },
               {
                 title: "Custom CRM Systems",
-                desc: "Streamline your business with a fully bespoke CRM. Quotes, invoices, customer data — all in one place.",
+                desc: "Simplify operations and scale smarter with bespoke CRM systems — built entirely around your workflows, not templates.",
               },
               {
                 title: "Maintenance & WebCare",
-                desc: "Keep your website secure, fast, and backed up with one of our PJH WebCare maintenance packages — available from just £45/month.",
+                desc: "We protect your investment with ongoing care, performance tuning, and security monitoring — so your website stays safe and fast.",
               },
             ].map((s, i) => (
               <div
@@ -182,7 +184,10 @@ export default function App() {
         </section>
 
         {/* PACKAGES SECTION */}
-        <section id="packages" className="py-24 px-6 border-t border-white/10 bg-slate-900/50">
+        <section
+          id="packages"
+          className="py-24 px-6 border-t border-white/10 bg-slate-900/50"
+        >
           <h2 className="text-3xl sm:text-4xl font-bold text-center mb-12">
             Our Most Popular Packages
           </h2>
@@ -198,8 +203,10 @@ export default function App() {
                     {pkg.name}
                   </h3>
                   <p className="text-gray-400 mb-4 text-sm">
-                    £{pkg.price_oneoff} one-off<br />or £{pkg.price_monthly}/month
-                    (min {pkg.term_months || 24} months)
+                    £{pkg.price_oneoff} one-off
+                    <br />
+                    or £{pkg.price_monthly}/month (min{" "}
+                    {pkg.term_months || 24} months)
                   </p>
                   <ul className="text-gray-500 text-sm mb-6 list-disc list-inside leading-relaxed">
                     {(pkg.features || []).slice(0, 4).map((f, i) => (
@@ -207,7 +214,9 @@ export default function App() {
                     ))}
                   </ul>
                   <Link
-                    to={`/packages/${encodeURIComponent(pkg.name.toLowerCase())}`}
+                    to={`/packages/${encodeURIComponent(
+                      pkg.name.toLowerCase()
+                    )}`}
                     className={`${buttonPrimary} w-full text-center`}
                   >
                     Select Package
@@ -227,20 +236,31 @@ export default function App() {
         </section>
 
         {/* ABOUT SECTION */}
-        <section id="about" className="py-24 px-6 text-center border-t border-white/10">
-          <h2 className="text-3xl sm:text-4xl font-bold mb-8">About PJH Web Services</h2>
+        <section
+          id="about"
+          className="py-24 px-6 text-center border-t border-white/10"
+        >
+          <h2 className="text-3xl sm:text-4xl font-bold mb-8">
+            About PJH Web Services
+          </h2>
           <p className="max-w-3xl mx-auto text-gray-400 leading-relaxed text-lg">
-            We’re passionate about building technology that empowers small businesses.
-            No templates, no guesswork — just bespoke solutions that match your goals and personality.
+            We’re a modern, tech-forward digital agency built on one core
+            principle — <strong>customer first</strong>. Every project starts
+            with your vision and is developed around your goals, industry, and
+            target audience. From sleek frontends to powerful CRM backends, we
+            bring your digital presence into the AI-powered era.
           </p>
         </section>
 
         {/* CONTACT CTA */}
         <section className="py-24 text-center border-t border-white/10 bg-slate-900/60">
-          <h2 className="text-3xl sm:text-4xl font-bold mb-6">Ready to Get Started?</h2>
+          <h2 className="text-3xl sm:text-4xl font-bold mb-6">
+            Ready to Get Started?
+          </h2>
           <p className="text-gray-400 mb-10 max-w-2xl mx-auto leading-relaxed">
-            Get in touch today and let’s create something unique together — or
-            protect your current website with our ongoing maintenance plans.
+            Let’s bring your business online the right way — secure, modern, and
+            designed to convert. Get in touch to discuss your ideas or protect
+            your existing website with our care plans.
           </p>
           <div className="flex justify-center flex-wrap gap-4">
             <Link to="/contact" className={buttonPrimary}>
@@ -255,8 +275,10 @@ export default function App() {
 
       <CookieBanner />
 
+      {/* FOOTER */}
       <footer className="border-t border-white/10 py-10 text-center text-sm text-gray-500 space-y-4 bg-slate-950">
         <p>© {new Date().getFullYear()} PJH Web Services — All rights reserved.</p>
+
         <div className="flex justify-center flex-wrap gap-4 text-xs uppercase tracking-wide">
           <Link to="/legal/privacy" className="hover:text-blue-400 transition">
             Privacy
@@ -267,11 +289,20 @@ export default function App() {
           <Link to="/legal/terms" className="hover:text-blue-400 transition">
             Terms
           </Link>
-          <Link to="/legal/monthly-terms" className="hover:text-blue-400 transition">
+          <Link
+            to="/legal/monthly-terms"
+            className="hover:text-blue-400 transition"
+          >
             Monthly Terms
           </Link>
-          <Link to="/legal/direct-debit-policy" className="hover:text-blue-400 transition">
+          <Link
+            to="/legal/direct-debit-policy"
+            className="hover:text-blue-400 transition"
+          >
             Direct Debit
+          </Link>
+          <Link to="/security" className="hover:text-blue-400 transition">
+            Security
           </Link>
           <Link to="/maintenance" className="hover:text-blue-400 transition">
             Maintenance
