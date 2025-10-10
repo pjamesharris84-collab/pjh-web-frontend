@@ -2,8 +2,9 @@
  * ============================================================
  * PJH Web Services — Frontend Router (React + Vite, Lazy-Loaded)
  * ============================================================
- * Lazy-loads admin dashboard modules for performance,
- * keeping the public-facing site lightweight.
+ * Handles all public-facing and admin routes.
+ * Public routes include marketing pages, legal info, and payment flows.
+ * Admin routes are lazy-loaded for performance.
  * ============================================================
  */
 
@@ -26,12 +27,17 @@ import PackageDetails from "./pages/PackageDetails.jsx";
 import DirectDebitPolicy from "./pages/legal/direct-debit-policy.jsx";
 import SetupComplete from "./pages/SetupComplete.jsx";
 import DirectDebitSetup from "./pages/direct-debit-setup.jsx";
-
+import FAQ from "./pages/FAQ.jsx";
 
 // 💳 Payment Pages
 import PaymentSuccess from "./pages/PaymentSuccess.jsx";
 import PaymentCancelled from "./pages/PaymentCancelled.jsx";
 import PaymentFailed from "./pages/PaymentFailed.jsx";
+
+// 🧰 Maintenance Marketing Pages
+import Maintenance from "./pages/Maintenance.jsx";
+import MaintenanceCompare from "./pages/MaintenanceCompare.jsx";
+import MaintenanceThankYou from "./pages/MaintenanceThankYou.jsx";
 
 // =======================
 // 💤 Lazy-Loaded Admin Pages
@@ -90,16 +96,23 @@ ReactDOM.createRoot(document.getElementById("root")).render(
           <Route path="/legal/terms" element={<Terms />} />
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/legal/monthly-terms" element={<LegalMonthlyTerms />} />
-          <Route path="/packages/:name" element={<PackageDetails />} /> 
-          <Route path="/legal/direct-debit-policy" element={<DirectDebitPolicy />} />   
+          <Route path="/packages/:name" element={<PackageDetails />} />
+          <Route path="/legal/direct-debit-policy" element={<DirectDebitPolicy />} />  
+          <Route path="/faq" element={<FAQ />} />
           <Route path="/direct-debit-setup" element={<DirectDebitSetup />} />
-<Route path="/setup-complete" element={<SetupComplete />} />     
-
+          <Route path="/setup-complete" element={<SetupComplete />} />
 
           {/* 💳 Payments */}
           <Route path="/payment-success" element={<PaymentSuccess />} />
           <Route path="/payment-cancelled" element={<PaymentCancelled />} />
           <Route path="/payment-failed" element={<PaymentFailed />} />
+
+          {/* =================== */}
+          {/* 🧰 MAINTENANCE PAGES */}
+          {/* =================== */}
+          <Route path="/maintenance" element={<Maintenance />} />
+          <Route path="/maintenance/compare" element={<MaintenanceCompare />} />
+          <Route path="/maintenance/thank-you" element={<MaintenanceThankYou />} />
 
           {/* =================== */}
           {/* 🔐 ADMIN ROUTES     */}

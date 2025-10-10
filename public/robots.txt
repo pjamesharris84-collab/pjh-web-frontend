@@ -1,10 +1,25 @@
-# robots.txt for https://www.pjhwebservices.co.uk
+# ============================================================
+# robots.txt — PJH Web Services
+# URL: https://www.pjhwebservices.co.uk
+# Purpose: Control access for search and AI crawlers
+# ============================================================
 
+# ✅ Allow all standard web crawlers
 User-agent: *
 Allow: /
 
-# Disallow admin area
+# 🚫 Block backend/admin routes (not for public indexing)
 Disallow: /admin
 
-# Sitemap reference
+# ✅ Allow AI crawlers (ChatGPT, Perplexity, Common Crawl)
+User-agent: GPTBot
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+# ✅ Sitemap reference for structured indexing
 Sitemap: https://www.pjhwebservices.co.uk/sitemap.xml

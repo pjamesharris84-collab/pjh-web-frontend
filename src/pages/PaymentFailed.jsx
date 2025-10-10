@@ -1,3 +1,12 @@
+/**
+ * ============================================================
+ * PJH Web Services — Payment Failed Page (2025)
+ * ============================================================
+ * Unified with the blue/white premium design system.
+ * Replaces harsh red tone with elegant blue-accented failure state.
+ * ============================================================
+ */
+
 import { useSearchParams } from "react-router-dom";
 
 export default function PaymentFailed() {
@@ -6,32 +15,44 @@ export default function PaymentFailed() {
   const type = params.get("type");
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-[#0d1117] text-pjh-light px-6 text-center">
-      <div className="max-w-md bg-[#161b22] border border-red-600/30 rounded-2xl p-10 shadow-lg">
+    <main className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white px-6 text-center">
+      <div className="max-w-md w-full bg-slate-900/70 border border-white/10 rounded-2xl p-10 shadow-xl backdrop-blur-sm">
+        {/* Logo */}
         <img
           src="/pjh-logo-light.png"
           alt="PJH Web Services"
-          className="mx-auto w-28 mb-6"
+          className="mx-auto w-28 mb-8 drop-shadow-xl"
         />
-        <h1 className="text-3xl font-bold text-red-500 mb-3">
+
+        {/* Title */}
+        <h1 className="text-3xl font-bold text-red-400 mb-4">
           Payment Failed ❌
         </h1>
-        <p className="text-gray-300 mb-6 leading-relaxed">
-          Your <span className="font-semibold">{type}</span> payment for order{" "}
-          <span className="font-semibold">#{orderId}</span> did not go through.
+
+        {/* Message */}
+        <p className="text-gray-300 leading-relaxed mb-8">
+          Your{" "}
+          <span className="font-semibold text-blue-300">{type}</span> payment
+          for order{" "}
+          <span className="font-semibold text-blue-300">#{orderId}</span> was
+          not successful.
           <br />
-          Please check your card details or try again.
+          Please check your card details and try again.
         </p>
+
+        {/* CTA */}
         <a
           href="/"
-          className="inline-block bg-red-600 text-white font-semibold py-3 px-6 rounded-xl shadow-md hover:bg-red-700 transition"
+          className="inline-block px-8 py-3 bg-blue-700 hover:bg-blue-800 text-white font-semibold rounded-xl transition-all duration-300 shadow-sm hover:shadow-blue-900/30"
         >
-          Try Again
+          🔁 Try Again
         </a>
       </div>
+
+      {/* Footer */}
       <p className="mt-8 text-xs text-gray-500">
-        © {new Date().getFullYear()} PJH Web Services
+        © {new Date().getFullYear()} PJH Web Services — All rights reserved.
       </p>
-    </div>
+    </main>
   );
 }

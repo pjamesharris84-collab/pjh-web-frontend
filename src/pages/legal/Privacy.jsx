@@ -1,116 +1,193 @@
+/**
+ * ============================================================
+ * PJH Web Services — Privacy Policy (2025)
+ * ============================================================
+ * Styled in the unified blue/white design system.
+ * Fully aligned with UK GDPR & Data Protection Act 2018.
+ * ============================================================
+ */
+
 import { Link } from "react-router-dom";
 import SEO from "../../components/SEO";
 
 export default function Privacy() {
   return (
-    <div className="min-h-screen bg-pjh-slate text-pjh-light font-outfit">
+    <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white font-outfit">
       <SEO
         title="Privacy Policy | PJH Web Services"
-        description="Discover how PJH Web Services collects, uses, and safeguards your personal data in accordance with UK GDPR and privacy regulations."
-        url="https://www.pjhwebservices.co.uk/privacy"
+        description="Learn how PJH Web Services collects, uses, and protects your personal data in accordance with UK GDPR and the Data Protection Act 2018."
+        url="https://www.pjhwebservices.co.uk/legal/privacy"
         image="https://www.pjhwebservices.co.uk/pjh-logo-light.png"
       />
 
-      <div className="max-w-4xl mx-auto px-6 py-16">
-        <div className="bg-pjh-gray p-8 rounded-2xl border border-white/10 shadow-lg space-y-8">
-          <h1 className="text-3xl font-bold text-pjh-blue">Privacy Policy</h1>
-          <p className="text-sm text-pjh-muted">Last updated: 28/09/2025</p>
+      <div className="max-w-4xl mx-auto px-6 py-20">
+        <article className="bg-slate-900/70 p-10 rounded-2xl border border-white/10 shadow-xl backdrop-blur-sm space-y-10">
+          {/* Header */}
+          <header>
+            <h1 className="text-4xl font-bold text-blue-400 mb-2">
+              Privacy Policy
+            </h1>
+            <p className="text-sm text-gray-400">
+              Last updated: 28 September 2025 — Version 2025-01
+            </p>
+          </header>
 
+          {/* Sections */}
           <section>
-            <h2 className="text-xl font-semibold text-pjh-blue mb-2">1. Introduction</h2>
-            <p className="text-pjh-light/80">
-              At PJH Web Services, we are committed to protecting your personal data and
-              respecting your privacy. This policy explains how we collect, use, and store
-              information when you visit our website or use our services.
+            <h2 className="text-xl font-semibold text-blue-400 mb-2">
+              1. Introduction
+            </h2>
+            <p className="text-gray-300 leading-relaxed">
+              At <b>PJH Web Services</b>, we are committed to protecting your
+              privacy and handling your data transparently. This policy explains
+              how we collect, use, and protect personal information when you
+              visit our website, make enquiries, or use our services.
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-pjh-blue mb-2">2. Information We Collect</h2>
-            <ul className="list-disc ml-6 text-pjh-light/80 space-y-1">
-              <li>Personal information (name, email, phone) provided via forms.</li>
-              <li>Business details supplied during service enquiries.</li>
-              <li>Technical data (IP address, browser type, cookies).</li>
-              <li>Analytics data such as pages visited and session duration.</li>
+            <h2 className="text-xl font-semibold text-blue-400 mb-2">
+              2. Information We Collect
+            </h2>
+            <ul className="list-disc ml-6 text-gray-300 space-y-1 leading-relaxed">
+              <li>Personal details (name, email address, telephone number).</li>
+              <li>Business or project information provided during enquiries.</li>
+              <li>Technical data such as IP address, browser type, and cookies.</li>
+              <li>Analytics data (pages visited, session duration, traffic source).</li>
             </ul>
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-pjh-blue mb-2">3. How We Use Your Information</h2>
-            <ul className="list-disc ml-6 text-pjh-light/80 space-y-1">
-              <li>To respond to enquiries and deliver requested services.</li>
-              <li>To manage projects, quotes, and customer relationships.</li>
-              <li>To enhance our site’s usability and customer experience.</li>
-              <li>To comply with UK data protection and legal requirements.</li>
+            <h2 className="text-xl font-semibold text-blue-400 mb-2">
+              3. How We Use Your Information
+            </h2>
+            <ul className="list-disc ml-6 text-gray-300 space-y-1 leading-relaxed">
+              <li>To respond to enquiries and provide requested services.</li>
+              <li>To manage quotes, invoices, and client communication.</li>
+              <li>To improve website usability and user experience.</li>
+              <li>To meet our legal, contractual, and accounting obligations.</li>
             </ul>
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-pjh-blue mb-2">4. Cookies & Analytics</h2>
-            <p className="text-pjh-light/80">
-              We use cookies and analytics tools (like Google Analytics) to monitor website
-              performance and user engagement. All analytics data is anonymised. You can
-              disable cookies via your browser at any time.
+            <h2 className="text-xl font-semibold text-blue-400 mb-2">
+              4. Cookies & Analytics
+            </h2>
+            <p className="text-gray-300 leading-relaxed">
+              We use cookies and analytics tools (such as Google Analytics) to
+              monitor performance and improve our content. All analytics data is
+              anonymised and aggregated. You can disable non-essential cookies in
+              your browser settings at any time.
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-pjh-blue mb-2">5. Data Sharing</h2>
-            <p className="text-pjh-light/80">
-              We do not sell your personal data. We only share information with trusted
-              third-party partners (hosting, analytics, or payment providers) when required
-              to deliver our services securely.
+            <h2 className="text-xl font-semibold text-blue-400 mb-2">
+              5. Data Sharing
+            </h2>
+            <p className="text-gray-300 leading-relaxed">
+              We do not sell or rent your personal data. Information is shared
+              only with trusted service partners (e.g. web hosting, payment
+              processing, or analytics providers) strictly for service delivery
+              and security purposes.
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-pjh-blue mb-2">6. Data Retention</h2>
-            <p className="text-pjh-light/80">
-              We retain personal data only as long as necessary to fulfil contractual or
-              legal obligations, after which it is securely deleted or anonymised.
+            <h2 className="text-xl font-semibold text-blue-400 mb-2">
+              6. Data Retention
+            </h2>
+            <p className="text-gray-300 leading-relaxed">
+              We retain personal data only as long as necessary for the purposes
+              for which it was collected — typically for active contracts or as
+              required by tax, accounting, or legal obligations. Data no longer
+              needed is securely deleted or anonymised.
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-pjh-blue mb-2">7. Your Rights</h2>
-            <ul className="list-disc ml-6 text-pjh-light/80 space-y-1">
-              <li>Access the data we hold about you.</li>
-              <li>Request corrections or updates.</li>
+            <h2 className="text-xl font-semibold text-blue-400 mb-2">
+              7. Your Rights
+            </h2>
+            <ul className="list-disc ml-6 text-gray-300 space-y-1 leading-relaxed">
+              <li>Access your personal data (“subject access request”).</li>
+              <li>Request correction of inaccurate or incomplete data.</li>
               <li>Request deletion (“right to be forgotten”).</li>
-              <li>Withdraw consent for non-essential communications.</li>
+              <li>Withdraw consent for optional marketing communications.</li>
+              <li>Complain to the ICO if you believe your data rights are infringed.</li>
             </ul>
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-pjh-blue mb-2">8. Security</h2>
-            <p className="text-pjh-light/80">
-              We apply SSL encryption and secure hosting to safeguard your information.
-              Although no online system is completely risk-free, we continuously improve our
-              protections to minimise threats.
+            <h2 className="text-xl font-semibold text-blue-400 mb-2">
+              8. Data Security
+            </h2>
+            <p className="text-gray-300 leading-relaxed">
+              We implement strong security measures, including SSL encryption,
+              secure servers, and restricted data access. While no system is
+              completely risk-free, PJH Web Services continuously reviews and
+              improves its data protection protocols.
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-pjh-blue mb-2">9. Policy Updates</h2>
-            <p className="text-pjh-light/80">
-              We may update this Privacy Policy periodically. All updates will be posted on
-              this page with a revised “Last Updated” date.
+            <h2 className="text-xl font-semibold text-blue-400 mb-2">
+              9. International Transfers
+            </h2>
+            <p className="text-gray-300 leading-relaxed">
+              We primarily store and process data within the UK. If data is
+              transferred outside the UK or EEA (for example, by cloud providers),
+              it is safeguarded by legally recognised mechanisms such as the UK
+              International Data Transfer Agreement (IDTA) or EU Standard
+              Contractual Clauses (SCCs).
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-pjh-blue mb-2">10. Contact Us</h2>
-            <p className="text-pjh-light/80">
-              Email: info@pjhwebservices.co.uk<br />
+            <h2 className="text-xl font-semibold text-blue-400 mb-2">
+              10. Policy Updates
+            </h2>
+            <p className="text-gray-300 leading-relaxed">
+              This policy may be updated to reflect changes in regulations or our
+              business operations. The most recent version will always be
+              available on our website with the revised “Last Updated” date.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-semibold text-blue-400 mb-2">
+              11. Contact Us
+            </h2>
+            <p className="text-gray-300 leading-relaxed">
+              For questions about this Privacy Policy or to exercise your rights:
+              <br />
+              <a
+                href="mailto:info@pjhwebservices.co.uk"
+                className="text-blue-400 underline underline-offset-2 hover:text-blue-300"
+              >
+                info@pjhwebservices.co.uk
+              </a>
+              <br />
               Phone: 07587 707981
             </p>
           </section>
 
-          <div className="pt-6">
-            <Link to="/" className="btn-secondary inline-block">Back to Home</Link>
-          </div>
-        </div>
+          {/* Footer / Back to Home */}
+          <footer className="pt-8 border-t border-white/10 text-center">
+            <p className="text-xs text-gray-500 mb-6">
+              Compliant with the <i>UK GDPR</i> and <i>Data Protection Act 2018</i>.  
+              PJH Web Services Ltd. — Suffolk, United Kingdom.
+            </p>
+
+            <Link
+              to="/"
+              className="inline-block px-8 py-3 bg-blue-700 hover:bg-blue-800 text-white font-semibold rounded-xl transition-all duration-300 shadow-sm hover:shadow-blue-900/30"
+            >
+              🏠 Back to Home
+            </Link>
+          </footer>
+        </article>
       </div>
-    </div>
+    </main>
   );
 }

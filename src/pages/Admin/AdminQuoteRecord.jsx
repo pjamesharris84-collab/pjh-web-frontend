@@ -404,21 +404,38 @@ export default function AdminQuoteRecord() {
         {statusBadge(quote.status)}
       </div>
 
-      {/* ACTION BUTTONS */}
-      <div className="mt-4 flex flex-wrap gap-3">
-        <button onClick={handleEmail} disabled={working} className="btn-secondary bg-pjh-blue hover:bg-pjh-blue/80 text-white">
-          ✉️ Email Quote (PDF)
-        </button>
-        <button onClick={handlePreviewPDF} className="btn-secondary bg-pjh-slate hover:bg-pjh-blue/50 text-white">
-          👁️ Preview Quote (PDF)
-        </button>
-        <button onClick={handleSave} disabled={saving} className="btn-primary">
-          {saving ? "Saving..." : "💾 Save Changes"}
-        </button>
-        <button onClick={handleDelete} className="btn-danger bg-red-600 hover:bg-red-700 text-white">
-          🗑️ Delete Quote
-        </button>
-      </div>
+     {/* ACTION BUTTONS */}
+<div className="mt-4 flex flex-wrap justify-between gap-3 w-full">
+  <button
+    onClick={handleEmail}
+    disabled={working}
+    className="flex-1 min-w-[150px] btn-secondary bg-pjh-blue hover:bg-pjh-blue/80 text-white"
+  >
+    ✉️ Email Quote (PDF)
+  </button>
+
+  <button
+    onClick={handlePreviewPDF}
+    className="flex-1 min-w-[150px] btn-secondary bg-pjh-slate hover:bg-pjh-blue/50 text-white"
+  >
+    👁️ Preview Quote (PDF)
+  </button>
+
+  <button
+    onClick={handleSave}
+    disabled={saving}
+    className="flex-1 min-w-[150px] btn-primary"
+  >
+    {saving ? "Saving..." : "💾 Save Changes"}
+  </button>
+
+  <button
+    onClick={handleDelete}
+    className="flex-1 min-w-[150px] btn-danger bg-red-600 hover:bg-red-700 text-white"
+  >
+    🗑️ Delete Quote
+  </button>
+</div>
 
       {/* META + ITEMS */}
       <div className="bg-pjh-gray p-6 rounded-xl mt-6 mb-8 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">

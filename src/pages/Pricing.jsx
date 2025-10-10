@@ -1,3 +1,12 @@
+/**
+ * ============================================================
+ * PJH Web Services — Pricing Page (2025)
+ * ============================================================
+ * Unified with blue/white premium design system.
+ * Consistent card layout, button styling, and gradient backdrop.
+ * ============================================================
+ */
+
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
@@ -9,8 +18,10 @@ export default function Pricing() {
     fetch(url)
       .then((res) => res.json())
       .then((data) => {
-        const list = Array.isArray(data?.data) ? data.data
-          : Array.isArray(data?.packages) ? data.packages
+        const list = Array.isArray(data?.data)
+          ? data.data
+          : Array.isArray(data?.packages)
+          ? data.packages
           : [];
         setPackages(list);
       })
@@ -36,7 +47,13 @@ export default function Pricing() {
           oneOff: 900,
           monthly: 60,
           term: 24,
-          features: ["4–6 pages", "Responsive design", "Basic SEO", "Social links", "Hosting setup"],
+          features: [
+            "4–6 pages",
+            "Responsive design",
+            "Basic SEO",
+            "Social links",
+            "Hosting setup",
+          ],
           guards: { require_deposit_months: 1, ownership_until_paid: true },
         },
         {
@@ -45,7 +62,13 @@ export default function Pricing() {
           oneOff: 2600,
           monthly: 140,
           term: 24,
-          features: ["Starter features", "Bookings", "Invoicing", "CRM core", "On-page SEO"],
+          features: [
+            "Starter features",
+            "Bookings",
+            "Invoicing",
+            "CRM core",
+            "On-page SEO",
+          ],
           guards: { require_deposit_months: 1, ownership_until_paid: true },
         },
         {
@@ -54,71 +77,108 @@ export default function Pricing() {
           oneOff: 6000,
           monthly: 300,
           term: 24,
-          features: ["Business features", "Automations", "Custom APIs", "Priority support", "SLA"],
+          features: [
+            "Business features",
+            "Automations",
+            "Custom APIs",
+            "Priority support",
+            "SLA",
+          ],
           guards: { require_deposit_months: 1, ownership_until_paid: true },
         },
       ];
 
-  return (
-    <div className="min-h-screen bg-pjh-charcoal text-pjh-light py-20 px-6 text-center font-outfit">
-      <h1 className="text-4xl font-bold text-pjh-blue mb-3">Website Packages & Pricing</h1>
-      <p className="max-w-3xl mx-auto text-pjh-muted mb-12">
-        Choose a package that fits your goals. Pay once, or spread the cost monthly with the first month upfront.
-      </p>
+  // Unified button styles
+  const buttonPrimary =
+    "inline-block w-full text-center px-6 py-3 bg-blue-700 hover:bg-blue-800 text-white font-semibold rounded-xl transition-all duration-300 shadow-sm hover:shadow-blue-900/30";
+  const buttonOutline =
+    "inline-block text-xs px-4 py-2 border border-blue-600 text-white hover:bg-blue-700 rounded-xl font-medium transition-all duration-300";
 
-      <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+  return (
+    <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white py-20 px-6 font-outfit">
+      {/* Header */}
+      <div className="text-center mb-14">
+        <h1 className="text-4xl sm:text-5xl font-bold text-blue-400 mb-4">
+          Website Packages & Pricing
+        </h1>
+        <p className="max-w-3xl mx-auto text-gray-400 leading-relaxed">
+          Choose a package that fits your goals. Pay once, or spread the cost
+          monthly with the first month upfront.
+        </p>
+      </div>
+
+      {/* Pricing Cards */}
+      <div className="grid md:grid-cols-3 gap-10 max-w-6xl mx-auto">
         {display.map((pkg, idx) => {
           const showMonthly = pkg.monthly && pkg.monthly > 0;
           const depositMonths = pkg.guards?.require_deposit_months ?? 1;
           const ownershipNote = pkg.guards?.ownership_until_paid !== false;
 
           return (
-            <div key={idx} className="bg-pjh-slate rounded-2xl p-8 shadow-xl border border-white/10 hover:border-pjh-blue/50 transition duration-300 text-left">
-              <div className="flex items-start justify-between">
+            <div
+              key={idx}
+              className="bg-slate-900/70 rounded-2xl p-8 border border-white/10 shadow-xl backdrop-blur-sm hover:border-blue-600 transition-all duration-300"
+            >
+              {/* Header */}
+              <div className="flex items-start justify-between mb-6">
                 <div>
-                  <h2 className="text-2xl font-semibold text-pjh-blue">{pkg.name}</h2>
-                  {pkg.tagline && <p className="text-pjh-muted text-sm mt-1">{pkg.tagline}</p>}
+                  <h2 className="text-2xl font-semibold text-blue-400">
+                    {pkg.name}
+                  </h2>
+                  {pkg.tagline && (
+                    <p className="text-gray-400 text-sm mt-1">{pkg.tagline}</p>
+                  )}
                 </div>
                 {showMonthly && (
-                  <span className="text-xs uppercase bg-pjh-blue/20 text-pjh-blue px-2 py-1 rounded">
-                    First {depositMonths} month{depositMonths > 1 ? "s" : ""} upfront
+                  <span className="text-[10px] uppercase bg-blue-900/30 text-blue-300 px-2 py-1 rounded-md tracking-wide">
+                    First {depositMonths} month
+                    {depositMonths > 1 ? "s" : ""} upfront
                   </span>
                 )}
               </div>
 
-              <div className="mt-5 mb-4">
+              {/* Pricing */}
+              <div className="mb-6">
                 {pkg.oneOff !== null && (
-                  <div className="text-3xl font-bold">£{pkg.oneOff}</div>
+                  <p className="text-3xl font-bold text-white">
+                    £{pkg.oneOff.toLocaleString()}
+                  </p>
                 )}
                 {showMonthly && (
-                  <div className="text-sm text-pjh-muted mt-1">
-                    or £{pkg.monthly}/month {pkg.term ? `(min ${pkg.term} months)` : ""}
-                  </div>
+                  <p className="text-sm text-gray-400 mt-1">
+                    or £{pkg.monthly}/month{" "}
+                    {pkg.term ? `(min ${pkg.term} months)` : ""}
+                  </p>
                 )}
               </div>
 
-              <ul className="space-y-2 text-sm text-pjh-light/90 mb-6">
-                {pkg.features.map((f, i) => <li key={i}>✔ {f}</li>)}
+              {/* Features */}
+              <ul className="space-y-2 text-sm text-gray-300 mb-6">
+                {pkg.features.map((f, i) => (
+                  <li key={i}>✔ {f}</li>
+                ))}
               </ul>
 
+              {/* Notes */}
               {ownershipNote && showMonthly && (
-                <p className="text-xs text-pjh-muted mb-4">
-                  Ownership transfers upon final payment. Early exit fees may apply.
+                <p className="text-xs text-gray-500 mb-5">
+                  Ownership transfers upon final payment. Early exit fees may
+                  apply.
                 </p>
               )}
 
+              {/* CTAs */}
               <div className="flex gap-2">
                 <Link
-                  to={`/contact?package=${encodeURIComponent(pkg.name)}&price=${pkg.oneOff ?? ""}&monthly=${pkg.monthly ?? ""}`}
-                  className="btn-accent flex-1 text-center"
+                  to={`/contact?package=${encodeURIComponent(
+                    pkg.name
+                  )}&price=${pkg.oneOff ?? ""}&monthly=${pkg.monthly ?? ""}`}
+                  className={buttonPrimary}
                 >
                   Enquire about {pkg.name}
                 </Link>
-                <Link
-                  to="/legal/monthly-terms"
-                  className="btn-secondary text-xs px-3"
-                >
-                  Monthly Terms
+                <Link to="/legal/monthly-terms" className={buttonOutline}>
+                  Terms
                 </Link>
               </div>
             </div>
@@ -126,11 +186,15 @@ export default function Pricing() {
         })}
       </div>
 
-      <div className="mt-16 text-center">
-        <Link to="/" className="inline-block text-pjh-blue hover:text-pjh-cyan transition font-semibold text-lg">
-          ← Back to Home
+      {/* Footer CTA */}
+      <div className="mt-20 text-center">
+        <Link
+          to="/"
+          className="inline-block px-8 py-3 bg-blue-700 hover:bg-blue-800 text-white font-semibold rounded-xl transition-all duration-300 shadow-sm hover:shadow-blue-900/30"
+        >
+          🏠 Back to Home
         </Link>
       </div>
-    </div>
+    </main>
   );
 }
