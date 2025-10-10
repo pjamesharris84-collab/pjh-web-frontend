@@ -1,21 +1,22 @@
 /**
  * ============================================================
- * PJH Web Services — Admin Order Record (Unified Final 2025)
+ * PJH Web Services — Admin Order Record (Final Unified 2025)
  * ============================================================
  * Features:
- *  ✅ Full sync with backend (refund-aware)
- *  ✅ Deposit, Balance, Paid, Refunded, Remaining totals
- *  ✅ Stripe Checkout (Card + Bacs + Direct Debit)
- *  ✅ Refund buttons (auto-sync)
- *  ✅ Clean responsive layout
+ *  ✅ Syncs with linked quote in real-time (deposit/balance/total)
+ *  ✅ Full refund + payment awareness
+ *  ✅ Delete order button
+ *  ✅ Refresh + dynamic recalculation
  * ============================================================
  */
 
 import { useEffect, useState, useMemo } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 
 export default function AdminOrderRecord() {
   const { id } = useParams();
+  const navigate = useNavigate();
+
   const [order, setOrder] = useState(null);
   const [linkedQuote, setLinkedQuote] = useState(null);
   const [payments, setPayments] = useState([]);
@@ -26,7 +27,7 @@ export default function AdminOrderRecord() {
     import.meta.env.VITE_API_URL || "https://pjh-web-backend.onrender.com";
 
   /* ============================================================
-     🔐 Admin Check + Initial Load
+     🔐 Admin Guard + Initial Data Load
   ============================================================ */
   useEffect(() => {
     if (localStorage.getItem("isAdmin") !== "true") {
@@ -59,12 +60,11 @@ export default function AdminOrderRecord() {
   async function loadLinkedQuote(quoteId) {
     try {
       const res = await fetch(`${API_BASE}/api/quotes/${quoteId}`);
-      if (res.ok) {
-        const data = await res.json();
-        setLinkedQuote(data.quote || data.data || data);
-      }
-    } catch {
-      /* ignore */
+      if (!res.ok) return;
+      const data = await res.json();
+      setLinkedQuote(data.quote || data.data || data);
+    } catch (err) {
+      console.warn("⚠️ Linked quote fetch failed:", err.message);
     }
   }
 
@@ -81,9 +81,7 @@ export default function AdminOrderRecord() {
 
   async function refreshOrder() {
     try {
-      const res = await fetch(`${API_BASE}/api/orders/${id}/refresh`);
-      const data = await res.json();
-      setOrder(data.data || {});
+      await loadOrder();
       await loadPayments();
       console.log("🔁 Order refreshed");
     } catch (err) {
@@ -92,30 +90,53 @@ export default function AdminOrderRecord() {
   }
 
   /* ============================================================
-     💰 Calculated Figures (Refund-Aware)
+     🗑️ Delete Order
+  ============================================================ */
+  async function handleDeleteOrder() {
+    if (!confirm("Are you sure you want to delete this order?")) return;
+    setWorking(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/orders/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      alert("✅ Order deleted successfully.");
+      navigate("/admin/orders");
+    } catch (err) {
+      console.error("❌ Delete order failed:", err);
+      alert("❌ Failed to delete order.");
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  /* ============================================================
+     💰 Calculated Figures (Refund + Quote Sync)
   ============================================================ */
   const figures = useMemo(() => {
     if (!order) return { deposit: 0, balance: 0, total: 0, paid: 0, refunded: 0, remaining: 0 };
 
-    const deposit = Number(order.deposit || 0);
-    const balance = Number(order.balance || 0);
+    const quoteDeposit = Number(linkedQuote?.deposit || 0);
+    const quoteTotal =
+      Number(linkedQuote?.custom_price || linkedQuote?.total_after_discount || 0);
+
+    const deposit = quoteDeposit || Number(order.deposit || 0);
+    const balance = quoteTotal
+      ? Math.max(quoteTotal - deposit, 0)
+      : Number(order.balance || 0);
     const total = deposit + balance;
 
     const paidAmount = payments
       .filter((p) => p.status === "paid" && p.amount > 0)
       .reduce((sum, p) => sum + Number(p.amount), 0);
 
-    const refundedAmount =
-      order.refunded_total ||
-      payments
-        .filter((p) => p.status === "refunded" || p.amount < 0)
-        .reduce((sum, p) => sum + Math.abs(Number(p.amount)), 0);
+    const refundedAmount = payments
+      .filter((p) => p.status === "refunded" || p.amount < 0)
+      .reduce((sum, p) => sum + Math.abs(Number(p.amount)), 0);
 
     const netPaid = paidAmount - refundedAmount;
     const remaining = Math.max(total - netPaid, 0);
 
     return { deposit, balance, total, paid: netPaid, refunded: refundedAmount, remaining };
-  }, [order, payments]);
+  }, [order, linkedQuote, payments]);
 
   /* ============================================================
      💳 Stripe Actions + Refunds
@@ -189,9 +210,21 @@ export default function AdminOrderRecord() {
         <h1 className="text-2xl md:text-3xl font-bold text-pjh-blue">
           Order #{order.id} — {order.title}
         </h1>
-        <button onClick={refreshOrder} className="text-xs text-pjh-muted hover:text-pjh-blue">
-          🔁 Refresh
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={refreshOrder}
+            className="text-xs text-pjh-muted hover:text-pjh-blue transition"
+          >
+            🔁 Refresh
+          </button>
+          <button
+            onClick={handleDeleteOrder}
+            disabled={working}
+            className="text-xs bg-red-700 hover:bg-red-800 text-white px-3 py-1 rounded-md"
+          >
+            🗑️ Delete Order
+          </button>
+        </div>
       </div>
 
       {linkedQuote && (
@@ -205,11 +238,7 @@ export default function AdminOrderRecord() {
         <SummaryCard label="Deposit" value={`£${figures.deposit.toFixed(2)}`} />
         <SummaryCard label="Balance" value={`£${figures.balance.toFixed(2)}`} />
         <SummaryCard label="Paid" value={`£${figures.paid.toFixed(2)}`} accent="text-green-300" />
-        <SummaryCard
-          label="Refunded"
-          value={`£${figures.refunded.toFixed(2)}`}
-          accent="text-red-300"
-        />
+        <SummaryCard label="Refunded" value={`£${figures.refunded.toFixed(2)}`} accent="text-red-300" />
         <SummaryCard label="Remaining" value={`£${figures.remaining.toFixed(2)}`} accent="text-amber-300" />
         <SummaryCard label="Total" value={`£${figures.total.toFixed(2)}`} />
       </div>
