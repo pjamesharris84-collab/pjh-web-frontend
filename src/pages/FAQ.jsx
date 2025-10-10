@@ -1,7 +1,7 @@
 // ============================================================
 // PJH Web Services — FAQ Page
 // ============================================================
-// SEO + AI Optimised Frequently Asked Questions
+// Customer-First | Modern | AI-Era Web Design & CRM Solutions
 // ============================================================
 
 import React from "react";
@@ -11,31 +11,40 @@ import { Link } from "react-router-dom";
 export default function FAQ() {
   const faqs = [
     {
-      q: "What does PJH Web Services offer?",
-      a: "We design, build, and maintain modern, SEO-optimised websites and CRM systems for small and medium-sized businesses across the UK.",
+      q: "What makes PJH Web Services different?",
+      a: "Everything we do starts with you — your vision, your goals, and your business needs. We don’t just build websites; we craft digital experiences that align perfectly with your objectives. Our customer-first approach ensures every site we create is tailored, strategic, and results-driven.",
     },
     {
-      q: "Do you provide website care plans?",
-      a: "Yes. We offer optional Care Plans that include updates, backups, monitoring, and priority support for all websites we build.",
+      q: "Do you build modern, AI-ready websites?",
+      a: "Absolutely. PJH Web Services is built for the AI generation — we design and develop future-ready websites that leverage modern frameworks, automation, and AI integrations. Your website will be optimised for search, voice, and AI discovery so it stays ahead of digital trends.",
     },
     {
-      q: "Can you host my website?",
-      a: "Absolutely. We provide fast, secure hosting options, ensuring optimal uptime and performance for all our clients’ websites.",
+      q: "What services do you provide?",
+      a: "We design, build, and maintain modern, SEO-optimised websites, CRMs, and online systems that help small and medium-sized businesses grow. From branding and user experience to hosting and automation, every solution is built with performance and your customers in mind.",
+    },
+    {
+      q: "Do you offer website care or maintenance plans?",
+      a: "Yes. We offer Care Plans exclusively for websites we build — providing updates, security patches, backups, uptime monitoring, and performance tuning. It’s complete peace of mind knowing your site is always protected and performing at its best.",
+    },
+    {
+      q: "Can you host my website and email?",
+      a: "Yes — we handle everything from fast, secure hosting to email setup and SSL management. Our hosting platform ensures high uptime, top-tier performance, and professional support tailored to your business size and needs.",
     },
     {
       q: "Do you only work with local clients?",
-      a: "While we’re proudly based in Suffolk, we work with clients across the UK and internationally through our remote setup.",
+      a: "While we’re proudly based in Suffolk, we work with forward-thinking businesses across the UK and internationally. Through our modern, remote-first setup, we deliver seamless collaboration and communication wherever you are.",
     },
     {
-      q: "What is your design process?",
-      a: "We start with a consultation to understand your goals, then move through design, development, testing, and post-launch support. Every project is built for speed, SEO, and scalability.",
+      q: "What is your design and build process?",
+      a: "We start with a discovery session to fully understand your goals, audience, and vision. From there, we move into design, development, and refinement — ensuring the final product doesn’t just look good but performs exceptionally. Every site is mobile-first, SEO-ready, and modernised for today’s digital landscape.",
     },
     {
-      q: "How do I get a quote?",
-      a: "Simply visit our Contact page and fill out the enquiry form, or email info@pjhwebservices.co.uk. We’ll respond with a tailored quote based on your project needs.",
+      q: "How do I get a quote or start a project?",
+      a: "Simply visit our Contact page or email info@pjhwebservices.co.uk. We’ll discuss your ideas, business goals, and future plans, then prepare a tailored proposal designed to help your brand succeed online.",
     },
   ];
 
+  // SEO Schema — FAQPage structured data
   const faqSchema = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -53,7 +62,7 @@ export default function FAQ() {
     <div className="min-h-screen bg-pjh-slate text-pjh-light font-outfit">
       <SEO
         title="Frequently Asked Questions | PJH Web Services"
-        description="Find answers to common questions about PJH Web Services — from website care plans and hosting to our bespoke design process."
+        description="Customer-first, AI-ready web design and CRM systems. Explore FAQs about PJH Web Services — our process, care plans, hosting, and modern, goal-driven approach."
         url="https://www.pjhwebservices.co.uk/faq"
       />
 
@@ -67,24 +76,25 @@ export default function FAQ() {
         </h1>
 
         <p className="text-center text-pjh-muted max-w-2xl mx-auto">
-          Find answers to common questions about our web design, hosting, and CRM services.
+          Discover how PJH Web Services blends customer-first strategy with
+          cutting-edge technology to build websites that grow with your business.
           Can’t find what you’re looking for?{" "}
           <Link to="/contact" className="text-pjh-blue hover:underline">
-            Contact us
-          </Link>
-          .
+            Get in touch
+          </Link>{" "}
+          and let’s talk about your vision.
         </p>
 
         <div className="mt-10 space-y-6">
           {faqs.map((item, index) => (
             <div
               key={index}
-              className="bg-pjh-gray border border-white/10 p-6 rounded-2xl shadow-lg"
+              className="bg-pjh-gray border border-white/10 p-6 rounded-2xl shadow-lg hover:shadow-pjh-blue/20 transition-all duration-300"
             >
               <h2 className="text-xl font-semibold text-pjh-blue mb-2">
                 {item.q}
               </h2>
-              <p className="text-pjh-light/90">{item.a}</p>
+              <p className="text-pjh-light/90 leading-relaxed">{item.a}</p>
             </div>
           ))}
         </div>
