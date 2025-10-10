@@ -7,6 +7,7 @@
  *  • Lazy-loaded admin routes for performance
  *  • Includes react-helmet-async for SEO handling
  *  • Optimized Suspense fallback and browser router structure
+ *  • Now includes Security Policy & FAQ for SEO and trust-building
  * ============================================================
  */
 
@@ -31,6 +32,7 @@ import DirectDebitPolicy from "./pages/legal/direct-debit-policy.jsx";
 import SetupComplete from "./pages/SetupComplete.jsx";
 import DirectDebitSetup from "./pages/direct-debit-setup.jsx";
 import FAQ from "./pages/FAQ.jsx";
+import Security from "./pages/Security.jsx"; // ✅ New Security Policy page
 
 // 💳 Payment Pages
 import PaymentSuccess from "./pages/PaymentSuccess.jsx";
@@ -97,6 +99,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/packages/:name" element={<PackageDetails />} />
             <Route path="/faq" element={<FAQ />} />
+            <Route path="/security" element={<Security />} /> {/* ✅ Added Security route */}
             <Route path="/setup-complete" element={<SetupComplete />} />
             <Route path="/direct-debit-setup" element={<DirectDebitSetup />} />
 
@@ -158,6 +161,27 @@ ReactDOM.createRoot(document.getElementById("root")).render(
 
             {/* 💼 Packages */}
             <Route path="/admin/packages" element={<AdminPackages />} />
+
+            {/* 🧭 404 Fallback */}
+            <Route
+              path="*"
+              element={
+                <div className="min-h-screen flex flex-col items-center justify-center bg-pjh-slate text-pjh-light text-center p-10">
+                  <h1 className="text-4xl font-bold text-pjh-blue mb-4">
+                    404 — Page Not Found
+                  </h1>
+                  <p className="text-pjh-muted mb-6 max-w-md">
+                    The page you’re looking for doesn’t exist or may have been moved.
+                  </p>
+                  <a
+                    href="/"
+                    className="bg-pjh-blue text-white px-6 py-3 rounded-lg hover:bg-pjh-blue/80 transition"
+                  >
+                    Return Home
+                  </a>
+                </div>
+              }
+            />
           </Routes>
         </Suspense>
       </BrowserRouter>
