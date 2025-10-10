@@ -1,11 +1,13 @@
 /**
  * ============================================================
- * PJH Web Services — Admin Order Record (Quote-Synced)
+ * PJH Web Services — Admin Order Record (Final 2025)
  * ============================================================
- * - Always reflects live quote data if linked
- * - Syncs deposit, balance, title, and totals dynamically
- * - Displays real-time payment + DD status
- * - Supports Checkout + Billing triggers
+ * Features:
+ *  ✅ Always synced with linked quote data
+ *  ✅ Reflects real-time deposit, balance, and totals
+ *  ✅ Displays Stripe/Bacs/DD payment status
+ *  ✅ Supports Card + Bacs Checkout, DD setup, Billing, and Refunds
+ *  ✅ Clean responsive layout with grouped action sections
  * ============================================================
  */
 
@@ -25,7 +27,7 @@ export default function AdminOrderRecord() {
     import.meta.env.VITE_API_URL || "https://pjh-web-backend.onrender.com";
 
   /* ============================================================
-     🔐 Admin Guard + Initial Load
+     🔐 Admin Guard + Initial Data Load
   ============================================================ */
   useEffect(() => {
     if (localStorage.getItem("isAdmin") !== "true") {
@@ -40,7 +42,7 @@ export default function AdminOrderRecord() {
   }, [id]);
 
   /* ============================================================
-     🔄 Auto-refresh after payment success
+     🔁 Auto-refresh after Stripe redirect
   ============================================================ */
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -60,8 +62,6 @@ export default function AdminOrderRecord() {
       o.tasks = parseMaybeJSON(o.tasks);
       o.diary = parseMaybeJSON(o.diary);
       setOrder(o);
-
-      // 🔗 Fetch linked quote if present
       if (o.quote_id) await loadLinkedQuote(o.quote_id);
     } catch (e) {
       console.error("❌ Failed to load order:", e);
@@ -110,7 +110,7 @@ export default function AdminOrderRecord() {
       if (!res.ok) throw new Error("Refresh failed");
       const data = await res.json();
       setOrder(data.data || {});
-      console.log("🔁 Order refreshed");
+      console.log("🔁 Order refreshed after payment");
       await loadPayments();
       if (data.data?.quote_id) await loadLinkedQuote(data.data.quote_id);
     } catch (err) {
@@ -130,13 +130,12 @@ export default function AdminOrderRecord() {
   }
 
   /* ============================================================
-     🔗 Sync with Quote
+     🔗 Sync Order with Linked Quote
   ============================================================ */
   const syncedOrder = useMemo(() => {
     if (!order) return null;
     if (!linkedQuote) return order;
 
-    // Merge key quote fields into order (without overwriting payments)
     return {
       ...order,
       title: linkedQuote.title || order.title,
@@ -165,11 +164,15 @@ export default function AdminOrderRecord() {
     return { deposit, balance, total, paid, remaining };
   }, [syncedOrder]);
 
-  const depositPayment = payments.find((p) => p.type === "deposit");
-  const balancePayment = payments.find((p) => p.type === "balance");
+  const depositPayment = payments.find(
+    (p) => p.type?.toLowerCase() === "deposit"
+  );
+  const balancePayment = payments.find(
+    (p) => p.type?.toLowerCase() === "balance"
+  );
 
   /* ============================================================
-     💳 Checkout + Billing
+     💳 Stripe Checkout + Billing + Refunds
   ============================================================ */
   async function handleCreateCheckout(flow, type) {
     if (!syncedOrder) return;
@@ -220,46 +223,48 @@ export default function AdminOrderRecord() {
   }
 
   async function handleRefund(type) {
-  const payment = payments.find((p) => p.type === type);
-  if (!payment) return alert("No payment found for " + type);
-  const amountStr = prompt(`Enter refund amount (£, max £${payment.amount}):`, payment.amount);
-  if (!amountStr) return;
-  const amount = Number(amountStr);
-  if (amount <= 0 || amount > payment.amount)
-    return alert("Invalid refund amount.");
+    const payment = payments.find(
+      (p) => p.type?.toLowerCase() === type.toLowerCase()
+    );
+    if (!payment) return alert("No payment found for " + type);
+    const amountStr = prompt(
+      `Enter refund amount (£, max £${payment.amount}):`,
+      payment.amount
+    );
+    if (!amountStr) return;
+    const amount = Number(amountStr);
+    if (amount <= 0 || amount > payment.amount)
+      return alert("Invalid refund amount.");
 
-  if (!confirm(`Confirm refund of £${amount.toFixed(2)} for ${type}?`)) return;
+    if (!confirm(`Confirm refund of £${amount.toFixed(2)} for ${type}?`)) return;
 
-  setWorking(true);
-  try {
-    const res = await fetch(`${API_BASE}/api/payments/refund`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ payment_id: payment.id, amount }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Refund failed");
-    alert("✅ Refund processed successfully.");
-    await loadPayments();
-    await refreshOrder();
-  } catch (err) {
-    console.error("❌ Refund error:", err);
-    alert("❌ Refund failed: " + err.message);
-  } finally {
-    setWorking(false);
+    setWorking(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/payments/refund`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ payment_id: payment.id, amount }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Refund failed");
+      alert("✅ Refund processed successfully.");
+      await loadPayments();
+      await refreshOrder();
+    } catch (err) {
+      console.error("❌ Refund error:", err);
+      alert("❌ Refund failed: " + err.message);
+    } finally {
+      setWorking(false);
+    }
   }
-}
 
   /* ============================================================
      🖥️ Render
   ============================================================ */
-  if (error)
-    return <div className="p-10 text-red-400">❌ {error}</div>;
+  if (error) return <div className="p-10 text-red-400">❌ {error}</div>;
   if (!syncedOrder)
     return (
-      <div className="p-10 text-pjh-muted animate-pulse">
-        Loading order…
-      </div>
+      <div className="p-10 text-pjh-muted animate-pulse">Loading order…</div>
     );
 
   return (
@@ -283,7 +288,6 @@ export default function AdminOrderRecord() {
         </button>
       </div>
 
-      {/* Live Quote Indicator */}
       {linkedQuote && (
         <p className="text-xs text-pjh-muted mt-1">
           🔗 Linked to Quote #{linkedQuote.id} (auto-synced)
@@ -308,9 +312,7 @@ export default function AdminOrderRecord() {
 
       {/* Payment Status */}
       <div className="mt-8 bg-pjh-slate p-6 rounded-xl border border-white/10 space-y-4">
-        <h2 className="text-xl font-semibold text-pjh-blue">
-          Payment Status
-        </h2>
+        <h2 className="text-xl font-semibold text-pjh-blue">Payment Status</h2>
 
         <StatusRow
           title="Deposit"
@@ -318,7 +320,6 @@ export default function AdminOrderRecord() {
           method={depositPayment?.method}
           amount={depositPayment?.amount}
         />
-
         <StatusRow
           title="Balance"
           paid={syncedOrder.balance_paid}
@@ -341,69 +342,77 @@ export default function AdminOrderRecord() {
       </div>
 
       {/* Actions */}
-      <div className="mt-8 flex flex-wrap gap-3">
-        <button
-          onClick={() => handleCreateCheckout("card_payment", "deposit")}
-          disabled={working}
-          className="btn bg-green-600 hover:bg-green-700 disabled:opacity-50"
-        >
-          💳 Card — Deposit
-        </button>
-        <button
-          onClick={() => handleCreateCheckout("card_payment", "balance")}
-          disabled={working}
-          className="btn bg-green-700 hover:bg-green-800 disabled:opacity-50"
-        >
-          💳 Card — Balance
-        </button>
-        <button
-          onClick={() => handleCreateCheckout("bacs_payment", "deposit")}
-          disabled={working}
-          className="btn bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
-        >
-          🏦 Bacs — Deposit
-        </button>
-        <button
-          onClick={() => handleCreateCheckout("bacs_payment", "balance")}
-          disabled={working}
-          className="btn bg-blue-700 hover:bg-blue-800 disabled:opacity-50"
-        >
-          🏦 Bacs — Balance
-        </button>
-        <button
-          onClick={() => handleCreateCheckout("bacs_setup")}
-          disabled={working}
-          className="btn bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50"
-        >
-          🧾 Setup Direct Debit
-        </button>
-        <button
-          onClick={handleRunBilling}
-          disabled={working}
-          className="btn bg-orange-600 hover:bg-orange-700 disabled:opacity-50"
-        >
-          🔁 Run Monthly Billing
-        </button>
+      <div className="mt-8 space-y-6">
+        {/* Payment & Billing */}
+        <div className="flex flex-wrap gap-3">
+          <button
+            onClick={() => handleCreateCheckout("card_payment", "deposit")}
+            disabled={working}
+            className="btn bg-green-600 hover:bg-green-700 disabled:opacity-50"
+          >
+            💳 Card — Deposit
+          </button>
+          <button
+            onClick={() => handleCreateCheckout("card_payment", "balance")}
+            disabled={working}
+            className="btn bg-green-700 hover:bg-green-800 disabled:opacity-50"
+          >
+            💳 Card — Balance
+          </button>
+          <button
+            onClick={() => handleCreateCheckout("bacs_payment", "deposit")}
+            disabled={working}
+            className="btn bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+          >
+            🏦 Bacs — Deposit
+          </button>
+          <button
+            onClick={() => handleCreateCheckout("bacs_payment", "balance")}
+            disabled={working}
+            className="btn bg-blue-700 hover:bg-blue-800 disabled:opacity-50"
+          >
+            🏦 Bacs — Balance
+          </button>
+          <button
+            onClick={() => handleCreateCheckout("bacs_setup")}
+            disabled={working}
+            className="btn bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50"
+          >
+            🧾 Setup Direct Debit
+          </button>
+          <button
+            onClick={handleRunBilling}
+            disabled={working}
+            className="btn bg-orange-600 hover:bg-orange-700 disabled:opacity-50"
+          >
+            🔁 Run Monthly Billing
+          </button>
+        </div>
 
-         {/* ----- Refunds ----- */}
-  {payments.some((p) => p.type === "deposit") && (
-    <button
-      onClick={() => handleRefund("deposit")}
-      disabled={working}
-      className="btn bg-red-600 hover:bg-red-700 disabled:opacity-50"
-    >
-      💸 Refund Deposit
-    </button>
-  )}
-  {payments.some((p) => p.type === "balance") && (
-    <button
-      onClick={() => handleRefund("balance")}
-      disabled={working}
-      className="btn bg-red-700 hover:bg-red-800 disabled:opacity-50"
-    >
-      💸 Refund Balance
-    </button>
-  )}
+        {/* Refunds */}
+        {payments.length > 0 && (
+          <div className="border-t border-white/10 pt-4 flex flex-wrap gap-3">
+            <h3 className="text-sm text-pjh-muted w-full">Refunds</h3>
+            {payments.some((p) => p.type?.toLowerCase() === "deposit") && (
+              <button
+                onClick={() => handleRefund("deposit")}
+                disabled={working}
+                className="btn bg-red-600 hover:bg-red-700 disabled:opacity-50"
+              >
+                💸 Refund Deposit
+              </button>
+            )}
+            {payments.some((p) => p.type?.toLowerCase() === "balance") && (
+              <button
+                onClick={() => handleRefund("balance")}
+                disabled={working}
+                className="btn bg-red-700 hover:bg-red-800 disabled:opacity-50"
+              >
+                💸 Refund Balance
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
