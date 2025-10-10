@@ -1,16 +1,19 @@
 /**
  * ============================================================
- * PJH Web Services — Frontend Router (React + Vite, Lazy-Loaded)
+ * PJH Web Services — Frontend Router (React 19 + Vite Stable)
  * ============================================================
- * Handles all public-facing and admin routes.
- * Public routes include marketing pages, legal info, and payment flows.
- * Admin routes are lazy-loaded for performance.
+ * Centralized route management for all public + admin pages.
+ *  • Fully React 19 compatible
+ *  • Lazy-loaded admin routes for performance
+ *  • Includes react-helmet-async for SEO handling
+ *  • Optimized Suspense fallback and browser router structure
  * ============================================================
  */
 
 import React, { Suspense, lazy } from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { HelmetProvider } from "react-helmet-async";
 
 // =======================
 // 🌍 Public Pages
@@ -70,8 +73,8 @@ import "./index.css";
 // ------------------------------------------------------------
 function Loader() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-pjh-charcoal text-pjh-blue text-lg font-medium animate-pulse">
-      Loading admin dashboard…
+    <div className="min-h-screen flex items-center justify-center bg-pjh-charcoal text-pjh-blue text-lg font-semibold animate-pulse">
+      Loading dashboard…
     </div>
   );
 }
@@ -81,73 +84,83 @@ function Loader() {
 // ============================================================
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <BrowserRouter>
-      <Suspense fallback={<Loader />}>
-        <Routes>
+    <HelmetProvider>
+      <BrowserRouter>
+        <Suspense fallback={<Loader />}>
+          <Routes>
+            {/* =================== */}
+            {/* 🌍 PUBLIC ROUTES    */}
+            {/* =================== */}
+            <Route path="/" element={<App />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/thank-you" element={<ThankYou />} />
+            <Route path="/pricing" element={<Pricing />} />
+            <Route path="/packages/:name" element={<PackageDetails />} />
+            <Route path="/faq" element={<FAQ />} />
+            <Route path="/setup-complete" element={<SetupComplete />} />
+            <Route path="/direct-debit-setup" element={<DirectDebitSetup />} />
 
-          {/* =================== */}
-          {/* 🌍 PUBLIC ROUTES    */}
-          {/* =================== */}
-          <Route path="/" element={<App />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/thank-you" element={<ThankYou />} />
-          <Route path="/legal/cookies" element={<Cookies />} />
-          <Route path="/legal/privacy" element={<Privacy />} />
-          <Route path="/legal/terms" element={<Terms />} />
-          <Route path="/pricing" element={<Pricing />} />
-          <Route path="/legal/monthly-terms" element={<LegalMonthlyTerms />} />
-          <Route path="/packages/:name" element={<PackageDetails />} />
-          <Route path="/legal/direct-debit-policy" element={<DirectDebitPolicy />} />  
-          <Route path="/faq" element={<FAQ />} />
-          <Route path="/direct-debit-setup" element={<DirectDebitSetup />} />
-          <Route path="/setup-complete" element={<SetupComplete />} />
+            {/* 🧾 Legal */}
+            <Route path="/legal/cookies" element={<Cookies />} />
+            <Route path="/legal/privacy" element={<Privacy />} />
+            <Route path="/legal/terms" element={<Terms />} />
+            <Route path="/legal/monthly-terms" element={<LegalMonthlyTerms />} />
+            <Route
+              path="/legal/direct-debit-policy"
+              element={<DirectDebitPolicy />}
+            />
 
-          {/* 💳 Payments */}
-          <Route path="/payment-success" element={<PaymentSuccess />} />
-          <Route path="/payment-cancelled" element={<PaymentCancelled />} />
-          <Route path="/payment-failed" element={<PaymentFailed />} />
+            {/* 💳 Payments */}
+            <Route path="/payment-success" element={<PaymentSuccess />} />
+            <Route path="/payment-cancelled" element={<PaymentCancelled />} />
+            <Route path="/payment-failed" element={<PaymentFailed />} />
 
-          {/* =================== */}
-          {/* 🧰 MAINTENANCE PAGES */}
-          {/* =================== */}
-          <Route path="/maintenance" element={<Maintenance />} />
-          <Route path="/maintenance/compare" element={<MaintenanceCompare />} />
-          <Route path="/maintenance/thank-you" element={<MaintenanceThankYou />} />
+            {/* 🧰 Maintenance */}
+            <Route path="/maintenance" element={<Maintenance />} />
+            <Route
+              path="/maintenance/compare"
+              element={<MaintenanceCompare />}
+            />
+            <Route
+              path="/maintenance/thank-you"
+              element={<MaintenanceThankYou />}
+            />
 
-          {/* =================== */}
-          {/* 🔐 ADMIN ROUTES     */}
-          {/* =================== */}
+            {/* =================== */}
+            {/* 🔐 ADMIN ROUTES     */}
+            {/* =================== */}
+            <Route path="/admin" element={<AdminLogin />} />
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
 
-          {/* Login & Dashboard */}
-          <Route path="/admin" element={<AdminLogin />} />
-          <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            {/* 👥 Customers */}
+            <Route path="/admin/customers" element={<AdminCustomers />} />
+            <Route
+              path="/admin/customers/:id"
+              element={<AdminCustomerRecord />}
+            />
 
-          {/* 👥 Customers */}
-          <Route path="/admin/customers" element={<AdminCustomers />} />
-          <Route path="/admin/customers/:id" element={<AdminCustomerRecord />} />
+            {/* 🧾 Quotes */}
+            <Route
+              path="/admin/customers/:id/quotes/new"
+              element={<AdminQuoteNew />}
+            />
+            <Route
+              path="/admin/customers/:id/quotes/:quoteId"
+              element={<AdminQuoteRecord />}
+            />
+            <Route path="/admin/quotes" element={<AdminQuotes />} />
+            <Route path="/admin/quotes/:quoteId" element={<AdminQuoteRecord />} />
 
-          {/* 🧾 Quotes */}
-          <Route
-            path="/admin/customers/:id/quotes/new"
-            element={<AdminQuoteNew />}
-          />
-          <Route
-            path="/admin/customers/:id/quotes/:quoteId"
-            element={<AdminQuoteRecord />}
-          />
-          <Route path="/admin/quotes" element={<AdminQuotes />} />
-          <Route path="/admin/quotes/:quoteId" element={<AdminQuoteRecord />} />
+            {/* 📦 Orders & Invoices */}
+            <Route path="/admin/orders" element={<AdminOrders />} />
+            <Route path="/admin/orders/:id" element={<AdminOrderRecord />} />
+            <Route path="/admin/invoices" element={<AdminInvoices />} />
 
-          {/* 📦 Orders & Invoices */}
-          <Route path="/admin/orders" element={<AdminOrders />} />
-          <Route path="/admin/orders/:id" element={<AdminOrderRecord />} />
-          <Route path="/admin/invoices" element={<AdminInvoices />} />
-
-          {/* 💼 Packages */}
-          <Route path="/admin/packages" element={<AdminPackages />} />
-
-        </Routes>
-      </Suspense>
-    </BrowserRouter>
+            {/* 💼 Packages */}
+            <Route path="/admin/packages" element={<AdminPackages />} />
+          </Routes>
+        </Suspense>
+      </BrowserRouter>
+    </HelmetProvider>
   </React.StrictMode>
 );
