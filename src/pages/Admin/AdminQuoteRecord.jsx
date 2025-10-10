@@ -2,10 +2,11 @@
  * ============================================================
  * PJH Web Services — Admin Quote Record
  * ============================================================
- * Includes:
+ * Features:
  *  • Weighted line-item pricing (Design > Booking/CRM > Other)
  *  • Per-item + global discount editing
- *  • PDF Preview button for unsaved quote review
+ *  • PDF Preview + Email actions
+ *  • Linked Order view & creation
  *  • Full live recalculation of totals
  * ============================================================
  */
@@ -25,14 +26,14 @@ export default function AdminQuoteRecord() {
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
 
-  // 🔐 Auth guard
+  // 🔐 Admin Auth
   useEffect(() => {
     if (localStorage.getItem("isAdmin") !== "true") {
       window.location.href = "/admin";
     }
   }, []);
 
-  // Load quote & packages
+  // 📦 Load quote + packages
   useEffect(() => {
     if (quoteId) loadQuote();
     loadPackages();
@@ -91,6 +92,7 @@ export default function AdminQuoteRecord() {
         deposit: q.deposit !== undefined ? Number(q.deposit) : undefined,
         notes: q.notes || "",
         pricing_mode: q.pricing_mode || "oneoff",
+        order_id: q.order_id || q.converted_order_id || null,
       });
     } catch (err) {
       console.error("❌ Failed to load quote:", err);
@@ -98,23 +100,20 @@ export default function AdminQuoteRecord() {
     }
   }
 
-  // ────────────────────────────────────────────────
+  // ──────────────────────────────
   // Helpers
-  // ────────────────────────────────────────────────
-  function toNum(v, fallback = 0) {
-    const n = Number(v);
-    return Number.isFinite(n) ? n : fallback;
-  }
+  // ──────────────────────────────
+  const toNum = (v, fallback = 0) =>
+    Number.isFinite(Number(v)) ? Number(v) : fallback;
 
-  function updateItem(index, patch) {
+  const updateItem = (index, patch) =>
     setQuote((q) => {
       const items = [...q.items];
       items[index] = { ...items[index], ...patch };
       return { ...q, items };
     });
-  }
 
-  function addItem() {
+  const addItem = () =>
     setQuote((q) => ({
       ...q,
       items: [
@@ -128,36 +127,31 @@ export default function AdminQuoteRecord() {
         },
       ],
     }));
-  }
 
-  function removeItem(index) {
+  const removeItem = (i) =>
     setQuote((q) => {
       const items = [...q.items];
-      items.splice(index, 1);
+      items.splice(i, 1);
       return { ...q, items };
     });
-  }
 
-  // ────────────────────────────────────────────────
-  // Weighted pricing logic for package features
-  // ────────────────────────────────────────────────
+  // ──────────────────────────────
+  // Weighted Package Logic
+  // ──────────────────────────────
   function applyPackage(packageId) {
     const pkg = packages.find((p) => String(p.id) === String(packageId));
-    if (!pkg) {
-      setQuote((q) => ({ ...q, package_id: "", items: [] }));
-      return;
-    }
+    if (!pkg) return setQuote((q) => ({ ...q, package_id: "", items: [] }));
 
     const features = Array.isArray(pkg.features) ? pkg.features : [];
     const priceOneOff = toNum(pkg.price_oneoff, 0);
 
     if (!features.length || !priceOneOff) {
-      setQuote((q) => ({
+      return setQuote((q) => ({
         ...q,
         package_id: pkg.id,
         items: [
           {
-            id: `pkg-${pkg.id}-only-${Date.now()}`,
+            id: `pkg-${pkg.id}-${Date.now()}`,
             name: pkg.name,
             qty: 1,
             unit_price: priceOneOff,
@@ -165,42 +159,18 @@ export default function AdminQuoteRecord() {
           },
         ],
       }));
-      return;
     }
 
-    // Weighted mapping
     const weightMap = features.map((f) => {
       const name = f.toLowerCase();
-      if (
-        name.includes("design") ||
-        name.includes("build") ||
-        name.includes("development") ||
-        name.includes("ui") ||
-        name.includes("ux")
-      )
-        return 0.4;
-      if (
-        name.includes("booking") ||
-        name.includes("crm") ||
-        name.includes("portal") ||
-        name.includes("system")
-      )
-        return pkg.name.toLowerCase().includes("mid") ||
-          pkg.name.toLowerCase().includes("premium")
-          ? 0.25
-          : 0.15;
-      if (
-        name.includes("content") ||
-        name.includes("seo") ||
-        name.includes("hosting") ||
-        name.includes("support") ||
-        name.includes("training")
-      )
-        return 0.15;
+      if (name.match(/design|build|development|ui|ux/)) return 0.4;
+      if (name.match(/booking|crm|portal|system/))
+        return pkg.name.toLowerCase().includes("premium") ? 0.25 : 0.15;
+      if (name.match(/content|seo|hosting|support|training/)) return 0.15;
       return 0.05;
     });
 
-    const totalWeight = weightMap.reduce((s, w) => s + w, 0);
+    const totalWeight = weightMap.reduce((a, b) => a + b, 0);
     const normalized = weightMap.map((w) => w / totalWeight);
 
     const newItems = features.map((f, i) => ({
@@ -220,22 +190,21 @@ export default function AdminQuoteRecord() {
     }));
   }
 
-  // ────────────────────────────────────────────────
-  // Totals
-  // ────────────────────────────────────────────────
+  // ──────────────────────────────
+  // Totals Calculation
+  // ──────────────────────────────
   const totals = useMemo(() => {
     if (!quote) return null;
+
     const lineTotals = quote.items.map((it) => {
-      const qty = toNum(it.qty, 1);
-      const unit = toNum(it.unit_price, 0);
-      const disc = Math.min(Math.max(toNum(it.discount_percent, 0), 0), 100);
-      const gross = qty * unit;
-      const net = gross * (1 - disc / 100);
+      const gross = toNum(it.qty, 1) * toNum(it.unit_price, 0);
+      const net =
+        gross * (1 - Math.min(Math.max(toNum(it.discount_percent, 0), 0), 100) / 100);
       return { gross, net };
     });
 
-    const subtotalGross = lineTotals.reduce((s, t) => s + t.gross, 0);
-    const subtotalAfterLineDiscounts = lineTotals.reduce((s, t) => s + t.net, 0);
+    const subtotalGross = lineTotals.reduce((a, t) => a + t.gross, 0);
+    const subtotalAfterLineDiscounts = lineTotals.reduce((a, t) => a + t.net, 0);
 
     const base =
       quote.custom_price && quote.custom_price > 0
@@ -245,8 +214,7 @@ export default function AdminQuoteRecord() {
     const globalDisc = Math.min(Math.max(toNum(quote.discount_percent, 0), 0), 100);
     const afterGlobal = base * (1 - globalDisc / 100);
     const defaultDeposit = Number((afterGlobal * 0.5).toFixed(2));
-    const deposit =
-      quote.deposit == null ? defaultDeposit : toNum(quote.deposit, 0);
+    const deposit = quote.deposit == null ? defaultDeposit : toNum(quote.deposit, 0);
     const balance = Math.max(afterGlobal - deposit, 0);
 
     return {
@@ -260,9 +228,9 @@ export default function AdminQuoteRecord() {
     };
   }, [quote]);
 
-  // ────────────────────────────────────────────────
+  // ──────────────────────────────
   // Core Actions
-  // ────────────────────────────────────────────────
+  // ──────────────────────────────
   async function handleSave() {
     if (!quote) return;
     setSaving(true);
@@ -274,7 +242,7 @@ export default function AdminQuoteRecord() {
       const payload = {
         title: quote.title,
         description: quote.description,
-        items: quote.items.map(({ id, ...rest }) => rest),
+        items: quote.items.map(({ id, ...r }) => r),
         deposit: totals.deposit,
         notes: quote.notes,
         status: quote.status,
@@ -301,22 +269,6 @@ export default function AdminQuoteRecord() {
     }
   }
 
-  async function handleDelete() {
-    if (!confirm("Are you sure you want to delete this quote?")) return;
-    try {
-      const url = customerId
-        ? `${API_BASE}/api/customers/${customerId}/quotes/${quoteId}`
-        : `${API_BASE}/api/quotes/${quoteId}`;
-      const res = await fetch(url, { method: "DELETE" });
-      if (!res.ok) throw new Error(`Delete failed (${res.status})`);
-      alert("✅ Quote deleted successfully");
-      navigate(customerId ? `/admin/customers/${customerId}` : "/admin/quotes");
-    } catch (err) {
-      console.error("❌ Delete failed:", err);
-      alert("❌ Could not delete quote — check console");
-    }
-  }
-
   async function handleEmail() {
     if (!quote) return;
     setWorking(true);
@@ -325,8 +277,7 @@ export default function AdminQuoteRecord() {
         method: "POST",
       });
       const data = await res.json();
-      if (res.ok) alert("✅ Quote emailed successfully");
-      else alert("❌ Email failed: " + (data.message || "Unknown error"));
+      alert(res.ok ? "✅ Quote emailed successfully" : `❌ Email failed: ${data.message}`);
     } catch (err) {
       console.error("❌ Email error:", err);
       alert("❌ Error sending quote email");
@@ -341,18 +292,16 @@ export default function AdminQuoteRecord() {
       const payload = {
         title: quote.title,
         description: quote.description,
-        items: quote.items.map(({ id, ...rest }) => rest),
+        items: quote.items.map(({ id, ...r }) => r),
         deposit: totals.deposit,
         discount_percent: quote.discount_percent || 0,
         custom_price: quote.custom_price || null,
       };
-
       const res = await fetch(`${API_BASE}/api/quotes/${quote.id}/preview`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-
       if (!res.ok) throw new Error("Failed to generate preview");
       const blob = await res.blob();
       const pdfUrl = URL.createObjectURL(blob);
@@ -363,18 +312,45 @@ export default function AdminQuoteRecord() {
     }
   }
 
-  // Status badge
+  async function handleCreateOrder() {
+    if (!quote) return;
+    if (!confirm("Convert this quote into an order?")) return;
+    setWorking(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/orders/from-quote/${quote.id}`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (res.ok && data.order_id) {
+        alert("✅ Order created successfully!");
+        navigate(`/admin/orders/${data.order_id}`);
+      } else {
+        alert("❌ Failed to create order: " + (data.error || "Unknown error"));
+      }
+    } catch (err) {
+      console.error("❌ Order creation error:", err);
+      alert("❌ Could not create order from quote.");
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  // ──────────────────────────────
+  // UI Helpers
+  // ──────────────────────────────
   const statusBadge = (status) => {
     const map = {
       pending: "bg-yellow-500/20 text-yellow-300 border border-yellow-400/30",
       accepted: "bg-green-500/20 text-green-300 border border-green-400/30",
       rejected: "bg-red-500/20 text-red-300 border border-red-400/30",
-      amend_requested: "bg-blue-500/20 text-blue-300 border border-blue-400/30",
+      amend_requested:
+        "bg-blue-500/20 text-blue-300 border border-blue-400/30",
     };
     return (
       <span
         className={`px-2 py-1 rounded text-xs font-semibold ${
-          map[status] || "bg-slate-500/20 text-slate-300 border border-slate-400/30"
+          map[status] ||
+          "bg-slate-500/20 text-slate-300 border border-slate-400/30"
         }`}
       >
         {status}
@@ -382,9 +358,14 @@ export default function AdminQuoteRecord() {
     );
   };
 
-  if (error) return <div className="p-10 text-red-400">❌ {error}</div>;
+  if (error)
+    return <div className="p-10 text-red-400">❌ {error}</div>;
   if (!quote)
-    return <div className="p-10 text-pjh-muted animate-pulse">Loading quote details...</div>;
+    return (
+      <div className="p-10 text-pjh-muted animate-pulse">
+        Loading quote details...
+      </div>
+    );
 
   const canCreateOrder = quote.status === "accepted";
 
@@ -397,26 +378,26 @@ export default function AdminQuoteRecord() {
         ← Back
       </a>
 
-      <div className="flex items-center gap-4 mt-2">
+      <div className="flex flex-wrap items-center gap-4 mt-2">
         <h1 className="text-3xl font-bold text-pjh-blue">
           Quote #{quote.quote_number || quote.id}
         </h1>
         {statusBadge(quote.status)}
       </div>
 
-     {/* ACTION BUTTONS */}
-<div className="mt-4 flex flex-wrap justify-between gap-3 w-full">
+{/* ACTION BUTTONS */}
+<div className="mt-6 grid sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
   <button
     onClick={handleEmail}
     disabled={working}
-    className="flex-1 min-w-[150px] btn-secondary bg-pjh-blue hover:bg-pjh-blue/80 text-white"
+    className="btn-secondary bg-pjh-blue hover:bg-pjh-blue/80 text-white w-full"
   >
     ✉️ Email Quote (PDF)
   </button>
 
   <button
     onClick={handlePreviewPDF}
-    className="flex-1 min-w-[150px] btn-secondary bg-pjh-slate hover:bg-pjh-blue/50 text-white"
+    className="btn-secondary bg-pjh-slate hover:bg-pjh-blue/50 text-white w-full"
   >
     👁️ Preview Quote (PDF)
   </button>
@@ -424,18 +405,43 @@ export default function AdminQuoteRecord() {
   <button
     onClick={handleSave}
     disabled={saving}
-    className="flex-1 min-w-[150px] btn-primary"
+    className="btn-primary w-full"
   >
     {saving ? "Saving..." : "💾 Save Changes"}
   </button>
 
   <button
-    onClick={handleDelete}
-    className="flex-1 min-w-[150px] btn-danger bg-red-600 hover:bg-red-700 text-white"
+    onClick={async () => {
+      if (confirm("Are you sure you want to delete this quote?")) await handleDelete();
+    }}
+    className="btn-danger bg-red-600 hover:bg-red-700 text-white w-full"
   >
     🗑️ Delete Quote
   </button>
 </div>
+
+{/* ORDER LINKS */}
+{(quote.order_id || canCreateOrder) && (
+  <div className="mt-4 flex flex-wrap gap-3">
+    {quote.order_id ? (
+      <a
+        href={`/admin/orders/${quote.order_id}`}
+        className="btn-secondary bg-green-700 hover:bg-green-600 text-white w-full sm:w-auto"
+      >
+        🔗 View Linked Order #{quote.order_id}
+      </a>
+    ) : (
+      <button
+        onClick={handleCreateOrder}
+        disabled={working}
+        className="btn-secondary bg-green-600 hover:bg-green-500 text-white w-full sm:w-auto"
+      >
+        🪄 Create Order from Quote
+      </button>
+    )}
+  </div>
+)}
+
 
       {/* META + ITEMS */}
       <div className="bg-pjh-gray p-6 rounded-xl mt-6 mb-8 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
