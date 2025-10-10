@@ -1,10 +1,10 @@
 /**
  * ============================================================
- * PJH Web Services — Admin Order Record (Final 2025)
+ * PJH Web Services — Admin Order Record (Final 2025, Refund-Aware)
  * ============================================================
  * Features:
- *  ✅ Always synced with linked quote data
- *  ✅ Reflects real-time deposit, balance, and totals
+ *  ✅ Syncs with linked quote data
+ *  ✅ Reflects real-time deposit, balance, paid, refunded & remaining
  *  ✅ Displays Stripe/Bacs/DD payment status
  *  ✅ Supports Card + Bacs Checkout, DD setup, Billing, and Refunds
  *  ✅ Clean responsive layout with grouped action sections
@@ -86,7 +86,8 @@ export default function AdminOrderRecord() {
       const res = await fetch(`${API_BASE}/api/orders/${id}/payments`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      const list = data.payments || data.data || (Array.isArray(data) ? data : []);
+      const list =
+        data.payments || data.data || (Array.isArray(data) ? data : []);
       setPayments(list);
     } catch (e) {
       console.warn("⚠️ Failed to load payments:", e.message);
@@ -151,25 +152,44 @@ export default function AdminOrderRecord() {
   }, [order, linkedQuote]);
 
   /* ============================================================
-     💰 Computed Figures
+     💰 Computed Figures — includes refunds
   ============================================================ */
   const figures = useMemo(() => {
-    if (!syncedOrder)
-      return { deposit: 0, balance: 0, total: 0, paid: 0, remaining: 0 };
+    if (!syncedOrder) {
+      return {
+        deposit: 0,
+        balance: 0,
+        total: 0,
+        paid: 0,
+        refunded: 0,
+        remaining: 0,
+      };
+    }
+
     const deposit = Number(syncedOrder.deposit || 0);
     const balance = Number(syncedOrder.balance || 0);
     const total = deposit + balance;
-    const paid = Number(syncedOrder.total_paid || 0);
-    const remaining = Math.max(total - paid, 0);
-    return { deposit, balance, total, paid, remaining };
-  }, [syncedOrder]);
 
-  const depositPayment = payments.find(
-    (p) => p.type?.toLowerCase() === "deposit"
-  );
-  const balancePayment = payments.find(
-    (p) => p.type?.toLowerCase() === "balance"
-  );
+    const paidAmount = payments
+      .filter((p) => p.status === "paid" && p.amount > 0)
+      .reduce((sum, p) => sum + Number(p.amount), 0);
+
+    const refundedAmount = payments
+      .filter((p) => p.status === "refunded" || p.amount < 0)
+      .reduce((sum, p) => sum + Math.abs(Number(p.amount)), 0);
+
+    const netPaid = paidAmount - refundedAmount;
+    const remaining = Math.max(total - netPaid, 0);
+
+    return {
+      deposit,
+      balance,
+      total,
+      paid: netPaid,
+      refunded: refundedAmount,
+      remaining,
+    };
+  }, [syncedOrder, payments]);
 
   /* ============================================================
      💳 Stripe Checkout + Billing + Refunds
@@ -295,13 +315,18 @@ export default function AdminOrderRecord() {
       )}
 
       {/* Totals */}
-      <div className="mt-4 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="mt-4 grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <SummaryCard label="Deposit" value={`£${figures.deposit.toFixed(2)}`} />
         <SummaryCard label="Balance" value={`£${figures.balance.toFixed(2)}`} />
         <SummaryCard
           label="Paid"
           value={`£${figures.paid.toFixed(2)}`}
           accent="text-green-300"
+        />
+        <SummaryCard
+          label="Refunded"
+          value={`£${figures.refunded.toFixed(2)}`}
+          accent="text-red-300"
         />
         <SummaryCard
           label="Remaining"
@@ -317,14 +342,14 @@ export default function AdminOrderRecord() {
         <StatusRow
           title="Deposit"
           paid={syncedOrder.deposit_paid}
-          method={depositPayment?.method}
-          amount={depositPayment?.amount}
+          method={payments.find(p=>p.type==="deposit")?.method}
+          amount={payments.find(p=>p.type==="deposit")?.amount}
         />
         <StatusRow
           title="Balance"
           paid={syncedOrder.balance_paid}
-          method={balancePayment?.method}
-          amount={balancePayment?.amount}
+          method={payments.find(p=>p.type==="balance")?.method}
+          amount={payments.find(p=>p.type==="balance")?.amount}
         />
 
         <div className="flex items-center gap-2 mt-3">
@@ -343,7 +368,6 @@ export default function AdminOrderRecord() {
 
       {/* Actions */}
       <div className="mt-8 space-y-6">
-        {/* Payment & Billing */}
         <div className="flex flex-wrap gap-3">
           <button
             onClick={() => handleCreateCheckout("card_payment", "deposit")}
@@ -389,7 +413,6 @@ export default function AdminOrderRecord() {
           </button>
         </div>
 
-        {/* Refunds */}
         {payments.length > 0 && (
           <div className="border-t border-white/10 pt-4 flex flex-wrap gap-3">
             <h3 className="text-sm text-pjh-muted w-full">Refunds</h3>
