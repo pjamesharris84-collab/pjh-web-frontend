@@ -129,60 +129,48 @@ const figures = useMemo(() => {
 
 
 
-  /* ============================================================
-     💳 Stripe Actions + Refunds
-  ============================================================ */
-  async function handleCreateCheckout(flow, type) {
-    if (!order) return;
-    setWorking(true);
-    try {
-      const res = await fetch(`${API_BASE}/api/payments/create-checkout`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId: order.id, flow, type }),
-      });
-      const data = await res.json();
-      if (res.ok && data.url) window.open(data.url, "_blank");
-      else alert(`❌ Checkout error: ${data.error || "Unknown error"}`);
-    } catch (err) {
-      console.error("❌ Checkout error:", err);
-      alert("❌ Failed to create checkout session.");
-    } finally {
-      setWorking(false);
+ /* ============================================================
+   💳 Stripe Actions + Refunds (updated for balance accuracy)
+============================================================ */
+async function handleCreateCheckout(flow, type) {
+  if (!order) return;
+  setWorking(true);
+
+  try {
+    const payload = {
+      orderId: order.id,
+      flow,
+      type,
+      // 💡 Pass explicit amount values for clarity
+      amount:
+        type === "deposit"
+          ? Number(order.deposit || 0)
+          : Number(order.balance || 0),
+    };
+
+    console.log("🧾 Checkout payload:", payload);
+
+    const res = await fetch(`${API_BASE}/api/payments/create-checkout`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await res.json();
+
+    if (res.ok && data.url) {
+      window.open(data.url, "_blank");
+    } else {
+      alert(`❌ Checkout error: ${data.error || "Unknown error"}`);
     }
+  } catch (err) {
+    console.error("❌ Checkout error:", err);
+    alert("❌ Failed to create checkout session.");
+  } finally {
+    setWorking(false);
   }
+}
 
-  async function handleRefund(type) {
-    const payment = payments.find(
-      (p) => p.type?.toLowerCase() === type.toLowerCase() && p.status === "paid"
-    );
-    if (!payment) return alert(`No ${type} payment found.`);
-
-    const amountStr = prompt(`Enter refund amount (£, max £${payment.amount}):`, payment.amount);
-    if (!amountStr) return;
-    const amount = Number(amountStr);
-    if (amount <= 0 || amount > payment.amount) return alert("Invalid refund amount.");
-
-    if (!confirm(`Confirm refund of £${amount.toFixed(2)} for ${type}?`)) return;
-
-    setWorking(true);
-    try {
-      const res = await fetch(`${API_BASE}/api/payments/refund`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ payment_id: payment.id, amount }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Refund failed");
-      alert("✅ Refund processed successfully.");
-      await refreshOrder();
-    } catch (err) {
-      console.error("❌ Refund error:", err);
-      alert("❌ Refund failed: " + err.message);
-    } finally {
-      setWorking(false);
-    }
-  }
 
   /* ============================================================
      🖥️ Render
