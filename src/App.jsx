@@ -1,13 +1,13 @@
 /**
  * ============================================================
- * PJH Web Services — Main App (Public Frontend)
+ * PJH Web Services — Main App (Public Frontend, Local Focused)
  * ============================================================
  * Homepage layout for PJH Web Services.
  * Updated to include:
- *   • Customer-first messaging
- *   • Visible Security Policy link
- *   • SEO-optimised trust and navigation
- *   • Unified premium button styling
+ *   • Local business focus & plain-English messaging
+ *   • "Cut Through the Noise" and "We Stay Ahead" positioning
+ *   • SEO-optimised content for local services
+ *   • All functionality preserved (API fetch, routing, UI)
  * ============================================================
  */
 
@@ -40,14 +40,14 @@ export default function App() {
           {
             id: 1,
             name: "Starter",
-            tagline: "Perfect for small business websites",
+            tagline: "Perfect for small local businesses",
             price_oneoff: 900,
             price_monthly: 60,
             term_months: 24,
             features: [
               "5-page custom website",
-              "Responsive design",
-              "SEO setup",
+              "Mobile responsive design",
+              "SEO setup & Google optimisation",
               "Social media links",
               "Hosting & domain management",
             ],
@@ -55,7 +55,7 @@ export default function App() {
           {
             id: 2,
             name: "Business",
-            tagline: "For growing companies needing automation",
+            tagline: "For growing local companies ready to scale",
             price_oneoff: 2600,
             price_monthly: 140,
             term_months: 24,
@@ -70,7 +70,7 @@ export default function App() {
           {
             id: 3,
             name: "Premium",
-            tagline: "Full bespoke CRM + integrations",
+            tagline: "Full bespoke CRM + automation suite",
             price_oneoff: 6000,
             price_monthly: 300,
             term_months: 24,
@@ -97,8 +97,8 @@ export default function App() {
   return (
     <div className="bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white min-h-screen flex flex-col font-inter">
       <SEO
-        title="PJH Web Services | Modern Websites, CRMs & Maintenance Plans"
-        description="PJH Web Services builds customer-first, AI-ready websites and CRM systems designed around your goals. Fully responsive, SEO-optimised, and built for the modern generation of technology."
+        title="PJH Web Services | Suffolk Web Design for Local Businesses"
+        description="PJH Web Services builds modern, SEO-optimised websites and CRMs for Suffolk and UK small businesses — cutting through the noise with honest, effective digital solutions."
         url="https://www.pjhwebservices.co.uk"
         image="https://www.pjhwebservices.co.uk/pjh-logo-light.png"
       />
@@ -116,18 +116,19 @@ export default function App() {
           />
 
           <p className="text-gray-400 uppercase tracking-[0.25em] text-sm mb-8">
-            Customer-First Web Design
+            Local Websites • Real Results
           </p>
 
           <h1 className="text-5xl sm:text-6xl font-bold leading-tight mb-8 tracking-tight">
-            Bespoke Websites & CRMs <br className="hidden sm:block" /> Built for
-            the AI Generation
+            Modern Websites & CRMs <br className="hidden sm:block" /> for Local
+            Businesses That Mean Business
           </h1>
 
           <p className="max-w-2xl text-gray-300 text-lg mb-12 leading-relaxed">
-            We design and build modern, responsive websites and CRM platforms
-            crafted around your vision, business goals, and brand identity —
-            keeping your digital presence one step ahead of the curve.
+            At <span className="text-blue-400 font-semibold">PJH Web Services</span>, we
+            help small businesses cut through the digital noise and stand out
+            online. We build clear, fast, SEO-ready websites that work hard for
+            your business — and we stay on top of trends, so you don’t have to.
           </p>
 
           <div className="flex flex-wrap justify-center gap-4">
@@ -146,22 +147,22 @@ export default function App() {
         {/* SERVICES SECTION */}
         <section id="services" className="py-24 px-6 border-t border-white/10">
           <h2 className="text-3xl sm:text-4xl font-bold text-center mb-16">
-            What We Offer
+            What We Do for Local Businesses
           </h2>
 
           <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-10">
             {[
               {
-                title: "Website Design",
-                desc: "We turn your business goals and ideas into a visual experience — fully responsive, SEO-ready, and optimised for the modern web.",
+                title: "Local Website Design",
+                desc: "We turn your local business goals into modern, responsive websites that attract customers and rank well on Google.",
               },
               {
                 title: "Custom CRM Systems",
-                desc: "Simplify operations and scale smarter with bespoke CRM systems — built entirely around your workflows, not templates.",
+                desc: "Simplify your daily tasks with custom-built CRM systems that automate quotes, bookings, and invoices — saving you time every day.",
               },
               {
                 title: "Maintenance & WebCare",
-                desc: "We protect your investment with ongoing care, performance tuning, and security monitoring — so your website stays safe and fast.",
+                desc: "Your website deserves long-term care. We handle updates, security, and performance so your business stays online and stress-free.",
               },
             ].map((s, i) => (
               <div
@@ -189,7 +190,7 @@ export default function App() {
           className="py-24 px-6 border-t border-white/10 bg-slate-900/50"
         >
           <h2 className="text-3xl sm:text-4xl font-bold text-center mb-12">
-            Our Most Popular Packages
+            Packages for Every Local Business
           </h2>
 
           {packages.length > 0 ? (
@@ -244,23 +245,24 @@ export default function App() {
             About PJH Web Services
           </h2>
           <p className="max-w-3xl mx-auto text-gray-400 leading-relaxed text-lg">
-            We’re a modern, tech-forward digital agency built on one core
-            principle — <strong>customer first</strong>. Every project starts
-            with your vision and is developed around your goals, industry, and
-            target audience. From sleek frontends to powerful CRM backends, we
-            bring your digital presence into the AI-powered era.
+            We’re a Suffolk-based web design and development agency helping
+            local businesses grow online. From builders and landscapers to
+            salons and shops, we create fast, functional, and future-ready
+            websites that attract customers and build trust. <br />
+            <br />
+            We cut through the online confusion, focus on what really matters,
+            and stay on top of the latest digital trends — so you don’t have to.
           </p>
         </section>
 
         {/* CONTACT CTA */}
         <section className="py-24 text-center border-t border-white/10 bg-slate-900/60">
           <h2 className="text-3xl sm:text-4xl font-bold mb-6">
-            Ready to Get Started?
+            Ready to Stand Out Online?
           </h2>
           <p className="text-gray-400 mb-10 max-w-2xl mx-auto leading-relaxed">
-            Let’s bring your business online the right way — secure, modern, and
-            designed to convert. Get in touch to discuss your ideas or protect
-            your existing website with our care plans.
+            Let’s simplify your digital world and build something that actually
+            works for your business — secure, modern, and built to perform.
           </p>
           <div className="flex justify-center flex-wrap gap-4">
             <Link to="/contact" className={buttonPrimary}>

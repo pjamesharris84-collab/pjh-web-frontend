@@ -1,9 +1,12 @@
 /**
  * ============================================================
- * PJH Web Services — Package Details Page (2025)
+ * PJH Web Services — Package Details Page (Local-Focused, 2025)
  * ============================================================
  * Displays full details for an individual package.
- * Styled with unified blue/white premium design system.
+ * Updated messaging:
+ *   • Tailored for local businesses
+ *   • Highlights clarity, trust & ongoing partnership
+ *   • Reinforces “we handle the tech so you don’t have to”
  * ============================================================
  */
 
@@ -71,7 +74,10 @@ export default function PackageDetails() {
           <h1 className="text-4xl sm:text-5xl font-bold text-blue-400 mb-2">
             {pkg.name} Package
           </h1>
-          <p className="text-gray-400">{pkg.tagline}</p>
+          <p className="text-gray-400 text-lg">
+            {pkg.tagline ||
+              "Smart, scalable web solutions designed for local businesses who want to grow online without the jargon."}
+          </p>
         </div>
 
         {/* Pricing + CTA */}
@@ -91,20 +97,42 @@ export default function PackageDetails() {
             )}&price=${pkg.price_oneoff}&monthly=${pkg.price_monthly}`}
             className={buttonPrimary}
           >
-            Enquire about this Package
+            Enquire About This Package
           </Link>
         </div>
 
         {/* Features */}
         <div className="space-y-3 mb-10">
           <h2 className="text-2xl font-semibold text-blue-400">
-            Included Features
+            What’s Included
           </h2>
           <ul className="list-disc ml-6 space-y-2 text-gray-300">
             {pkg.features?.map((f, i) => (
               <li key={i}>{f}</li>
             ))}
           </ul>
+        </div>
+
+        {/* Local business reassurance */}
+        <div className="space-y-5 mb-10 text-gray-400 leading-relaxed border-t border-white/10 pt-6">
+          <h3 className="text-xl font-semibold text-blue-400">
+            Designed for Local Success
+          </h3>
+          <p>
+            We know how confusing the digital world can feel — one day you’re
+            told websites are dead, the next you’re told you need AI, funnels,
+            or endless subscriptions. PJH Web Services helps you cut through
+            that noise. Every package focuses on what actually works for{" "}
+            <span className="text-blue-300 font-medium">
+              real Suffolk and UK businesses
+            </span>{" "}
+            — fast, secure websites that attract genuine customers.
+          </p>
+          <p>
+            We stay ahead of design trends, Google changes, and security
+            updates, so you can focus on running your business while we handle
+            the rest.
+          </p>
         </div>
 
         {/* Terms & Info */}

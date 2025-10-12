@@ -1,7 +1,8 @@
 // ============================================================
-// PJH Web Services — FAQ Page
+// PJH Web Services — FAQ Page (Local Focus, Clarity-Driven)
 // ============================================================
-// Customer-First | Modern | AI-Era Web Design & CRM Solutions
+// Helping local businesses cut through digital noise
+// and stay ahead of trends with modern, honest web design.
 // ============================================================
 
 import React from "react";
@@ -12,35 +13,39 @@ export default function FAQ() {
   const faqs = [
     {
       q: "What makes PJH Web Services different?",
-      a: "Everything we do starts with you — your vision, your goals, and your business needs. We don’t just build websites; we craft digital experiences that align perfectly with your objectives. Our customer-first approach ensures every site we create is tailored, strategic, and results-driven.",
+      a: "We help local businesses cut through the digital noise. Instead of jargon and buzzwords, we give you clear, honest advice that works. Every website and CRM we build is tailored to your business goals, not a one-size-fits-all template. Our focus is results, not trends.",
     },
     {
-      q: "Do you build modern, AI-ready websites?",
-      a: "Absolutely. PJH Web Services is built for the AI generation — we design and develop future-ready websites that leverage modern frameworks, automation, and AI integrations. Your website will be optimised for search, voice, and AI discovery so it stays ahead of digital trends.",
+      q: "Do you work with small or local businesses?",
+      a: "Yes — that’s who we specialise in. From trades and shops to service providers, we help Suffolk and UK-based businesses look professional online and attract real customers. You don’t need to be a tech expert — we handle everything from start to finish.",
     },
     {
-      q: "What services do you provide?",
-      a: "We design, build, and maintain modern, SEO-optimised websites, CRMs, and online systems that help small and medium-sized businesses grow. From branding and user experience to hosting and automation, every solution is built with performance and your customers in mind.",
+      q: "Do you keep up with the latest digital trends?",
+      a: "Absolutely. The online world changes fast — AI, algorithms, SEO, design tools. We stay on top of it all, filter out the hype, and apply only what benefits your business. You focus on running your company; we’ll keep your website current and performing.",
+    },
+    {
+      q: "What services do you offer?",
+      a: "We design, build, and maintain modern, SEO-ready websites and custom CRM systems. Our services include local SEO setup, hosting, branding, automation, and ongoing maintenance — everything your business needs to stay visible and secure online.",
     },
     {
       q: "Do you offer website care or maintenance plans?",
-      a: "Yes. We offer Care Plans exclusively for websites we build — providing updates, security patches, backups, uptime monitoring, and performance tuning. It’s complete peace of mind knowing your site is always protected and performing at its best.",
+      a: "Yes. Our Website Care Plans keep your site protected, fast, and up-to-date. We handle all updates, security patches, backups, and performance checks — so you can rest easy knowing your site is in safe hands.",
     },
     {
-      q: "Can you host my website and email?",
-      a: "Yes — we handle everything from fast, secure hosting to email setup and SSL management. Our hosting platform ensures high uptime, top-tier performance, and professional support tailored to your business size and needs.",
+      q: "Can you host my website and emails?",
+      a: "Yes. We provide fast, secure hosting and professional email setup. Every site includes SSL security, daily backups, and managed support — so your business stays online and reliable without technical stress.",
     },
     {
-      q: "Do you only work with local clients?",
-      a: "While we’re proudly based in Suffolk, we work with forward-thinking businesses across the UK and internationally. Through our modern, remote-first setup, we deliver seamless collaboration and communication wherever you are.",
+      q: "Do you only work locally?",
+      a: "We’re proudly based in Suffolk and love supporting local businesses — but we also work with clients across the UK. Thanks to our modern, remote-friendly setup, we can collaborate seamlessly wherever you are.",
     },
     {
-      q: "What is your design and build process?",
-      a: "We start with a discovery session to fully understand your goals, audience, and vision. From there, we move into design, development, and refinement — ensuring the final product doesn’t just look good but performs exceptionally. Every site is mobile-first, SEO-ready, and modernised for today’s digital landscape.",
+      q: "What’s your design and build process?",
+      a: "We start with a simple discovery session to understand your business and your customers. Then we move through design, development, and testing. The result is a fast, mobile-first, SEO-optimised site that looks great and converts visitors into customers.",
     },
     {
       q: "How do I get a quote or start a project?",
-      a: "Simply visit our Contact page or email info@pjhwebservices.co.uk. We’ll discuss your ideas, business goals, and future plans, then prepare a tailored proposal designed to help your brand succeed online.",
+      a: "Just visit our Contact page or email info@pjhwebservices.co.uk. We’ll chat about your goals and ideas, then create a clear, no-obligation proposal focused on what will actually help your business grow online.",
     },
   ];
 
@@ -59,42 +64,41 @@ export default function FAQ() {
   };
 
   return (
-    <div className="min-h-screen bg-pjh-slate text-pjh-light font-outfit">
+    <div className="min-h-screen bg-slate-950 text-white font-inter">
       <SEO
-        title="Frequently Asked Questions | PJH Web Services"
-        description="Customer-first, AI-ready web design and CRM systems. Explore FAQs about PJH Web Services — our process, care plans, hosting, and modern, goal-driven approach."
+        title="FAQs | PJH Web Services | Suffolk Web Design for Local Businesses"
+        description="Honest, modern web design and CRM systems for Suffolk and UK businesses. Explore PJH Web Services FAQs to see how we cut through the noise and keep your site ahead of digital trends."
         url="https://www.pjhwebservices.co.uk/faq"
       />
 
-      <script type="application/ld+json">
-        {JSON.stringify(faqSchema)}
-      </script>
+      <script type="application/ld+json">{JSON.stringify(faqSchema)}</script>
 
       <div className="max-w-4xl mx-auto px-6 py-16 space-y-8">
-        <h1 className="text-3xl font-bold text-pjh-blue text-center">
+        <h1 className="text-3xl font-bold text-blue-400 text-center">
           Frequently Asked Questions
         </h1>
 
-        <p className="text-center text-pjh-muted max-w-2xl mx-auto">
-          Discover how PJH Web Services blends customer-first strategy with
-          cutting-edge technology to build websites that grow with your business.
-          Can’t find what you’re looking for?{" "}
-          <Link to="/contact" className="text-pjh-blue hover:underline">
+        <p className="text-center text-gray-400 max-w-2xl mx-auto leading-relaxed">
+          Get straight, no-nonsense answers about how PJH Web Services helps
+          small and local businesses build fast, secure, and effective websites.
+          We believe in clarity, not confusion — and we stay on top of digital
+          trends so you don’t have to. Can’t find what you’re looking for?{" "}
+          <Link to="/contact" className="text-blue-400 hover:underline">
             Get in touch
           </Link>{" "}
-          and let’s talk about your vision.
+          and let’s talk about your goals.
         </p>
 
         <div className="mt-10 space-y-6">
           {faqs.map((item, index) => (
             <div
               key={index}
-              className="bg-pjh-gray border border-white/10 p-6 rounded-2xl shadow-lg hover:shadow-pjh-blue/20 transition-all duration-300"
+              className="bg-slate-900/70 border border-white/10 p-6 rounded-2xl shadow-lg hover:border-blue-500 hover:shadow-blue-900/30 transition-all duration-300"
             >
-              <h2 className="text-xl font-semibold text-pjh-blue mb-2">
+              <h2 className="text-xl font-semibold text-blue-400 mb-2">
                 {item.q}
               </h2>
-              <p className="text-pjh-light/90 leading-relaxed">{item.a}</p>
+              <p className="text-gray-300 leading-relaxed">{item.a}</p>
             </div>
           ))}
         </div>

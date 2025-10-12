@@ -1,217 +1,306 @@
-// ============================================
-// PJH Web Services — Admin New Quote
-// ============================================
-// Auto-populates weighted line items from selected package
-// Includes One-Off / Monthly pricing modes and a visual breakdown
-// ============================================
+/**
+ * ============================================================
+ * PJH Web Services — Admin Quote New (2025 Production Ready)
+ * ============================================================
+ *  • Loads packages from /api/packages
+ *  • Loads maintenance plans from /api/maintenance/plans
+ *  • Subtotal → After Discounts → Deposit (auto) → Balance
+ *  • Deposit auto: 50% (one-off) | full month (monthly)
+ *  • Add/delete lines, global delete + close buttons
+ * ============================================================
+ */
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 
 export default function AdminQuoteNew() {
   const { id: customerId } = useParams();
   const navigate = useNavigate();
   const API_BASE =
-    import.meta.env.VITE_API_URL || "https://pjh-web-backend-1.onrender.com";
+    import.meta.env.VITE_API_URL || "https://pjh-web-backend.onrender.com";
 
   const [customer, setCustomer] = useState(null);
   const [packages, setPackages] = useState([]);
+  const [maintenancePlans, setMaintenancePlans] = useState([]);
   const [form, setForm] = useState({
     title: "",
     description: "",
     notes: "",
     package_id: "",
-    custom_price: "",
+    maintenance_id: "",
+    pricing_mode: "oneoff",
     discount_percent: 0,
+    items: [],
   });
-
-  const [pricingMode, setPricingMode] = useState("oneoff");
-  const [items, setItems] = useState([]);
-  const [subtotal, setSubtotal] = useState(0);
-  const [deposit, setDeposit] = useState(0);
-  const [balance, setBalance] = useState(0);
   const [saving, setSaving] = useState(false);
-  const [breakdown, setBreakdown] = useState([]); // 💡 new weighted summary
+  const [deleting, setDeleting] = useState(false);
+  const [closing, setClosing] = useState(false);
 
-  // 🧠 Auth check
-  useEffect(() => {
-    if (localStorage.getItem("isAdmin") !== "true") {
-      window.location.href = "/admin";
+  // ──────────────────────────────
+  // Helpers
+  // ──────────────────────────────
+  const toNum = (v, f = 0) => (Number.isFinite(Number(v)) ? Number(v) : f);
+  const clampPct = (n) => Math.min(Math.max(toNum(n, 0), 0), 100);
+  const money = (n) => (Number.isFinite(n) ? n.toFixed(2) : "0.00");
+
+  function distributeAmount(amount, weights) {
+    const totalW = weights.reduce((a, b) => a + b, 0) || 1;
+    const raw = weights.map((w) => (amount * w) / totalW);
+    const rounded = raw.map((x) => Math.floor(x * 100) / 100);
+    const diff = Number((amount - rounded.reduce((a, b) => a + b, 0)).toFixed(2));
+    if (diff !== 0) {
+      const idx = raw.indexOf(Math.max(...raw));
+      rounded[idx] = Number((rounded[idx] + diff).toFixed(2));
     }
+    return rounded;
+  }
+
+  function buildItemsFromPackage(pkg, pricingMode) {
+    const features = Array.isArray(pkg.features) ? pkg.features : [];
+    const basePrice =
+      pricingMode === "monthly"
+        ? toNum(pkg.price_monthly, 0)
+        : toNum(pkg.price_oneoff, 0);
+
+    if (!features.length || basePrice <= 0) {
+      return {
+        items: [
+          {
+            id: `pkg-${pkg.id}-${Date.now()}`,
+            name: pkg.name || "Package",
+            qty: 1,
+            unit_price: basePrice,
+            discount_percent: 0,
+          },
+        ],
+      };
+    }
+
+    const weights = features.map((f) => {
+      const s = (f || "").toLowerCase();
+      if (/(design|build|development|ui|ux)/.test(s)) return 4;
+      if (/(booking|crm|portal|system|scheduler|payment)/.test(s)) return 3;
+      if (/(content|seo|hosting|support|training|domain)/.test(s)) return 1.5;
+      return 1;
+    });
+
+    const amounts = distributeAmount(basePrice, weights);
+
+    const items = features.map((f, i) => ({
+      id: `pkg-${pkg.id}-${i}-${Date.now()}`,
+      name: f,
+      qty: 1,
+      unit_price: amounts[i],
+      discount_percent: 0,
+    }));
+
+    return { items };
+  }
+
+  // ──────────────────────────────
+  // Load customer + packages + maintenance plans
+  // ──────────────────────────────
+  useEffect(() => {
+    if (localStorage.getItem("isAdmin") !== "true")
+      window.location.href = "/admin";
   }, []);
 
-  // 🧩 Load customer
   useEffect(() => {
-    if (!customerId) return;
     (async () => {
+      if (!customerId) return;
       const res = await fetch(`${API_BASE}/api/customers/${customerId}`);
       const data = await res.json();
       setCustomer(data.data || data);
     })();
   }, [customerId]);
 
-  // 🧩 Load packages
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch(`${API_BASE}/api/packages`);
-        const data = await res.json();
-        const list = Array.isArray(data)
-          ? data
-          : Array.isArray(data.packages)
-          ? data.packages
-          : data.data || [];
-        setPackages(list);
+        const [pkgRes, maintRes] = await Promise.all([
+          fetch(`${API_BASE}/api/packages`),
+          fetch(`${API_BASE}/api/maintenance/plans`),
+        ]);
+        const pkgData = await pkgRes.json();
+        const maintData = await maintRes.json();
+
+        setPackages(
+          Array.isArray(pkgData)
+            ? pkgData
+            : Array.isArray(pkgData.data)
+            ? pkgData.data
+            : []
+        );
+        setMaintenancePlans(
+          Array.isArray(maintData)
+            ? maintData
+            : Array.isArray(maintData.data)
+            ? maintData.data
+            : []
+        );
       } catch (err) {
-        console.error("❌ Failed to load packages:", err);
+        console.error("❌ Failed to load packages or maintenance plans:", err);
+        setPackages([]);
+        setMaintenancePlans([]);
       }
     })();
   }, []);
 
-  // 💰 Totals recalculation
-  useEffect(() => {
-    const newSubtotal = items.reduce(
-      (sum, item) => sum + (Number(item.qty) * Number(item.unit_price) || 0),
-      0
-    );
-    const newDeposit = newSubtotal * 0.5;
-    setSubtotal(newSubtotal);
-    setDeposit(newDeposit);
-    setBalance(newSubtotal - newDeposit);
-  }, [items]);
-
-  // 🧩 Handle package selection
+  // ──────────────────────────────
+  // Package & maintenance logic
+  // ──────────────────────────────
   function handlePackageChange(packageId) {
-    const pkg = packages.find((p) => p.id === Number(packageId));
+    if (!packageId)
+      return setForm((f) => ({ ...f, package_id: "", items: f.items }));
+    const pkg = packages.find((p) => String(p.id) === String(packageId));
     if (!pkg) return;
-
-    const basePrice =
-      pricingMode === "monthly"
-        ? Number(pkg.price_monthly || 0)
-        : Number(pkg.price_oneoff || 0);
-
-    // Weighted pricing map
-    const weights = {
-      design: 4,
-      website: 4,
-      crm: 5,
-      booking: 3,
-      scheduler: 3,
-      payment: 3,
-      seo: 1,
-      domain: 1,
-      hosting: 1,
-      social: 1,
-    };
-
-    const features = pkg.features || [];
-    const featureWeights = features.map((f) => {
-      const key = Object.keys(weights).find((k) =>
-        f.toLowerCase().includes(k)
-      );
-      return weights[key] || 2; // default medium
-    });
-
-    const totalWeight = featureWeights.reduce((sum, w) => sum + w, 0) || 1;
-
-    // Build weighted line items
-    const autoItems = features.map((f, i) => {
-      const share = featureWeights[i] / totalWeight;
-      const price = basePrice * share;
-      return {
-        name: f,
-        qty: 1,
-        unit_price: Number(price.toFixed(2)),
-        total: Number(price.toFixed(2)),
-        weight: featureWeights[i],
-        share: share * 100,
-      };
-    });
-
-    // Build summary breakdown for visualisation
-    const grouped = features.map((f, i) => ({
-      name: f,
-      weight: featureWeights[i],
-      percent: ((featureWeights[i] / totalWeight) * 100).toFixed(1),
-      value: ((featureWeights[i] / totalWeight) * basePrice).toFixed(2),
+    if (!confirm("Replace current items with this package’s features?")) {
+      setForm((f) => ({ ...f, package_id: pkg.id }));
+      return;
+    }
+    const { items } = buildItemsFromPackage(pkg, form.pricing_mode);
+    setForm((f) => ({
+      ...f,
+      package_id: pkg.id,
+      title: f.title || pkg.name,
+      description: f.description || pkg.tagline,
+      items,
     }));
-
-    setBreakdown(grouped);
-    setForm({
-      ...form,
-      package_id: packageId,
-      title: pkg.name,
-      description: pkg.tagline || "",
-      custom_price: basePrice,
-    });
-    setItems(autoItems);
   }
 
-  // ➕ Manual item edits
+  function handleMaintenanceChange(maintId) {
+    const plan = maintenancePlans.find((m) => String(m.id) === String(maintId));
+    if (!plan) return;
+    setForm((f) => {
+      const exists = f.items.some((it) => it.name === plan.name);
+      if (exists) return { ...f, maintenance_id: maintId };
+      const newItem = {
+        id: `maint-${plan.id}-${Date.now()}`,
+        name: plan.name,
+        qty: 1,
+        unit_price: toNum(plan.price, 0),
+        discount_percent: 0,
+      };
+      return { ...f, maintenance_id: maintId, items: [...f.items, newItem] };
+    });
+  }
+
+  function handlePricingModeChange(mode) {
+    if (mode === form.pricing_mode) return;
+    if (!form.package_id)
+      return setForm((f) => ({ ...f, pricing_mode: mode }));
+    const pkg = packages.find((p) => String(p.id) === String(form.package_id));
+    if (!pkg)
+      return setForm((f) => ({ ...f, pricing_mode: mode }));
+    if (confirm("Switch pricing mode and rebuild items?")) {
+      const { items } = buildItemsFromPackage(pkg, mode);
+      setForm((f) => ({ ...f, pricing_mode: mode, items }));
+    } else {
+      setForm((f) => ({ ...f, pricing_mode: mode }));
+    }
+  }
+
+  // ──────────────────────────────
+  // Line items + totals
+  // ──────────────────────────────
   const addItem = () =>
-    setItems([...items, { name: "", qty: 1, unit_price: 0, total: 0 }]);
+    setForm((f) => ({
+      ...f,
+      items: [
+        ...f.items,
+        { id: `item-${Date.now()}`, name: "New Item", qty: 1, unit_price: 0, discount_percent: 0 },
+      ],
+    }));
 
-  const removeItem = (i) => setItems(items.filter((_, idx) => idx !== i));
+  const removeItem = (i) =>
+    setForm((f) => ({ ...f, items: f.items.filter((_, idx) => idx !== i) }));
 
-  const updateItem = (i, key, value) => {
-    const updated = [...items];
-    updated[i][key] = value;
-    updated[i].total =
-      Number(updated[i].qty) * Number(updated[i].unit_price) || 0;
-    setItems(updated);
-  };
+  const updateItem = (i, patch) =>
+    setForm((f) => {
+      const items = [...f.items];
+      items[i] = {
+        ...items[i],
+        ...patch,
+        discount_percent: clampPct(patch.discount_percent ?? items[i].discount_percent),
+      };
+      return { ...f, items };
+    });
 
-  // 💾 Save quote
+  const totals = useMemo(() => {
+    const items = form.items || [];
+    const subtotal = items.reduce(
+      (sum, it) => sum + toNum(it.qty, 1) * toNum(it.unit_price, 0),
+      0
+    );
+    const afterLine = items.reduce((sum, it) => {
+      const gross = toNum(it.qty, 1) * toNum(it.unit_price, 0);
+      const net = gross * (1 - clampPct(it.discount_percent) / 100);
+      return sum + net;
+    }, 0);
+    const afterDiscounts = afterLine * (1 - clampPct(form.discount_percent) / 100);
+    const deposit =
+      form.pricing_mode === "monthly"
+        ? afterDiscounts
+        : afterDiscounts * 0.5;
+    const balance =
+      form.pricing_mode === "monthly"
+        ? 0
+        : Math.max(afterDiscounts - deposit, 0);
+    return { subtotal, afterDiscounts, deposit, balance };
+  }, [form]);
+
+  // ──────────────────────────────
+  // Save / Delete / Close
+  // ──────────────────────────────
   async function handleSave(e) {
     e.preventDefault();
     setSaving(true);
-
-    const payload = {
-      ...form,
-      items,
-      subtotal,
-      deposit,
-      balance,
-      pricing_mode: pricingMode,
-      customer_id: customerId,
-      package_id: form.package_id ? Number(form.package_id) : null,
-      custom_price: form.custom_price ? Number(form.custom_price) : null,
-      discount_percent: form.discount_percent
-        ? Number(form.discount_percent)
-        : 0,
-    };
-
     try {
+      const payload = {
+        customer_id: customerId,
+        title: form.title,
+        description: form.description,
+        items: form.items.map(({ id, ...r }) => r),
+        notes: form.notes,
+        package_id: form.package_id ? Number(form.package_id) : null,
+        discount_percent: clampPct(form.discount_percent),
+        pricing_mode: form.pricing_mode,
+        deposit: Number((totals.deposit ?? 0).toFixed(2)),
+      };
       const res = await fetch(`${API_BASE}/api/customers/${customerId}/quotes`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-
-      if (!res.ok) throw new Error("Failed to save quote");
-
+      if (!res.ok) throw new Error("Failed to save");
       alert("✅ Quote created successfully!");
       navigate(`/admin/customers/${customerId}`);
     } catch (err) {
-      console.error("❌ Quote creation error:", err);
-      alert("❌ Failed to create quote — check console for details.");
+      console.error(err);
+      alert("❌ Failed to create quote");
     } finally {
       setSaving(false);
     }
   }
 
-  if (!customer)
-    return <div className="p-10 text-pjh-muted">Loading customer...</div>;
+  function handleDelete() {
+    if (!confirm("Delete this quote draft?")) return;
+    navigate(`/admin/customers/${customerId}`);
+  }
 
-  // =============================================
-  // 🖥️ RENDER
-  // =============================================
+  function handleClose() {
+    if (!confirm("Close this quote as declined?")) return;
+    alert("📁 Quote closed (visual only — handled post-save).");
+  }
+
+  // ──────────────────────────────
+  // Render
+  // ──────────────────────────────
+  if (!customer) return <div className="p-10 text-pjh-muted">Loading customer…</div>;
+
   return (
     <div className="min-h-screen bg-pjh-charcoal text-pjh-light p-10">
-      <a
-        href={`/admin/customers/${customerId}`}
-        className="text-sm text-pjh-muted hover:text-pjh-blue"
-      >
+      <a href={`/admin/customers/${customerId}`} className="text-sm text-pjh-muted hover:text-pjh-blue">
         ← Back to {customer.business || customer.name}
       </a>
 
@@ -220,164 +309,206 @@ export default function AdminQuoteNew() {
       </h1>
 
       <form onSubmit={handleSave} className="space-y-8">
-        {/* === Package Selection === */}
-        <div className="bg-pjh-gray p-6 rounded-xl grid md:grid-cols-2 gap-4">
-          <div className="flex items-center justify-between md:col-span-2">
-            <label className="text-sm text-pjh-muted">Select Package</label>
-            <div className="flex items-center gap-2 text-sm">
-              <span
-                onClick={() => setPricingMode("oneoff")}
-                className={`cursor-pointer px-3 py-1 rounded-md ${
-                  pricingMode === "oneoff"
+        <div className="bg-pjh-gray p-6 rounded-xl grid sm:grid-cols-2 gap-4">
+          <div className="sm:col-span-2">
+            <label className="text-sm text-pjh-muted">Website Package</label>
+            <select
+              className="form-input mt-1"
+              value={form.package_id || ""}
+              onChange={(e) => handlePackageChange(e.target.value)}
+            >
+              <option value="">— Select package —</option>
+              {packages.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name} (One-off £{money(toNum(p.price_oneoff))} • Monthly £{money(toNum(p.price_monthly))})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="sm:col-span-2">
+            <label className="text-sm text-pjh-muted">Maintenance Plan</label>
+            <select
+              className="form-input mt-1"
+              value={form.maintenance_id || ""}
+              onChange={(e) => handleMaintenanceChange(e.target.value)}
+            >
+              <option value="">— Optional maintenance plan —</option>
+              {maintenancePlans.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.name} (£{money(toNum(m.price))}/month)
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="text-sm text-pjh-muted">Pricing Mode</label>
+            <div className="flex gap-2 mt-1">
+              <button
+                type="button"
+                className={`px-3 py-1 rounded-md ${
+                  form.pricing_mode === "oneoff"
                     ? "bg-pjh-blue text-white"
-                    : "bg-pjh-slate text-pjh-muted hover:bg-pjh-gray"
+                    : "bg-pjh-slate text-pjh-muted"
                 }`}
+                onClick={() => handlePricingModeChange("oneoff")}
               >
-                One-Off
-              </span>
-              <span
-                onClick={() => setPricingMode("monthly")}
-                className={`cursor-pointer px-3 py-1 rounded-md ${
-                  pricingMode === "monthly"
+                One-off
+              </button>
+              <button
+                type="button"
+                className={`px-3 py-1 rounded-md ${
+                  form.pricing_mode === "monthly"
                     ? "bg-pjh-blue text-white"
-                    : "bg-pjh-slate text-pjh-muted hover:bg-pjh-gray"
+                    : "bg-pjh-slate text-pjh-muted"
                 }`}
+                onClick={() => handlePricingModeChange("monthly")}
               >
                 Monthly
-              </span>
+              </button>
             </div>
           </div>
 
-          <select
-            value={form.package_id}
-            onChange={(e) => handlePackageChange(e.target.value)}
-            className="form-input md:col-span-2"
-          >
-            <option value="">— Choose a Package —</option>
-            {packages.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name} (£
-                {pricingMode === "monthly"
-                  ? p.price_monthly
-                  : p.price_oneoff}
-                )
-              </option>
-            ))}
-          </select>
+          <div className="sm:col-span-2">
+            <label className="text-sm text-pjh-muted">Global Discount (%)</label>
+            <input
+              type="number"
+              className="form-input mt-1"
+              value={form.discount_percent ?? 0}
+              onChange={(e) =>
+                setForm({ ...form, discount_percent: clampPct(e.target.value) })
+              }
+              min="0"
+              max="100"
+              step="0.01"
+            />
+          </div>
         </div>
 
-        {/* === Weighted Breakdown Summary === */}
-        {breakdown.length > 0 && (
-          <div className="bg-pjh-gray p-6 rounded-xl">
-            <h3 className="text-lg font-semibold text-pjh-blue mb-3">
-              Weighted Pricing Breakdown
-            </h3>
-            <table className="w-full text-sm text-left border-collapse">
-              <thead className="text-pjh-muted border-b border-white/10">
+        {/* Items */}
+        <div className="bg-pjh-slate p-6 rounded-xl">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-pjh-blue">Line Items</h2>
+            <button type="button" onClick={addItem} className="btn-secondary">
+              ➕ Add Line
+            </button>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="min-w-full border border-white/10 rounded-lg">
+              <thead className="bg-pjh-gray/60 text-left text-sm text-pjh-muted">
                 <tr>
-                  <th className="py-1">Feature</th>
-                  <th className="py-1">Weight</th>
-                  <th className="py-1">% of Total</th>
-                  <th className="py-1">Value (£)</th>
+                  <th className="p-3 w-[36%]">Item</th>
+                  <th className="p-3 w-[10%]">Qty</th>
+                  <th className="p-3 w-[14%]">Unit (£)</th>
+                  <th className="p-3 w-[14%]">Discount %</th>
+                  <th className="p-3 w-[16%]">Line Total (£)</th>
+                  <th className="p-3 w-[10%]"></th>
                 </tr>
               </thead>
               <tbody>
-                {breakdown.map((b, i) => (
-                  <tr
-                    key={i}
-                    className="border-b border-white/5 hover:bg-pjh-slate/40 transition"
-                  >
-                    <td className="py-1">{b.name}</td>
-                    <td className="py-1">{b.weight}</td>
-                    <td className="py-1">{b.percent}%</td>
-                    <td className="py-1">£{b.value}</td>
+                {form.items.map((it, i) => {
+                  const gross = toNum(it.qty, 1) * toNum(it.unit_price, 0);
+                  const net = gross * (1 - clampPct(it.discount_percent) / 100);
+                  return (
+                    <tr key={it.id} className="border-t border-white/5">
+                      <td className="p-2">
+                        <input
+                          className="form-input w-full"
+                          value={it.name}
+                          onChange={(e) => updateItem(i, { name: e.target.value })}
+                        />
+                      </td>
+                      <td className="p-2">
+                        <input
+                          type="number"
+                          min="0"
+                          step="1"
+                          className="form-input w-24"
+                          value={it.qty}
+                          onChange={(e) => updateItem(i, { qty: toNum(e.target.value) })}
+                        />
+                      </td>
+                      <td className="p-2">
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          className="form-input w-32"
+                          value={it.unit_price}
+                          onChange={(e) =>
+                            updateItem(i, { unit_price: toNum(e.target.value) })
+                          }
+                        />
+                      </td>
+                      <td className="p-2">
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.01"
+                          className="form-input w-24"
+                          value={it.discount_percent}
+                          onChange={(e) =>
+                            updateItem(i, { discount_percent: clampPct(e.target.value) })
+                          }
+                        />
+                      </td>
+                      <td className="p-2 font-semibold">£{money(net)}</td>
+                      <td className="p-2 text-right">
+                        <button
+                          type="button"
+                          onClick={() => removeItem(i)}
+                          className="btn-danger"
+                        >
+                          ✖
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {form.items.length === 0 && (
+                  <tr>
+                    <td className="p-4 text-pjh-muted" colSpan={6}>
+                      No line items. Choose a package or add lines.
+                    </td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>
-        )}
 
-        {/* === Items === */}
-        <div className="bg-pjh-gray p-6 rounded-xl">
-          <h2 className="text-xl font-semibold text-pjh-blue mb-4">
-            Quote Items
-          </h2>
-
-          {items.map((item, i) => (
-            <div key={i} className="grid md:grid-cols-5 gap-4 items-center mb-4">
-              <input
-                type="text"
-                placeholder="Service Name"
-                value={item.name}
-                onChange={(e) => updateItem(i, "name", e.target.value)}
-                className="form-input"
-              />
-              <input
-                type="number"
-                placeholder="Qty"
-                value={item.qty}
-                onChange={(e) => updateItem(i, "qty", +e.target.value)}
-                className="form-input"
-              />
-              <input
-                type="number"
-                placeholder="Unit Price (£)"
-                value={item.unit_price}
-                onChange={(e) =>
-                  updateItem(i, "unit_price", +e.target.value)
-                }
-                className="form-input"
-              />
-              <div className="text-center font-semibold">
-                £{!isNaN(item.total) ? Number(item.total).toFixed(2) : "0.00"}
-              </div>
-              <button
-                type="button"
-                onClick={() => removeItem(i)}
-                className="text-red-400 hover:text-red-500"
-              >
-                Remove
-              </button>
+          {totals && (
+            <div className="mt-6 grid gap-1 justify-end text-right">
+              <p className="text-sm text-pjh-muted">
+                Subtotal: £{money(totals.subtotal)}
+              </p>
+              <p className="text-sm">
+                After discounts: <b>£{money(totals.afterDiscounts)}</b>
+              </p>
+              <p className="text-lg">
+                Deposit {form.pricing_mode === "monthly" ? "(first month)" : "(50%)"}:{" "}
+                <b>£{money(totals.deposit)}</b>
+              </p>
+              <p className="text-lg">
+                Balance: <b>£{money(totals.balance)}</b>
+              </p>
             </div>
-          ))}
+          )}
+        </div>
 
-          <button type="button" onClick={addItem} className="mt-2 btn-secondary">
-            + Add Item
+        <div className="flex flex-wrap gap-4">
+          <button type="submit" disabled={saving} className="btn-primary">
+            {saving ? "Saving…" : "💾 Save Quote"}
+          </button>
+          <button type="button" onClick={handleClose} className="btn-secondary">
+            📁 Close Quote
+          </button>
+          <button type="button" onClick={handleDelete} className="btn-danger">
+            🗑️ Delete
           </button>
         </div>
-
-        {/* === Totals === */}
-        <div className="bg-pjh-gray p-6 rounded-xl grid md:grid-cols-3 gap-6 text-lg font-medium">
-          <div>
-            <p className="text-pjh-muted">Subtotal</p>
-            <p>£{subtotal.toFixed(2)}</p>
-          </div>
-          <div>
-            <p className="text-pjh-muted">Deposit (50%)</p>
-            <p>£{deposit.toFixed(2)}</p>
-          </div>
-          <div>
-            <p className="text-pjh-muted">Balance</p>
-            <p>£{balance.toFixed(2)}</p>
-          </div>
-        </div>
-
-        <textarea
-          placeholder="Additional Notes"
-          value={form.notes}
-          onChange={(e) => setForm({ ...form, notes: e.target.value })}
-          className="form-input"
-          rows="3"
-        />
-
-        <button
-          type="submit"
-          disabled={saving}
-          className="btn-primary w-full sm:w-auto"
-        >
-          {saving ? "Saving..." : "Save Quote"}
-        </button>
       </form>
     </div>
   );
