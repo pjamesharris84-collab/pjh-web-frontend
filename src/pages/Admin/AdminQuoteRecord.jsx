@@ -394,19 +394,29 @@ export default function AdminQuoteRecord() {
         </div>
       </div>
 
-      {/* ACTIONS */}
-      <div className="mt-6 grid sm:grid-cols-2 gap-4">
-        <button onClick={handleSave} disabled={saving} className="btn-primary">
-          {saving ? "Saving…" : "💾 Save Changes"}
-        </button>
-        <button
-          onClick={handleCreateOrder}
-          disabled={working}
-          className="btn-secondary bg-green-600 hover:bg-green-500 text-white"
-        >
-          🪄 Convert to Order
-        </button>
-      </div>
+     <div className="mt-6 grid sm:grid-cols-2 gap-4">
+  <button onClick={handleSave} disabled={saving} className="btn-primary">
+    {saving ? "Saving…" : "💾 Save Changes"}
+  </button>
+
+  {quote.order_id ? (
+    <button
+      onClick={() => navigate(`/admin/orders/${quote.order_id}`)}
+      className="btn-secondary bg-blue-600 hover:bg-blue-500 text-white"
+    >
+      🔗 View Created Order
+    </button>
+  ) : (
+    <button
+      onClick={handleCreateOrder}
+      disabled={working}
+      className="btn-secondary bg-green-600 hover:bg-green-500 text-white"
+    >
+      🪄 Convert to Order
+    </button>
+  )}
+</div>
+
 
       {/* META */}
       <div className="bg-pjh-gray p-6 rounded-xl mt-6 grid sm:grid-cols-2 gap-4">
