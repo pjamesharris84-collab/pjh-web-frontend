@@ -226,58 +226,52 @@ export default function AdminQuoteNew() {
       return { ...f, items };
     });
 
-  const totals = useMemo(() => {
-    const items = form.items || [];
-    const subtotal = items.reduce(
-      (sum, it) => sum + toNum(it.qty, 1) * toNum(it.unit_price, 0),
-      0
-    );
+const totals = useMemo(() => {
+  const items = form.items || [];
+  const subtotal = items.reduce(
+    (sum, it) => sum + toNum(it.qty, 1) * toNum(it.unit_price, 0),
+    0
+  );
 
-    const afterLine = items.reduce((sum, it) => {
-      const gross = toNum(it.qty, 1) * toNum(it.unit_price, 0);
-      const net = gross * (1 - clampPct(it.discount_percent) / 100);
-      return sum + net;
-    }, 0);
+  const afterLine = items.reduce((sum, it) => {
+    const gross = toNum(it.qty, 1) * toNum(it.unit_price, 0);
+    const net = gross * (1 - clampPct(it.discount_percent) / 100);
+    return sum + net;
+  }, 0);
 
-    const afterDiscounts = afterLine * (1 - clampPct(form.discount_percent) / 100);
+  const afterDiscounts = afterLine * (1 - clampPct(form.discount_percent) / 100);
 
-    // ──────────────────────────────
-    // 💰 Deposit Rules
-    // ──────────────────────────────
-    // One-off package = 50% deposit
-    // Monthly package = 100% (first month)
-    // Maintenance = +100% of maintenance (always first month)
-    const pkg = packages.find((p) => String(p.id) === String(form.package_id));
-    const maint = maintenancePlans.find(
-      (m) => String(m.id) === String(form.maintenance_id)
-    );
+  // ──────────────────────────────
+  // 💰 Deposit + Balance Rules (Fixed)
+  // ──────────────────────────────
+  const pkg = packages.find((p) => String(p.id) === String(form.package_id));
+  const maint = maintenancePlans.find(
+    (m) => String(m.id) === String(form.maintenance_id)
+  );
 
-    const packagePrice =
-      form.pricing_mode === "monthly"
-        ? toNum(pkg?.price_monthly, 0)
-        : toNum(pkg?.price_oneoff, 0);
+  const packagePrice =
+    form.pricing_mode === "monthly"
+      ? toNum(pkg?.price_monthly, 0)
+      : toNum(pkg?.price_oneoff, 0);
 
-    const maintenancePrice = toNum(maint?.price, 0);
+  const maintenancePrice = toNum(maint?.price, 0);
 
-    let deposit = 0;
+  let deposit = 0;
+  let balance = 0;
 
-    if (form.pricing_mode === "monthly") {
-      // Pay monthly → full first month for package + maintenance
-      deposit = packagePrice + maintenancePrice;
-    } else {
-      // One-off → 50% of package + first month of maintenance (if any)
-      deposit = packagePrice * 0.5 + maintenancePrice;
-    }
+  if (form.pricing_mode === "monthly") {
+    // Monthly → pay full first month of both
+    deposit = packagePrice + maintenancePrice;
+    balance = 0;
+  } else {
+    // One-off → 50% of package + first month maintenance upfront
+    deposit = packagePrice * 0.5 + maintenancePrice;
+    // Balance = remaining 50% of package only (maintenance already included)
+    balance = packagePrice * 0.5;
+  }
 
-    // Balance = remaining (only relevant for one-off)
-    const balance =
-      form.pricing_mode === "monthly"
-        ? 0
-        : Math.max(afterDiscounts - (packagePrice * 0.5), 0);
-
-    return { subtotal, afterDiscounts, deposit, balance };
-  }, [form, packages, maintenancePlans]);
-
+  return { subtotal, afterDiscounts, deposit, balance };
+}, [form, packages, maintenancePlans]);
 
   // ──────────────────────────────
   // Save / Delete / Close
