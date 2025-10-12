@@ -111,35 +111,22 @@ export default function AdminOrderRecord() {
   }
 
 const figures = useMemo(() => {
-  if (!order) return { total: 0, deposit: 0, paid: 0, refunded: 0, balance: 0 };
+  if (!order)
+    return { total: 0, deposit: 0, paid: 0, refunded: 0, balance: 0 };
 
-  // Prefer backend-calculated values first
-  const total = Number(order.total || (Number(order.deposit || 0) + Number(order.balance || 0)));
-  const deposit = Number(order.deposit || linkedQuote?.deposit || 0);
+  // Pull directly from backend when possible
+  const deposit = Number(order.deposit || 0);
+  const balance = Number(order.balance || 0);
+  const paid = Number(order.total_paid || 0);
+  const refunded = Number(order.refunded_total || 0);
 
-  const paid = payments
-    .filter((p) => p.status === "paid" && p.amount > 0)
-    .reduce((sum, p) => sum + Number(p.amount), 0);
+  // Compute total and remaining balance dynamically
+  const total = deposit + balance;
+  const remaining = Math.max(total - (paid - refunded), 0);
 
-  const refunded = payments
-    .filter((p) => p.status === "refunded" || p.amount < 0)
-    .reduce((sum, p) => sum + Math.abs(Number(p.amount)), 0);
+  return { total, deposit, paid, refunded, balance: remaining };
+}, [order]);
 
-  const balance =
-    order.balance !== undefined
-      ? Number(order.balance)
-      : Math.max(total - deposit, 0);
-
-  const balanceRemaining = Math.max(total - (paid - refunded), 0);
-
-  return {
-    total,
-    deposit,
-    paid,
-    refunded,
-    balance: balanceRemaining,
-  };
-}, [order, linkedQuote, payments]);
 
 
   /* ============================================================

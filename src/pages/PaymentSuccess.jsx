@@ -38,7 +38,7 @@ export default function PaymentSuccess() {
 
         {/* Title */}
         <h1 className="text-3xl font-bold text-emerald-400 mb-4">
-          Payment Successful 🎉
+          Payment Successful 
         </h1>
 
         {/* Message */}
