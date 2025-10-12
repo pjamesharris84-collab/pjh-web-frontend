@@ -167,53 +167,59 @@ export default function AdminQuoteRecord() {
     }
   }
 
+ // ──────────────────────────────
+// Totals (mirrors AdminQuoteNew)
+// ──────────────────────────────
+const totals = useMemo(() => {
+  if (!quote) return null;
+
+  const subtotal = quote.items.reduce(
+    (sum, it) => sum + toNum(it.qty, 1) * toNum(it.unit_price, 0),
+    0
+  );
+
+  const afterLine = quote.items.reduce((sum, it) => {
+    const gross = toNum(it.qty, 1) * toNum(it.unit_price, 0);
+    const lineDisc = clampPct(it.discount_percent);
+    const net = gross * (1 - lineDisc / 100);
+    return sum + net;
+  }, 0);
+
+  const globalDisc = clampPct(quote.discount_percent);
+  const afterDiscounts = afterLine * (1 - globalDisc / 100);
+
   // ──────────────────────────────
-  // Totals (mirrors AdminQuoteNew)
+  // 💰 Deposit + Balance Rules (Fixed)
   // ──────────────────────────────
-  const totals = useMemo(() => {
-    if (!quote) return null;
+  const pkg = packages.find((p) => String(p.id) === String(quote.package_id));
+  const maint = maintenancePlans.find(
+    (m) => String(m.id) === String(quote.maintenance_id)
+  );
 
-    const subtotal = quote.items.reduce(
-      (sum, it) => sum + toNum(it.qty, 1) * toNum(it.unit_price, 0),
-      0
-    );
+  const packagePrice =
+    quote.pricing_mode === "monthly"
+      ? toNum(pkg?.price_monthly, 0)
+      : toNum(pkg?.price_oneoff, 0);
 
-    const afterLine = quote.items.reduce((sum, it) => {
-      const gross = toNum(it.qty, 1) * toNum(it.unit_price, 0);
-      const lineDisc = clampPct(it.discount_percent);
-      const net = gross * (1 - lineDisc / 100);
-      return sum + net;
-    }, 0);
+  const maintenancePrice = toNum(maint?.price, 0);
 
-    const globalDisc = clampPct(quote.discount_percent);
-    const afterDiscounts = afterLine * (1 - globalDisc / 100);
+  let deposit = 0;
+  let balance = 0;
 
-    const pkg = packages.find((p) => String(p.id) === String(quote.package_id));
-    const maint = maintenancePlans.find(
-      (m) => String(m.id) === String(quote.maintenance_id)
-    );
+  if (quote.pricing_mode === "monthly") {
+    // Monthly → full first month of both
+    deposit = packagePrice + maintenancePrice;
+    balance = 0;
+  } else {
+    // One-off → 50% of package + 1 month of maintenance upfront
+    deposit = packagePrice * 0.5 + maintenancePrice;
+    // Balance = remaining 50% of package only
+    balance = packagePrice * 0.5;
+  }
 
-    const packagePrice =
-      quote.pricing_mode === "monthly"
-        ? toNum(pkg?.price_monthly, 0)
-        : toNum(pkg?.price_oneoff, 0);
+  return { subtotal, afterDiscounts, deposit, balance };
+}, [quote, packages, maintenancePlans]);
 
-    const maintenancePrice = toNum(maint?.price, 0);
-
-    let deposit = 0;
-    if (quote.pricing_mode === "monthly") {
-      deposit = packagePrice + maintenancePrice;
-    } else {
-      deposit = packagePrice * 0.5 + maintenancePrice;
-    }
-
-    const balance =
-      quote.pricing_mode === "monthly"
-        ? 0
-        : Math.max(afterDiscounts - packagePrice * 0.5, 0);
-
-    return { subtotal, afterDiscounts, deposit, balance };
-  }, [quote, packages, maintenancePlans]);
 
   // ──────────────────────────────
   // Line items CRUD
