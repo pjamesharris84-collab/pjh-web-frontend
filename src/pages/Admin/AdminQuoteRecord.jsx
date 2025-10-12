@@ -326,18 +326,19 @@ const totals = useMemo(() => {
         ? `${API_BASE}/api/customers/${customerId}/quotes/${quoteId}`
         : `${API_BASE}/api/quotes/${quoteId}`;
 
-      const payload = {
-        title: quote.title,
-        description: quote.description,
-        items: quote.items.map(({ id, ...r }) => r),
-        notes: quote.notes,
-        status: quote.status,
-        discount_percent: clampPct(quote.discount_percent),
-        package_id: quote.package_id ? Number(quote.package_id) : null,
-        maintenance_id: quote.maintenance_id ? Number(quote.maintenance_id) : null,
-        pricing_mode: quote.pricing_mode || "oneoff",
-        deposit: Number((totals?.deposit ?? 0).toFixed(2)),
-      };
+const payload = {
+  customer_id: customerId,
+  title: form.title,
+  description: form.description,
+  items: form.items.map(({ id, ...r }) => r),
+  notes: form.notes,
+  package_id: form.package_id ? Number(form.package_id) : null,
+  maintenance_id: form.maintenance_id ? Number(form.maintenance_id) : null, // ✅ Added
+  discount_percent: clampPct(form.discount_percent),
+  pricing_mode: form.pricing_mode,
+  deposit: Number((totals.deposit ?? 0).toFixed(2)),
+};
+
 
       const res = await fetch(url, {
         method: "PUT",
