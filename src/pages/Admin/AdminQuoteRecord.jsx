@@ -167,12 +167,29 @@ export default function AdminQuoteRecord() {
     }
   }
 
- // ──────────────────────────────
-// Totals (mirrors AdminQuoteNew)
-// ──────────────────────────────
+  function inferMaintenancePrice(quote, maintenancePlans, toNum) {
+  // 1) Prefer by saved maintenance_id
+  const plan = maintenancePlans.find(
+    (m) => String(m.id) === String(quote?.maintenance_id)
+  );
+  if (plan) return toNum(plan.price, 0);
+
+  // 2) Fall back: infer from line items
+  const names = maintenancePlans.map((m) => (m.name || "").toLowerCase());
+  const maintItem = (quote?.items || []).find((it) => {
+    const nm = (it.name || "").toLowerCase();
+    return (
+      names.includes(nm) ||
+      /(maintenance|webcare|care\s*plan|support)/i.test(nm)
+    );
+  });
+  return maintItem ? toNum(maintItem.unit_price, 0) : 0;
+}
+
 const totals = useMemo(() => {
   if (!quote) return null;
 
+  // Line-item maths (keeps discounts intact)
   const subtotal = quote.items.reduce(
     (sum, it) => sum + toNum(it.qty, 1) * toNum(it.unit_price, 0),
     0
@@ -188,37 +205,37 @@ const totals = useMemo(() => {
   const globalDisc = clampPct(quote.discount_percent);
   const afterDiscounts = afterLine * (1 - globalDisc / 100);
 
-  // ──────────────────────────────
-  // 💰 Deposit + Balance Rules (Fixed)
-  // ──────────────────────────────
+  // Determine package price from selected package (monthly vs one-off)
   const pkg = packages.find((p) => String(p.id) === String(quote.package_id));
-  const maint = maintenancePlans.find(
-    (m) => String(m.id) === String(quote.maintenance_id)
-  );
-
   const packagePrice =
     quote.pricing_mode === "monthly"
       ? toNum(pkg?.price_monthly, 0)
       : toNum(pkg?.price_oneoff, 0);
 
-  const maintenancePrice = toNum(maint?.price, 0);
+  // Maintenance: robust — use maintenance_id if present, else infer from items
+  const maintenancePrice = inferMaintenancePrice(quote, maintenancePlans, toNum);
 
+  // Deposit rules:
+  //  - One-off: 50% of package + first month of maintenance
+  //  - Monthly: 100% of package (first month) + 100% of maintenance (first month)
   let deposit = 0;
-  let balance = 0;
-
   if (quote.pricing_mode === "monthly") {
-    // Monthly → full first month of both
     deposit = packagePrice + maintenancePrice;
-    balance = 0;
   } else {
-    // One-off → 50% of package + 1 month of maintenance upfront
     deposit = packagePrice * 0.5 + maintenancePrice;
-    // Balance = remaining 50% of package only
-    balance = packagePrice * 0.5;
   }
+
+  // Balance rules:
+  //  - One-off: remaining 50% of package ONLY (maintenance first month already covered in deposit)
+  //  - Monthly: 0 (ongoing monthly billing handled separately)
+  const balance =
+    quote.pricing_mode === "monthly"
+      ? 0
+      : Math.max(afterDiscounts - (packagePrice * 0.5 + maintenancePrice), 0);
 
   return { subtotal, afterDiscounts, deposit, balance };
 }, [quote, packages, maintenancePlans]);
+
 
 
   // ──────────────────────────────
