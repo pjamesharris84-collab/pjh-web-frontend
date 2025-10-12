@@ -110,33 +110,37 @@ export default function AdminOrderRecord() {
     }
   }
 
-  /* ============================================================
-     💰 Corrected Financial Logic
-  ============================================================ */
-  const figures = useMemo(() => {
-    if (!linkedQuote)
-      return { total: 0, deposit: 0, paid: 0, refunded: 0, balance: 0 };
+const figures = useMemo(() => {
+  if (!order) return { total: 0, deposit: 0, paid: 0, refunded: 0, balance: 0 };
 
-    // 1️⃣ From linked quote
-    const total = Number(
-      linkedQuote.custom_price || linkedQuote.total_after_discount || 0
-    );
-    const deposit = Number(linkedQuote.deposit || 0);
+  // Prefer backend-calculated values first
+  const total = Number(order.total || (Number(order.deposit || 0) + Number(order.balance || 0)));
+  const deposit = Number(order.deposit || linkedQuote?.deposit || 0);
 
-    // 2️⃣ From backend
-    const paid = payments
-      .filter((p) => p.status === "paid" && p.amount > 0)
-      .reduce((sum, p) => sum + Number(p.amount), 0);
+  const paid = payments
+    .filter((p) => p.status === "paid" && p.amount > 0)
+    .reduce((sum, p) => sum + Number(p.amount), 0);
 
-    const refunded = payments
-      .filter((p) => p.status === "refunded" || p.amount < 0)
-      .reduce((sum, p) => sum + Math.abs(Number(p.amount)), 0);
+  const refunded = payments
+    .filter((p) => p.status === "refunded" || p.amount < 0)
+    .reduce((sum, p) => sum + Math.abs(Number(p.amount)), 0);
 
-    // 3️⃣ Balance = Order Total - (Payments - Refunds)
-    const balance = Math.max(total - (paid - refunded), 0);
+  const balance =
+    order.balance !== undefined
+      ? Number(order.balance)
+      : Math.max(total - deposit, 0);
 
-    return { total, deposit, paid, refunded, balance };
-  }, [linkedQuote, payments]);
+  const balanceRemaining = Math.max(total - (paid - refunded), 0);
+
+  return {
+    total,
+    deposit,
+    paid,
+    refunded,
+    balance: balanceRemaining,
+  };
+}, [order, linkedQuote, payments]);
+
 
   /* ============================================================
      💳 Stripe Actions + Refunds

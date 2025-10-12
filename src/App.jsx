@@ -5,9 +5,9 @@
  * Homepage layout for PJH Web Services.
  * Updated to include:
  *   • Local business focus & plain-English messaging
- *   • "Cut Through the Noise" and "We Stay Ahead" positioning
- *   • SEO-optimised content for local services
- *   • All functionality preserved (API fetch, routing, UI)
+ *   • Clearer flow to detailed package pages
+ *   • Removed redundant “See Full Pricing” link
+ *   • Restored footer, maintenance, and CookieBanner
  * ============================================================
  */
 
@@ -86,7 +86,6 @@ export default function App() {
       });
   }, []);
 
-  // 🔹 Unified Button Classes
   const buttonPrimary =
     "inline-block px-8 py-3 bg-blue-700 hover:bg-blue-800 text-white font-semibold rounded-xl transition-all duration-300 shadow-sm hover:shadow-blue-900/30";
   const buttonOutline =
@@ -135,9 +134,9 @@ export default function App() {
             <a href="#services" className={buttonOutline}>
               View Services
             </a>
-            <Link to="/pricing" className={buttonPrimary}>
+            <a href="#packages" className={buttonPrimary}>
               View Packages
-            </Link>
+            </a>
             <Link to="/maintenance" className={buttonSubtle}>
               Website Care Plans
             </Link>
@@ -193,6 +192,10 @@ export default function App() {
             Packages for Every Local Business
           </h2>
 
+          <p className="text-center text-gray-400 mb-10">
+            Click a package below to view full details and inclusions.
+          </p>
+
           {packages.length > 0 ? (
             <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-10">
               {packages.map((pkg) => (
@@ -203,24 +206,27 @@ export default function App() {
                   <h3 className="text-xl font-semibold text-blue-400 mb-1">
                     {pkg.name}
                   </h3>
-                  <p className="text-gray-400 mb-4 text-sm">
-                    £{pkg.price_oneoff} one-off
-                    <br />
-                    or £{pkg.price_monthly}/month (min{" "}
-                    {pkg.term_months || 24} months)
+
+                  <p className="text-gray-400 mb-3 text-sm">
+                    {pkg.tagline || "Perfect for growing local businesses"}
                   </p>
+
+                  <p className="text-gray-300 text-lg font-semibold mb-4">
+                    £{pkg.price_oneoff} one-off <br />
+                    or £{pkg.price_monthly}/month
+                  </p>
+
                   <ul className="text-gray-500 text-sm mb-6 list-disc list-inside leading-relaxed">
-                    {(pkg.features || []).slice(0, 4).map((f, i) => (
+                    {(pkg.features || []).slice(0, 2).map((f, i) => (
                       <li key={i}>{f}</li>
                     ))}
                   </ul>
+
                   <Link
-                    to={`/packages/${encodeURIComponent(
-                      pkg.name.toLowerCase()
-                    )}`}
-                    className={`${buttonPrimary} w-full text-center`}
+                    to={`/packages/${encodeURIComponent(pkg.name.toLowerCase())}`}
+                    className="inline-block w-full text-center px-6 py-3 bg-blue-700 hover:bg-blue-800 text-white font-semibold rounded-xl transition-all duration-300 shadow-sm hover:shadow-blue-900/30"
                   >
-                    Select Package
+                    View Details →
                   </Link>
                 </div>
               ))}
@@ -228,12 +234,6 @@ export default function App() {
           ) : (
             <p className="text-center text-gray-500">No packages available.</p>
           )}
-
-          <div className="text-center mt-16">
-            <Link to="/pricing" className={buttonOutline}>
-              View Full Pricing →
-            </Link>
-          </div>
         </section>
 
         {/* ABOUT SECTION */}
@@ -279,7 +279,9 @@ export default function App() {
 
       {/* FOOTER */}
       <footer className="border-t border-white/10 py-10 text-center text-sm text-gray-500 space-y-4 bg-slate-950">
-        <p>© {new Date().getFullYear()} PJH Web Services — All rights reserved.</p>
+        <p>
+          © {new Date().getFullYear()} PJH Web Services — All rights reserved.
+        </p>
 
         <div className="flex justify-center flex-wrap gap-4 text-xs uppercase tracking-wide">
           <Link to="/legal/privacy" className="hover:text-blue-400 transition">
