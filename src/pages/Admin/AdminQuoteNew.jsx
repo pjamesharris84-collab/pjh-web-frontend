@@ -232,22 +232,52 @@ export default function AdminQuoteNew() {
       (sum, it) => sum + toNum(it.qty, 1) * toNum(it.unit_price, 0),
       0
     );
+
     const afterLine = items.reduce((sum, it) => {
       const gross = toNum(it.qty, 1) * toNum(it.unit_price, 0);
       const net = gross * (1 - clampPct(it.discount_percent) / 100);
       return sum + net;
     }, 0);
+
     const afterDiscounts = afterLine * (1 - clampPct(form.discount_percent) / 100);
-    const deposit =
+
+    // ──────────────────────────────
+    // 💰 Deposit Rules
+    // ──────────────────────────────
+    // One-off package = 50% deposit
+    // Monthly package = 100% (first month)
+    // Maintenance = +100% of maintenance (always first month)
+    const pkg = packages.find((p) => String(p.id) === String(form.package_id));
+    const maint = maintenancePlans.find(
+      (m) => String(m.id) === String(form.maintenance_id)
+    );
+
+    const packagePrice =
       form.pricing_mode === "monthly"
-        ? afterDiscounts
-        : afterDiscounts * 0.5;
+        ? toNum(pkg?.price_monthly, 0)
+        : toNum(pkg?.price_oneoff, 0);
+
+    const maintenancePrice = toNum(maint?.price, 0);
+
+    let deposit = 0;
+
+    if (form.pricing_mode === "monthly") {
+      // Pay monthly → full first month for package + maintenance
+      deposit = packagePrice + maintenancePrice;
+    } else {
+      // One-off → 50% of package + first month of maintenance (if any)
+      deposit = packagePrice * 0.5 + maintenancePrice;
+    }
+
+    // Balance = remaining (only relevant for one-off)
     const balance =
       form.pricing_mode === "monthly"
         ? 0
-        : Math.max(afterDiscounts - deposit, 0);
+        : Math.max(afterDiscounts - (packagePrice * 0.5), 0);
+
     return { subtotal, afterDiscounts, deposit, balance };
-  }, [form]);
+  }, [form, packages, maintenancePlans]);
+
 
   // ──────────────────────────────
   // Save / Delete / Close

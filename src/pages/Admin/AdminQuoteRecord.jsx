@@ -1,16 +1,14 @@
 /**
  * ============================================================
- * PJH Web Services — Admin Quote Record (2025 Parity & Clean Maths)
+ * PJH Web Services — Admin Quote Record (2025 Parity Build)
  * ============================================================
- * Rules:
- *  • Packages populate line items and define total cost
- *  • Subtotal = sum of items before discounts
- *  • After Discounts = Subtotal minus line discounts, then global discount
- *  • Deposit (NOT editable):
- *      - oneoff  → 50% of After Discounts
- *      - monthly → first month's charge (After Discounts)
- *  • Balance = After Discounts - Deposit (monthly → £0.00)
- *  • Package + pricing mode can be changed any time (with rebuild confirm)
+ * Full parity with AdminQuoteNew:
+ *  • Loads Packages + Maintenance Plans
+ *  • Smart deposit logic:
+ *      - One-off  → 50% of package + 100% maintenance
+ *      - Monthly  → 100% of both (first month)
+ *  • Mirrors full discount and totals math
+ *  • Auto-adds/removes maintenance line items
  * ============================================================
  */
 
@@ -25,6 +23,7 @@ export default function AdminQuoteRecord() {
 
   const [quote, setQuote] = useState(null);
   const [packages, setPackages] = useState([]);
+  const [maintenancePlans, setMaintenancePlans] = useState([]); // ✅ added
   const [saving, setSaving] = useState(false);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
@@ -36,28 +35,18 @@ export default function AdminQuoteRecord() {
   const clampPct = (n) => Math.min(Math.max(toNum(n, 0), 0), 100);
   const money = (n) => (Number.isFinite(n) ? n.toFixed(2) : "0.00");
 
-  // Distribute base amount across features by weights and ensure the sum is exact
   function distributeAmount(amount, weights) {
     const totalW = weights.reduce((a, b) => a + b, 0) || 1;
     const raw = weights.map((w) => (amount * w) / totalW);
     const rounded = raw.map((x) => Math.floor(x * 100) / 100);
     const diff = Number((amount - rounded.reduce((a, b) => a + b, 0)).toFixed(2));
     if (diff !== 0) {
-      // add remainder to the largest raw share to keep proportionality sensible
-      let idx = 0;
-      let max = -Infinity;
-      raw.forEach((x, i) => {
-        if (x > max) {
-          max = x;
-          idx = i;
-        }
-      });
+      const idx = raw.indexOf(Math.max(...raw));
       rounded[idx] = Number((rounded[idx] + diff).toFixed(2));
     }
     return rounded;
   }
 
-  // Build line items from a package for a pricing mode
   function buildItemsFromPackage(pkg, pricingMode) {
     const features = Array.isArray(pkg.features) ? pkg.features : [];
     const basePrice =
@@ -82,11 +71,10 @@ export default function AdminQuoteRecord() {
       if (/(design|build|development|ui|ux)/.test(s)) return 4;
       if (/(booking|crm|portal|system|scheduler|payment)/.test(s)) return 3;
       if (/(content|seo|hosting|support|training|domain)/.test(s)) return 1.5;
-      return 1; // default
+      return 1;
     });
 
     const amounts = distributeAmount(basePrice, weights);
-
     const items = features.map((f, i) => ({
       id: `pkg-${pkg.id}-${i}-${Date.now()}`,
       name: f,
@@ -108,6 +96,7 @@ export default function AdminQuoteRecord() {
   useEffect(() => {
     if (quoteId) loadQuote();
     loadPackages();
+    loadMaintenancePlans(); // ✅ added
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [quoteId]);
 
@@ -121,6 +110,23 @@ export default function AdminQuoteRecord() {
     }
   }
 
+  async function loadMaintenancePlans() {
+    try {
+      const res = await fetch(`${API_BASE}/api/maintenance/plans`);
+      const data = await res.json();
+      setMaintenancePlans(
+        Array.isArray(data)
+          ? data
+          : Array.isArray(data.data)
+          ? data.data
+          : []
+      );
+    } catch (err) {
+      console.error("❌ Failed to load maintenance plans:", err);
+      setMaintenancePlans([]);
+    }
+  }
+
   async function loadQuote() {
     try {
       const url = customerId
@@ -131,7 +137,6 @@ export default function AdminQuoteRecord() {
       const data = await res.json();
 
       const q = data.quote || data.data || data;
-
       const items = Array.isArray(q.items)
         ? q.items.map((it, i) => ({
             id: it.id ?? `item-${i}-${Date.now()}`,
@@ -153,6 +158,7 @@ export default function AdminQuoteRecord() {
         notes: q.notes || "",
         status: q.status || "pending",
         package_id: q.package_id || "",
+        maintenance_id: q.maintenance_id || "",
         pricing_mode: q.pricing_mode === "monthly" ? "monthly" : "oneoff",
         order_id: q.order_id || null,
       });
@@ -162,18 +168,16 @@ export default function AdminQuoteRecord() {
   }
 
   // ──────────────────────────────
-  // Totals
+  // Totals (mirrors AdminQuoteNew)
   // ──────────────────────────────
   const totals = useMemo(() => {
     if (!quote) return null;
 
-    // Subtotal (before any discounts)
     const subtotal = quote.items.reduce(
       (sum, it) => sum + toNum(it.qty, 1) * toNum(it.unit_price, 0),
       0
     );
 
-    // After line discounts
     const afterLine = quote.items.reduce((sum, it) => {
       const gross = toNum(it.qty, 1) * toNum(it.unit_price, 0);
       const lineDisc = clampPct(it.discount_percent);
@@ -181,22 +185,35 @@ export default function AdminQuoteRecord() {
       return sum + net;
     }, 0);
 
-    // After global discount
     const globalDisc = clampPct(quote.discount_percent);
     const afterDiscounts = afterLine * (1 - globalDisc / 100);
 
-    // Deposit logic
-    const deposit =
-      quote.pricing_mode === "monthly"
-        ? afterDiscounts // first month
-        : afterDiscounts * 0.5; // 50% for one-off
+    const pkg = packages.find((p) => String(p.id) === String(quote.package_id));
+    const maint = maintenancePlans.find(
+      (m) => String(m.id) === String(quote.maintenance_id)
+    );
 
-    // Balance
+    const packagePrice =
+      quote.pricing_mode === "monthly"
+        ? toNum(pkg?.price_monthly, 0)
+        : toNum(pkg?.price_oneoff, 0);
+
+    const maintenancePrice = toNum(maint?.price, 0);
+
+    let deposit = 0;
+    if (quote.pricing_mode === "monthly") {
+      deposit = packagePrice + maintenancePrice;
+    } else {
+      deposit = packagePrice * 0.5 + maintenancePrice;
+    }
+
     const balance =
-      quote.pricing_mode === "monthly" ? 0 : Math.max(afterDiscounts - deposit, 0);
+      quote.pricing_mode === "monthly"
+        ? 0
+        : Math.max(afterDiscounts - packagePrice * 0.5, 0);
 
     return { subtotal, afterDiscounts, deposit, balance };
-  }, [quote]);
+  }, [quote, packages, maintenancePlans]);
 
   // ──────────────────────────────
   // Line items CRUD
@@ -204,7 +221,11 @@ export default function AdminQuoteRecord() {
   const updateItem = (i, patch) =>
     setQuote((q) => {
       const items = [...q.items];
-      items[i] = { ...items[i], ...patch, discount_percent: clampPct(patch.discount_percent ?? items[i].discount_percent) };
+      items[i] = {
+        ...items[i],
+        ...patch,
+        discount_percent: clampPct(patch.discount_percent ?? items[i].discount_percent),
+      };
       return { ...q, items };
     });
 
@@ -213,7 +234,13 @@ export default function AdminQuoteRecord() {
       ...q,
       items: [
         ...q.items,
-        { id: `item-${Date.now()}`, name: "New Item", qty: 1, unit_price: 0, discount_percent: 0 },
+        {
+          id: `item-${Date.now()}`,
+          name: "New Item",
+          qty: 1,
+          unit_price: 0,
+          discount_percent: 0,
+        },
       ],
     }));
 
@@ -221,18 +248,18 @@ export default function AdminQuoteRecord() {
     setQuote((q) => ({ ...q, items: q.items.filter((_, idx) => idx !== i) }));
 
   // ──────────────────────────────
-  // Package & Pricing mode controls
+  // Package, Maintenance & Pricing mode controls
   // ──────────────────────────────
   function handlePackageChange(packageId) {
     if (!packageId) {
-      setQuote((q) => ({ ...q, package_id: "", items: q.items })); // keep current items
+      setQuote((q) => ({ ...q, package_id: "", items: q.items }));
       return;
     }
     const pkg = packages.find((p) => String(p.id) === String(packageId));
     if (!pkg) return;
 
-    if (!confirm("Replace current items with items from this package?")) {
-      setQuote((q) => ({ ...q, package_id: pkg.id })); // just store selection
+    if (!confirm("Replace current items with this package’s features?")) {
+      setQuote((q) => ({ ...q, package_id: pkg.id }));
       return;
     }
 
@@ -240,26 +267,41 @@ export default function AdminQuoteRecord() {
     setQuote((q) => ({
       ...q,
       package_id: pkg.id,
-      title: q.title || pkg.name || "Quote",
-      description: q.description || pkg.tagline || "",
+      title: q.title || pkg.name,
+      description: q.description || pkg.tagline,
       items,
     }));
+  }
+
+  function handleMaintenanceChange(maintId) {
+    const plan = maintenancePlans.find((m) => String(m.id) === String(maintId));
+    if (!plan) return;
+    setQuote((q) => {
+      // Remove any previous maintenance lines
+      const filtered = q.items.filter(
+        (it) => !/(maintenance|care|support|plan)/i.test(it.name)
+      );
+      // Add selected plan as line item
+      const newItem = {
+        id: `maint-${plan.id}-${Date.now()}`,
+        name: plan.name,
+        qty: 1,
+        unit_price: toNum(plan.price, 0),
+        discount_percent: 0,
+      };
+      return { ...q, maintenance_id: maintId, items: [...filtered, newItem] };
+    });
   }
 
   function handlePricingModeChange(mode) {
     if (mode === quote.pricing_mode) return;
     if (!quote.package_id) {
-      // No package selected → just switch mode, keep manual items as-is
       setQuote((q) => ({ ...q, pricing_mode: mode }));
       return;
     }
     const pkg = packages.find((p) => String(p.id) === String(quote.package_id));
-    if (!pkg) {
-      setQuote((q) => ({ ...q, pricing_mode: mode }));
-      return;
-    }
-
-    if (confirm("Switch pricing mode and rebuild items from the selected package?")) {
+    if (!pkg) return;
+    if (confirm("Switch pricing mode and rebuild items from package?")) {
       const { items } = buildItemsFromPackage(pkg, mode);
       setQuote((q) => ({ ...q, pricing_mode: mode, items }));
     } else {
@@ -268,7 +310,7 @@ export default function AdminQuoteRecord() {
   }
 
   // ──────────────────────────────
-  // Actions
+  // Save / Order Actions
   // ──────────────────────────────
   async function handleSave() {
     if (!quote) return;
@@ -286,6 +328,7 @@ export default function AdminQuoteRecord() {
         status: quote.status,
         discount_percent: clampPct(quote.discount_percent),
         package_id: quote.package_id ? Number(quote.package_id) : null,
+        maintenance_id: quote.maintenance_id ? Number(quote.maintenance_id) : null,
         pricing_mode: quote.pricing_mode || "oneoff",
         deposit: Number((totals?.deposit ?? 0).toFixed(2)),
       };
@@ -368,7 +411,7 @@ export default function AdminQuoteRecord() {
       {/* META */}
       <div className="bg-pjh-gray p-6 rounded-xl mt-6 grid sm:grid-cols-2 gap-4">
         <div className="sm:col-span-2">
-          <label className="text-sm text-pjh-muted">Package</label>
+          <label className="text-sm text-pjh-muted">Website Package</label>
           <select
             className="form-input mt-1"
             value={quote.package_id || ""}
@@ -377,7 +420,25 @@ export default function AdminQuoteRecord() {
             <option value="">— No Package —</option>
             {packages.map((p) => (
               <option key={p.id} value={p.id}>
-                {p.name} (One-off £{money(toNum(p.price_oneoff))} • Monthly £{money(toNum(p.price_monthly))})
+                {p.name} (One-off £{money(toNum(p.price_oneoff))} • Monthly £
+                {money(toNum(p.price_monthly))})
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* ✅ Maintenance Plan */}
+        <div className="sm:col-span-2">
+          <label className="text-sm text-pjh-muted">Maintenance Plan</label>
+          <select
+            className="form-input mt-1"
+            value={quote.maintenance_id || ""}
+            onChange={(e) => handleMaintenanceChange(e.target.value)}
+          >
+            <option value="">— Optional maintenance plan —</option>
+            {maintenancePlans.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name} (£{money(toNum(m.price))}/month)
               </option>
             ))}
           </select>
@@ -389,7 +450,9 @@ export default function AdminQuoteRecord() {
             <button
               type="button"
               className={`px-3 py-1 rounded-md ${
-                quote.pricing_mode === "oneoff" ? "bg-pjh-blue text-white" : "bg-pjh-slate text-pjh-muted"
+                quote.pricing_mode === "oneoff"
+                  ? "bg-pjh-blue text-white"
+                  : "bg-pjh-slate text-pjh-muted"
               }`}
               onClick={() => handlePricingModeChange("oneoff")}
             >
@@ -398,7 +461,9 @@ export default function AdminQuoteRecord() {
             <button
               type="button"
               className={`px-3 py-1 rounded-md ${
-                quote.pricing_mode === "monthly" ? "bg-pjh-blue text-white" : "bg-pjh-slate text-pjh-muted"
+                quote.pricing_mode === "monthly"
+                  ? "bg-pjh-blue text-white"
+                  : "bg-pjh-slate text-pjh-muted"
               }`}
               onClick={() => handlePricingModeChange("monthly")}
             >
@@ -435,7 +500,9 @@ export default function AdminQuoteRecord() {
             className="form-input mt-1"
             rows={3}
             value={quote.description}
-            onChange={(e) => setQuote({ ...quote, description: e.target.value })}
+            onChange={(e) =>
+              setQuote({ ...quote, description: e.target.value })
+            }
             placeholder="Short description"
           />
         </div>
@@ -446,7 +513,9 @@ export default function AdminQuoteRecord() {
             type="number"
             className="form-input mt-1"
             value={quote.discount_percent ?? 0}
-            onChange={(e) => setQuote({ ...quote, discount_percent: clampPct(e.target.value) })}
+            onChange={(e) =>
+              setQuote({ ...quote, discount_percent: clampPct(e.target.value) })
+            }
             min="0"
             max="100"
             step="0.01"
@@ -469,7 +538,9 @@ export default function AdminQuoteRecord() {
       <div className="bg-pjh-slate p-6 rounded-xl mt-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold text-pjh-blue">Line Items</h2>
-          <button onClick={addItem} className="btn-secondary">➕ Add Line</button>
+          <button onClick={addItem} className="btn-secondary">
+            ➕ Add Line
+          </button>
         </div>
 
         <div className="overflow-x-auto">
@@ -479,7 +550,7 @@ export default function AdminQuoteRecord() {
                 <th className="p-3 w-[36%]">Item</th>
                 <th className="p-3 w-[10%]">Qty</th>
                 <th className="p-3 w-[14%]">Unit (£)</th>
-                <th className="p-3 w-[14%]">Line Discount %</th>
+                <th className="p-3 w-[14%]">Discount %</th>
                 <th className="p-3 w-[16%]">Line Total (£)</th>
                 <th className="p-3 w-[10%]"></th>
               </tr>
@@ -494,7 +565,9 @@ export default function AdminQuoteRecord() {
                       <input
                         className="form-input w-full"
                         value={it.name}
-                        onChange={(e) => updateItem(i, { name: e.target.value })}
+                        onChange={(e) =>
+                          updateItem(i, { name: e.target.value })
+                        }
                       />
                     </td>
                     <td className="p-2">
@@ -504,7 +577,9 @@ export default function AdminQuoteRecord() {
                         step="1"
                         className="form-input w-24"
                         value={it.qty}
-                        onChange={(e) => updateItem(i, { qty: toNum(e.target.value, 0) })}
+                        onChange={(e) =>
+                          updateItem(i, { qty: toNum(e.target.value, 0) })
+                        }
                       />
                     </td>
                     <td className="p-2">
@@ -514,26 +589,34 @@ export default function AdminQuoteRecord() {
                         step="0.01"
                         className="form-input w-32"
                         value={it.unit_price}
-                        onChange={(e) => updateItem(i, { unit_price: toNum(e.target.value, 0) })}
+                        onChange={(e) =>
+                          updateItem(i, {
+                            unit_price: toNum(e.target.value, 0),
+                          })
+                        }
                       />
                     </td>
                     <td className="p-2">
-                      <div className="flex flex-col">
-                        <label className="text-xs text-pjh-muted mb-1">Discount %</label>
-                        <input
-                          type="number"
-                          min="0"
-                          max="100"
-                          step="0.01"
-                          className="form-input w-28"
-                          value={it.discount_percent}
-                          onChange={(e) => updateItem(i, { discount_percent: clampPct(e.target.value) })}
-                        />
-                      </div>
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.01"
+                        className="form-input w-24"
+                        value={it.discount_percent}
+                        onChange={(e) =>
+                          updateItem(i, {
+                            discount_percent: clampPct(e.target.value),
+                          })
+                        }
+                      />
                     </td>
                     <td className="p-2 font-semibold">£{money(net)}</td>
                     <td className="p-2 text-right">
-                      <button onClick={() => removeItem(i)} className="btn-danger" title="Remove line">
+                      <button
+                        onClick={() => removeItem(i)}
+                        className="btn-danger"
+                      >
                         ✖
                       </button>
                     </td>
@@ -551,18 +634,24 @@ export default function AdminQuoteRecord() {
           </table>
         </div>
 
-        {/* TOTALS */}
         {totals && (
           <div className="mt-6 grid gap-1 justify-end text-right">
             <p className="text-sm text-pjh-muted">
-              Subtotal{quote.pricing_mode === "monthly" ? " (per month)" : ""}: £{money(totals.subtotal)}
+              Subtotal
+              {quote.pricing_mode === "monthly" ? " (per month)" : ""}: £
+              {money(totals.subtotal)}
             </p>
             <p className="text-sm">
               After discounts: <b>£{money(totals.afterDiscounts)}</b>
             </p>
             <p className="text-lg">
-              Deposit {quote.pricing_mode === "monthly" ? "(first month)" : "(50%)"}:{" "}
-              <b>£{money(totals.deposit)}</b>
+              Deposit{" "}
+              {quote.pricing_mode === "monthly"
+                ? "(first month)"
+                : quote.maintenance_id
+                ? "(50% + first month of maintenance)"
+                : "(50%)"}
+              : <b>£{money(totals.deposit)}</b>
             </p>
             <p className="text-lg">
               Balance: <b>£{money(totals.balance)}</b>

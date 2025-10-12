@@ -86,6 +86,27 @@ export default function AdminCustomerRecord() {
     }
   }
 
+  // 🗑️ Delete quote
+  async function handleDeleteQuote(quoteId, quoteTitle) {
+    if (
+      !confirm(
+        `Are you sure you want to delete quote "${
+          quoteTitle || quoteId
+        }"? This action cannot be undone.`
+      )
+    )
+      return;
+
+    try {
+      await apiFetch(`/api/quotes/${quoteId}`, { method: "DELETE" });
+      alert("✅ Quote deleted successfully");
+      await loadQuotes(); // Refresh quotes list
+    } catch (err) {
+      console.error("❌ Failed to delete quote:", err);
+      alert("❌ Failed to delete quote — check console for details.");
+    }
+  }
+
   if (!customer) {
     return (
       <div className="p-10 text-pjh-muted animate-pulse">
@@ -166,21 +187,41 @@ export default function AdminCustomerRecord() {
                 <th className="p-3">Title</th>
                 <th className="p-3">Deposit (£)</th>
                 <th className="p-3">Status</th>
+                <th className="p-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
               {quotes.map((q) => (
                 <tr
                   key={q.id}
-                  className="border-t border-white/5 hover:bg-pjh-gray/40 cursor-pointer transition"
-                  onClick={() =>
-                    (window.location.href = `/admin/quotes/${q.id}`)
-                  }
+                  className="border-t border-white/5 hover:bg-pjh-gray/40 transition"
                 >
-                  <td className="p-3">{q.quote_number || "—"}</td>
-                  <td className="p-3">{q.title || "Untitled"}</td>
+                  <td
+                    className="p-3 cursor-pointer"
+                    onClick={() =>
+                      (window.location.href = `/admin/quotes/${q.id}`)
+                    }
+                  >
+                    {q.quote_number || "—"}
+                  </td>
+                  <td
+                    className="p-3 cursor-pointer"
+                    onClick={() =>
+                      (window.location.href = `/admin/quotes/${q.id}`)
+                    }
+                  >
+                    {q.title || "Untitled"}
+                  </td>
                   <td className="p-3">£{Number(q.deposit || 0).toFixed(2)}</td>
                   <td className="p-3 capitalize">{q.status || "draft"}</td>
+                  <td className="p-3 text-right">
+                    <button
+                      onClick={() => handleDeleteQuote(q.id, q.title)}
+                      className="text-red-400 hover:text-red-300 text-xs underline"
+                    >
+                      Delete
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>

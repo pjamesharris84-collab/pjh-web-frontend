@@ -1,9 +1,10 @@
 /**
  * ============================================================
- * PJH Web Services — Pricing Page (2025)
+ * PJH Web Services — Pricing Page (2025 Premium Version)
  * ============================================================
- * Unified with blue/white premium design system.
- * Consistent card layout, button styling, and gradient backdrop.
+ *  • Designed for clarity, conversion & trust
+ *  • Detailed package breakdowns for local businesses
+ *  • Blue/white premium design system
  * ============================================================
  */
 
@@ -35,56 +36,64 @@ export default function Pricing() {
         tagline: p.tagline,
         oneOff: p.price_oneoff ? Number(p.price_oneoff) : null,
         monthly: p.price_monthly ? Number(p.price_monthly) : null,
-        term: p.term_months ? Number(p.term_months) : null,
+        term: p.term_months ? Number(p.term_months) : 24,
         features: p.features || [],
         guards: p.pricing_guardrails || {},
       }))
     : [
-        // fallback (only if API returns nothing)
         {
           name: "Starter",
-          tagline: "Perfect for small business websites",
+          tagline: "Perfect for small local businesses taking their first step online",
           oneOff: 900,
           monthly: 60,
           term: 24,
           features: [
-            "4–6 pages",
-            "Responsive design",
-            "Basic SEO",
-            "Social links",
-            "Hosting setup",
+            "Up to 6 professionally designed pages",
+            "Responsive design (mobile & tablet friendly)",
+            "Basic SEO setup and keyword targeting",
+            "Custom contact form and social media links",
+            "Domain and hosting setup assistance",
+            "Ongoing support options available",
           ],
           guards: { require_deposit_months: 1, ownership_until_paid: true },
+          description:
+            "Ideal for small trades, sole traders, and local businesses who need a professional online presence that’s easy to update, search-ready, and designed to convert enquiries.",
         },
         {
           name: "Business",
-          tagline: "Automation & CRM essentials",
+          tagline: "Built for growing companies ready to streamline operations",
           oneOff: 2600,
           monthly: 140,
           term: 24,
           features: [
-            "Starter features",
-            "Bookings",
-            "Invoicing",
-            "CRM core",
-            "On-page SEO",
+            "Everything in the Starter package",
+            "Bespoke booking & enquiry systems",
+            "Integrated CRM core (track customers & leads)",
+            "Invoicing system integration",
+            "Enhanced SEO & Google Analytics setup",
+            "Professional email configuration",
           ],
           guards: { require_deposit_months: 1, ownership_until_paid: true },
+          description:
+            "Perfect for established businesses that want to automate repetitive admin, manage leads efficiently, and enhance client communications — all within one unified system.",
         },
         {
           name: "Premium",
-          tagline: "Full bespoke build + integrations",
+          tagline: "Fully bespoke CRM + advanced automation suite",
           oneOff: 6000,
           monthly: 300,
           term: 24,
           features: [
-            "Business features",
-            "Automations",
-            "Custom APIs",
-            "Priority support",
-            "SLA",
+            "Everything in Business package",
+            "Advanced workflow automations",
+            "Online payments & recurring billing",
+            "Bespoke integrations (e.g. Stripe, Zapier, Google Workspace)",
+            "Client portal access & advanced dashboards",
+            "Priority SLA support & maintenance",
           ],
           guards: { require_deposit_months: 1, ownership_until_paid: true },
+          description:
+            "Designed for scaling businesses that demand full automation, data insights, and high-end client portals — custom-built to fit your business model and growth plan.",
         },
       ];
 
@@ -97,13 +106,14 @@ export default function Pricing() {
   return (
     <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white py-20 px-6 font-outfit">
       {/* Header */}
-      <div className="text-center mb-14">
+      <div className="text-center mb-16">
         <h1 className="text-4xl sm:text-5xl font-bold text-blue-400 mb-4">
           Website Packages & Pricing
         </h1>
         <p className="max-w-3xl mx-auto text-gray-400 leading-relaxed">
-          Choose a package that fits your goals. Pay once, or spread the cost
-          monthly with the first month upfront.
+          Transparent, flexible pricing designed for local businesses. Choose a
+          one-off build or spread the cost monthly — every project is crafted
+          around your goals, not templates.
         </p>
       </div>
 
@@ -117,10 +127,10 @@ export default function Pricing() {
           return (
             <div
               key={idx}
-              className="bg-slate-900/70 rounded-2xl p-8 border border-white/10 shadow-xl backdrop-blur-sm hover:border-blue-600 transition-all duration-300"
+              className="bg-slate-900/70 rounded-2xl p-8 border border-white/10 shadow-xl backdrop-blur-sm hover:border-blue-600 transition-all duration-300 flex flex-col"
             >
               {/* Header */}
-              <div className="flex items-start justify-between mb-6">
+              <div className="flex items-start justify-between mb-5">
                 <div>
                   <h2 className="text-2xl font-semibold text-blue-400">
                     {pkg.name}
@@ -152,34 +162,46 @@ export default function Pricing() {
                 )}
               </div>
 
+              {/* Description */}
+              {pkg.description && (
+                <p className="text-gray-400 text-sm leading-relaxed mb-6">
+                  {pkg.description}
+                </p>
+              )}
+
               {/* Features */}
-              <ul className="space-y-2 text-sm text-gray-300 mb-6">
+              <ul className="space-y-2 text-sm text-gray-300 mb-6 border-t border-white/10 pt-4">
                 {pkg.features.map((f, i) => (
-                  <li key={i}>✔ {f}</li>
+                  <li key={i} className="flex items-start gap-2">
+                    <span className="text-blue-400">✔</span>
+                    <span>{f}</span>
+                  </li>
                 ))}
               </ul>
 
               {/* Notes */}
               {ownershipNote && showMonthly && (
-                <p className="text-xs text-gray-500 mb-5">
+                <p className="text-xs text-gray-500 mb-6">
                   Ownership transfers upon final payment. Early exit fees may
                   apply.
                 </p>
               )}
 
               {/* CTAs */}
-              <div className="flex gap-2">
-                <Link
-                  to={`/contact?package=${encodeURIComponent(
-                    pkg.name
-                  )}&price=${pkg.oneOff ?? ""}&monthly=${pkg.monthly ?? ""}`}
-                  className={buttonPrimary}
-                >
-                  Enquire about {pkg.name}
-                </Link>
-                <Link to="/legal/monthly-terms" className={buttonOutline}>
-                  Terms
-                </Link>
+              <div className="mt-auto">
+                <div className="flex gap-2">
+                  <Link
+                    to={`/contact?package=${encodeURIComponent(
+                      pkg.name
+                    )}&price=${pkg.oneOff ?? ""}&monthly=${pkg.monthly ?? ""}`}
+                    className={buttonPrimary}
+                  >
+                    Enquire about {pkg.name}
+                  </Link>
+                  <Link to="/legal/monthly-terms" className={buttonOutline}>
+                    Terms
+                  </Link>
+                </div>
               </div>
             </div>
           );
