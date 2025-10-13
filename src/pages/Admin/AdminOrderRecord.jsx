@@ -6,6 +6,7 @@
  *  ✅ Accurate 5-key financials (Total, Deposit, Paid, Refunds, Balance)
  *  ✅ Stripe & Bacs checkout actions
  *  ✅ Direct Debit visibility (maintenance plan + mandate)
+ *  ✅ Manual re-charge trigger for maintenance billing
  *  ✅ Full payment history tab
  *  ✅ Refund + re-charge awareness
  *  ✅ Delete + refresh order buttons
@@ -196,6 +197,39 @@ export default function AdminOrderRecord() {
   }
 
   /* ============================================================
+     ⚡ Manual Direct Debit Charge (Maintenance Re-run)
+  ============================================================ */
+  async function handleManualMaintenanceCharge() {
+    if (!order || !summary?.direct_debit_active) {
+      return alert("No active Direct Debit found for this order.");
+    }
+
+    const confirmCharge = confirm(
+      `Run Direct Debit maintenance charge of £${summary.maintenance_monthly?.toFixed(
+        2
+      )}?`
+    );
+    if (!confirmCharge) return;
+
+    setWorking(true);
+    try {
+      const res = await fetch(
+        `${API_BASE}/api/automation/directdebit/run?orderId=${order.id}`
+      );
+      if (!res.ok) throw new Error("Failed to trigger maintenance charge");
+      alert(
+        "✅ Maintenance charge initiated. It will appear once Stripe confirms."
+      );
+      refreshOrder();
+    } catch (err) {
+      console.error("❌ Maintenance charge error:", err);
+      alert("❌ Failed to trigger maintenance charge.");
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  /* ============================================================
      💰 Figures
   ============================================================ */
   const figures = useMemo(() => {
@@ -297,10 +331,21 @@ export default function AdminOrderRecord() {
               <p className="text-sm text-pjh-muted">
                 Maintenance Plan: £{summary.maintenance_monthly?.toFixed(2)}/month
               </p>
+
+              {/* Manual Direct Debit Re-run */}
+              {summary.direct_debit_active && summary.maintenance_monthly > 0 && (
+                <button
+                  onClick={handleManualMaintenanceCharge}
+                  disabled={working}
+                  className="btn bg-pjh-blue hover:bg-pjh-blue-dark mt-3"
+                >
+                  ⚡ Run Maintenance Charge Now
+                </button>
+              )}
             </div>
           )}
 
-          {/* Actions */}
+          {/* Payment Actions */}
           <div className="mt-10 space-y-6">
             <div className="flex flex-wrap gap-3">
               <button onClick={() => handleCreateCheckout("card_payment", "deposit")} disabled={working} className="btn bg-green-600 hover:bg-green-700">
