@@ -2,15 +2,15 @@
  * ============================================================
  * PJH Web Services — Admin Quote Record (2025 Parity Build)
  * ============================================================
- * Features:
- *  • Loads Packages + Maintenance Plans (auto sync)
+ * Full parity with AdminQuoteNew:
+ *  • Loads Packages + Maintenance Plans
  *  • Smart deposit logic:
  *      - One-off  → 50% of package + 100% maintenance
  *      - Monthly  → 100% of both (first month)
- *  • Mirrors discount + totals math from AdminQuoteNew
+ *  • Mirrors discount and totals math
  *  • Auto-adds/removes maintenance line items
  *  • Includes “Start Monthly Billing” (Stripe checkout)
- *  • Fix: Properly renders quote data regardless of API shape
+ *  • Fix: Proper rendering & full quote editor UI
  * ============================================================
  */
 
@@ -137,15 +137,7 @@ export default function AdminQuoteRecord() {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
 
-      console.log("🔍 API Response (Quote):", data);
-
-      // Normalise API shape
-      const q =
-        data?.quote ||
-        data?.data?.quote ||
-        data?.data ||
-        data;
-
+      const q = data?.quote || data?.data?.quote || data?.data || data;
       if (!q || !q.id) throw new Error("Invalid quote response.");
 
       const items = Array.isArray(q.items)
@@ -357,11 +349,9 @@ export default function AdminQuoteRecord() {
       </div>
     );
 
-  /* ============================================================
-     Main UI
-  ============================================================ */
   return (
     <div className="min-h-screen bg-pjh-charcoal text-pjh-light p-10">
+      {/* HEADER */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-3xl font-bold text-pjh-blue">
           Quote #{quote.quote_number}
@@ -379,6 +369,7 @@ export default function AdminQuoteRecord() {
         </div>
       </div>
 
+      {/* ACTIONS */}
       <div className="mt-6 grid sm:grid-cols-2 gap-4">
         <button onClick={handleSave} disabled={saving} className="btn-primary">
           {saving ? "Saving…" : "💾 Save Changes"}
@@ -410,6 +401,188 @@ export default function AdminQuoteRecord() {
             🪄 Convert to Order
           </button>
         )}
+      </div>
+
+      {/* FORM FIELDS */}
+      <div className="mt-8 space-y-6">
+        <div>
+          <label className="block text-sm text-pjh-muted mb-1">Title</label>
+          <input
+            type="text"
+            className="w-full bg-pjh-dark border border-slate-700 rounded p-2"
+            value={quote.title}
+            onChange={(e) => setQuote({ ...quote, title: e.target.value })}
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm text-pjh-muted mb-1">Description</label>
+          <textarea
+            className="w-full bg-pjh-dark border border-slate-700 rounded p-2 min-h-[80px]"
+            value={quote.description}
+            onChange={(e) => setQuote({ ...quote, description: e.target.value })}
+          />
+        </div>
+
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm text-pjh-muted mb-1">Package</label>
+            <select
+              className="w-full bg-pjh-dark border border-slate-700 rounded p-2"
+              value={quote.package_id}
+              onChange={(e) =>
+                setQuote({ ...quote, package_id: e.target.value || "" })
+              }
+            >
+              <option value="">— Select Package —</option>
+              {packages.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name} — £{money(p.price_oneoff)}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm text-pjh-muted mb-1">
+              Maintenance Plan
+            </label>
+            <select
+              className="w-full bg-pjh-dark border border-slate-700 rounded p-2"
+              value={quote.maintenance_id}
+              onChange={(e) =>
+                setQuote({ ...quote, maintenance_id: e.target.value || "" })
+              }
+            >
+              <option value="">— None —</option>
+              {maintenancePlans.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.name} — £{money(m.price)}/mo
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm text-pjh-muted mb-1">Pricing Mode</label>
+          <select
+            className="w-full bg-pjh-dark border border-slate-700 rounded p-2"
+            value={quote.pricing_mode}
+            onChange={(e) => setQuote({ ...quote, pricing_mode: e.target.value })}
+          >
+            <option value="oneoff">One-off (50% deposit)</option>
+            <option value="monthly">Monthly Subscription</option>
+          </select>
+        </div>
+
+        {/* ITEMS TABLE */}
+        <div className="overflow-x-auto mt-8">
+          <table className="w-full text-sm border-collapse">
+            <thead className="bg-pjh-dark text-pjh-blue uppercase text-xs">
+              <tr>
+                <th className="p-2 text-left">Item</th>
+                <th className="p-2 text-right">Qty</th>
+                <th className="p-2 text-right">Unit (£)</th>
+                <th className="p-2 text-right">Disc %</th>
+                <th className="p-2 text-right">Line Total (£)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {quote.items.map((it, i) => (
+                <tr key={it.id} className="border-b border-slate-800">
+                  <td className="p-2">
+                    <input
+                      className="w-full bg-transparent"
+                      value={it.name}
+                      onChange={(e) =>
+                        setQuote((q) => {
+                          const items = [...q.items];
+                          items[i].name = e.target.value;
+                          return { ...q, items };
+                        })
+                      }
+                    />
+                  </td>
+                  <td className="p-2 text-right">
+                    <input
+                      type="number"
+                      className="w-16 bg-transparent text-right"
+                      value={it.qty}
+                      onChange={(e) =>
+                        setQuote((q) => {
+                          const items = [...q.items];
+                          items[i].qty = toNum(e.target.value, 1);
+                          return { ...q, items };
+                        })
+                      }
+                    />
+                  </td>
+                  <td className="p-2 text-right">
+                    <input
+                      type="number"
+                      className="w-24 bg-transparent text-right"
+                      value={it.unit_price}
+                      onChange={(e) =>
+                        setQuote((q) => {
+                          const items = [...q.items];
+                          items[i].unit_price = toNum(e.target.value, 0);
+                          return { ...q, items };
+                        })
+                      }
+                    />
+                  </td>
+                  <td className="p-2 text-right">
+                    <input
+                      type="number"
+                      className="w-16 bg-transparent text-right"
+                      value={it.discount_percent}
+                      onChange={(e) =>
+                        setQuote((q) => {
+                          const items = [...q.items];
+                          items[i].discount_percent = clampPct(e.target.value);
+                          return { ...q, items };
+                        })
+                      }
+                    />
+                  </td>
+                  <td className="p-2 text-right">
+                    £{money(it.qty * it.unit_price * (1 - it.discount_percent / 100))}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* TOTALS */}
+        <div className="mt-6 text-sm bg-pjh-dark p-4 rounded-lg border border-slate-800">
+          <div className="flex justify-between mb-1">
+            <span>Subtotal:</span>
+            <span>£{money(totals?.subtotal)}</span>
+          </div>
+          <div className="flex justify-between mb-1">
+            <span>After Discounts:</span>
+            <span>£{money(totals?.afterDiscounts)}</span>
+          </div>
+          <div className="flex justify-between mb-1">
+            <span>Deposit:</span>
+            <span>£{money(totals?.deposit)}</span>
+          </div>
+          <div className="flex justify-between font-semibold text-pjh-blue">
+            <span>Balance:</span>
+            <span>£{money(totals?.balance)}</span>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm text-pjh-muted mb-1">Notes</label>
+          <textarea
+            className="w-full bg-pjh-dark border border-slate-700 rounded p-2 min-h-[80px]"
+            value={quote.notes}
+            onChange={(e) => setQuote({ ...quote, notes: e.target.value })}
+          />
+        </div>
       </div>
     </div>
   );
