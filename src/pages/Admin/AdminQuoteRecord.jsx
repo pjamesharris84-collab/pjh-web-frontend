@@ -2,14 +2,15 @@
  * ============================================================
  * PJH Web Services — Admin Quote Record (2025 Parity Build)
  * ============================================================
- * Full parity with AdminQuoteNew:
- *  • Loads Packages + Maintenance Plans
+ * Features:
+ *  • Loads Packages + Maintenance Plans (auto sync)
  *  • Smart deposit logic:
  *      - One-off  → 50% of package + 100% maintenance
  *      - Monthly  → 100% of both (first month)
- *  • Mirrors full discount and totals math
+ *  • Mirrors discount + totals math from AdminQuoteNew
  *  • Auto-adds/removes maintenance line items
  *  • Includes “Start Monthly Billing” (Stripe checkout)
+ *  • Fix: Properly renders quote data regardless of API shape
  * ============================================================
  */
 
@@ -29,9 +30,9 @@ export default function AdminQuoteRecord() {
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
 
-  // ──────────────────────────────
-  // Helpers
-  // ──────────────────────────────
+  /* ============================================================
+     Helpers
+  ============================================================ */
   const toNum = (v, f = 0) => (Number.isFinite(Number(v)) ? Number(v) : f);
   const clampPct = (n) => Math.min(Math.max(toNum(n, 0), 0), 100);
   const money = (n) => (Number.isFinite(n) ? n.toFixed(2) : "0.00");
@@ -87,17 +88,20 @@ export default function AdminQuoteRecord() {
     return { items };
   }
 
-  // ──────────────────────────────
-  // Load
-  // ──────────────────────────────
+  /* ============================================================
+     Load Data
+  ============================================================ */
   useEffect(() => {
-    if (localStorage.getItem("isAdmin") !== "true") window.location.href = "/admin";
+    if (localStorage.getItem("isAdmin") !== "true") {
+      window.location.href = "/admin";
+      return;
+    }
+    loadPackages();
+    loadMaintenancePlans();
   }, []);
 
   useEffect(() => {
     if (quoteId) loadQuote();
-    loadPackages();
-    loadMaintenancePlans();
   }, [quoteId]);
 
   async function loadPackages() {
@@ -105,7 +109,8 @@ export default function AdminQuoteRecord() {
       const res = await fetch(`${API_BASE}/api/packages`);
       const data = await res.json();
       setPackages(Array.isArray(data) ? data : data.data || []);
-    } catch {
+    } catch (err) {
+      console.error("❌ Failed to load packages:", err);
       setPackages([]);
     }
   }
@@ -115,11 +120,7 @@ export default function AdminQuoteRecord() {
       const res = await fetch(`${API_BASE}/api/maintenance/plans`);
       const data = await res.json();
       setMaintenancePlans(
-        Array.isArray(data)
-          ? data
-          : Array.isArray(data.data)
-          ? data.data
-          : []
+        Array.isArray(data) ? data : Array.isArray(data.data) ? data.data : []
       );
     } catch (err) {
       console.error("❌ Failed to load maintenance plans:", err);
@@ -136,7 +137,17 @@ export default function AdminQuoteRecord() {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
 
-      const q = data.quote || data.data || data;
+      console.log("🔍 API Response (Quote):", data);
+
+      // Normalise API shape
+      const q =
+        data?.quote ||
+        data?.data?.quote ||
+        data?.data ||
+        data;
+
+      if (!q || !q.id) throw new Error("Invalid quote response.");
+
       const items = Array.isArray(q.items)
         ? q.items.map((it, i) => ({
             id: it.id ?? `item-${i}-${Date.now()}`,
@@ -162,11 +173,15 @@ export default function AdminQuoteRecord() {
         pricing_mode: q.pricing_mode === "monthly" ? "monthly" : "oneoff",
         order_id: q.order_id || null,
       });
-    } catch {
-      setError("Failed to load quote.");
+    } catch (err) {
+      console.error("❌ loadQuote error:", err);
+      setError("Failed to load quote details. Check console for details.");
     }
   }
 
+  /* ============================================================
+     Derived Totals
+  ============================================================ */
   function inferMaintenancePrice(quote, maintenancePlans, toNum) {
     const plan = maintenancePlans.find(
       (m) => String(m.id) === String(quote?.maintenance_id)
@@ -176,9 +191,7 @@ export default function AdminQuoteRecord() {
     const names = maintenancePlans.map((m) => (m.name || "").toLowerCase());
     const maintItem = (quote?.items || []).find((it) => {
       const nm = (it.name || "").toLowerCase();
-      return (
-        names.includes(nm) || /(maintenance|webcare|care\s*plan|support)/i.test(nm)
-      );
+      return names.includes(nm) || /(maintenance|webcare|care\s*plan|support)/i.test(nm);
     });
     return maintItem ? toNum(maintItem.unit_price, 0) : 0;
   }
@@ -224,9 +237,9 @@ export default function AdminQuoteRecord() {
     return { subtotal, afterDiscounts, deposit, balance };
   }, [quote, packages, maintenancePlans]);
 
-  // ──────────────────────────────
-  // Save / Order Actions
-  // ──────────────────────────────
+  /* ============================================================
+     Actions
+  ============================================================ */
   async function handleSave() {
     if (!quote) return;
     setSaving(true);
@@ -253,12 +266,13 @@ export default function AdminQuoteRecord() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
+
       if (!res.ok) throw new Error(`Save failed (${res.status})`);
-      alert("✅ Quote saved");
+      alert("✅ Quote saved successfully");
       await loadQuote();
     } catch (e) {
-      console.error(e);
-      alert("❌ Save failed");
+      console.error("❌ Save error:", e);
+      alert("❌ Failed to save quote.");
     } finally {
       setSaving(false);
     }
@@ -277,21 +291,22 @@ export default function AdminQuoteRecord() {
         alert("✅ Order created successfully!");
         navigate(`/admin/orders/${data.order.id}`);
       } else {
-        alert("❌ Failed to create order");
+        alert("❌ Failed to create order.");
       }
+    } catch (err) {
+      console.error("❌ Create order error:", err);
     } finally {
       setWorking(false);
     }
   }
 
-  // 💳 Start Monthly Billing via Stripe
   async function startMonthlyBilling() {
     if (!quote?.order_id) {
-      alert("⚠️ You must first create an order before starting billing.");
+      alert("⚠️ You must create an order before starting billing.");
       return;
     }
     if (quote.pricing_mode !== "monthly") {
-      alert("⚠️ This quote is not set to 'Monthly' pricing mode.");
+      alert("⚠️ This quote is not set to monthly mode.");
       return;
     }
 
@@ -310,24 +325,41 @@ export default function AdminQuoteRecord() {
       });
 
       const data = await res.json();
-      if (!res.ok || !data.url) {
-        console.error("Billing failed:", data);
-        return alert("❌ Failed to start Stripe checkout");
-      }
-
+      if (!res.ok || !data.url) throw new Error("Stripe checkout failed");
       window.location.href = data.url;
     } catch (err) {
       console.error("❌ Billing error:", err);
-      alert("Failed to start monthly billing.");
+      alert("❌ Failed to start monthly billing.");
     }
   }
 
-  // ──────────────────────────────
-  // Render
-  // ──────────────────────────────
-  if (error) return <div className="p-10 text-red-400">❌ {error}</div>;
-  if (!quote) return <div className="p-10 text-pjh-muted">Loading…</div>;
+  /* ============================================================
+     Render
+  ============================================================ */
+  if (error)
+    return (
+      <div className="p-10 text-red-400">
+        ❌ {error}
+        <p className="text-sm text-pjh-muted mt-2">
+          Try reloading or check your console for details.
+        </p>
+      </div>
+    );
 
+  if (!quote)
+    return (
+      <div className="p-10 text-pjh-muted">
+        Loading quote details…
+        <br />
+        <span className="text-xs text-pjh-muted/70">
+          (Ensure the backend returns {"{ success: true, quote: {...} }"})
+        </span>
+      </div>
+    );
+
+  /* ============================================================
+     Main UI
+  ============================================================ */
   return (
     <div className="min-h-screen bg-pjh-charcoal text-pjh-light p-10">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -379,7 +411,6 @@ export default function AdminQuoteRecord() {
           </button>
         )}
       </div>
-      {/* Rest of render continues unchanged */}
     </div>
   );
 }
