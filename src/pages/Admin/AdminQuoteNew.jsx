@@ -1,12 +1,13 @@
 /**
  * ============================================================
- * PJH Web Services — Admin Quote New (2025 Production Ready)
+ * PJH Web Services — Admin Quote New (2025-10 Production Ready)
  * ============================================================
  *  • Loads packages from /api/packages
  *  • Loads maintenance plans from /api/maintenance/plans
  *  • Subtotal → After Discounts → Deposit (auto) → Balance
  *  • Deposit auto: 50% (one-off) | full month (monthly)
  *  • Add/delete lines, global delete + close buttons
+ *  • Fully synced with new 2025 API schema
  * ============================================================
  */
 
@@ -33,12 +34,10 @@ export default function AdminQuoteNew() {
     items: [],
   });
   const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [closing, setClosing] = useState(false);
 
-  // ──────────────────────────────
-  // Helpers
-  // ──────────────────────────────
+  /* ------------------------------------------------------------
+     Helpers
+  ------------------------------------------------------------ */
   const toNum = (v, f = 0) => (Number.isFinite(Number(v)) ? Number(v) : f);
   const clampPct = (n) => Math.min(Math.max(toNum(n, 0), 0), 100);
   const money = (n) => (Number.isFinite(n) ? n.toFixed(2) : "0.00");
@@ -97,17 +96,17 @@ export default function AdminQuoteNew() {
     return { items };
   }
 
-  // ──────────────────────────────
-  // Load customer + packages + maintenance plans
-  // ──────────────────────────────
+  /* ------------------------------------------------------------
+     Load customer + packages + maintenance plans
+  ------------------------------------------------------------ */
   useEffect(() => {
     if (localStorage.getItem("isAdmin") !== "true")
       window.location.href = "/admin";
   }, []);
 
   useEffect(() => {
+    if (!customerId) return;
     (async () => {
-      if (!customerId) return;
       const res = await fetch(`${API_BASE}/api/customers/${customerId}`);
       const data = await res.json();
       setCustomer(data.data || data);
@@ -146,18 +145,21 @@ export default function AdminQuoteNew() {
     })();
   }, []);
 
-  // ──────────────────────────────
-  // Package & maintenance logic
-  // ──────────────────────────────
+  /* ------------------------------------------------------------
+     Package & Maintenance Logic
+  ------------------------------------------------------------ */
   function handlePackageChange(packageId) {
     if (!packageId)
       return setForm((f) => ({ ...f, package_id: "", items: f.items }));
+
     const pkg = packages.find((p) => String(p.id) === String(packageId));
     if (!pkg) return;
+
     if (!confirm("Replace current items with this package’s features?")) {
       setForm((f) => ({ ...f, package_id: pkg.id }));
       return;
     }
+
     const { items } = buildItemsFromPackage(pkg, form.pricing_mode);
     setForm((f) => ({
       ...f,
@@ -171,9 +173,20 @@ export default function AdminQuoteNew() {
   function handleMaintenanceChange(maintId) {
     const plan = maintenancePlans.find((m) => String(m.id) === String(maintId));
     if (!plan) return;
+
     setForm((f) => {
       const exists = f.items.some((it) => it.name === plan.name);
-      if (exists) return { ...f, maintenance_id: maintId };
+      if (exists) {
+        // Update price if plan already added
+        return {
+          ...f,
+          maintenance_id: maintId,
+          items: f.items.map((it) =>
+            it.name === plan.name ? { ...it, unit_price: toNum(plan.price, 0) } : it
+          ),
+        };
+      }
+
       const newItem = {
         id: `maint-${plan.id}-${Date.now()}`,
         name: plan.name,
@@ -189,9 +202,11 @@ export default function AdminQuoteNew() {
     if (mode === form.pricing_mode) return;
     if (!form.package_id)
       return setForm((f) => ({ ...f, pricing_mode: mode }));
+
     const pkg = packages.find((p) => String(p.id) === String(form.package_id));
     if (!pkg)
       return setForm((f) => ({ ...f, pricing_mode: mode }));
+
     if (confirm("Switch pricing mode and rebuild items?")) {
       const { items } = buildItemsFromPackage(pkg, mode);
       setForm((f) => ({ ...f, pricing_mode: mode, items }));
@@ -200,9 +215,9 @@ export default function AdminQuoteNew() {
     }
   }
 
-  // ──────────────────────────────
-  // Line items + totals
-  // ──────────────────────────────
+  /* ------------------------------------------------------------
+     Line Items & Totals
+  ------------------------------------------------------------ */
   const addItem = () =>
     setForm((f) => ({
       ...f,
@@ -226,56 +241,50 @@ export default function AdminQuoteNew() {
       return { ...f, items };
     });
 
-const totals = useMemo(() => {
-  const items = form.items || [];
-  const subtotal = items.reduce(
-    (sum, it) => sum + toNum(it.qty, 1) * toNum(it.unit_price, 0),
-    0
-  );
+  const totals = useMemo(() => {
+    const items = form.items || [];
+    const subtotal = items.reduce(
+      (sum, it) => sum + toNum(it.qty, 1) * toNum(it.unit_price, 0),
+      0
+    );
 
-  const afterLine = items.reduce((sum, it) => {
-    const gross = toNum(it.qty, 1) * toNum(it.unit_price, 0);
-    const net = gross * (1 - clampPct(it.discount_percent) / 100);
-    return sum + net;
-  }, 0);
+    const afterLine = items.reduce((sum, it) => {
+      const gross = toNum(it.qty, 1) * toNum(it.unit_price, 0);
+      const net = gross * (1 - clampPct(it.discount_percent) / 100);
+      return sum + net;
+    }, 0);
 
-  const afterDiscounts = afterLine * (1 - clampPct(form.discount_percent) / 100);
+    const afterDiscounts = afterLine * (1 - clampPct(form.discount_percent) / 100);
 
-  // ──────────────────────────────
-  // 💰 Deposit + Balance Rules (Fixed)
-  // ──────────────────────────────
-  const pkg = packages.find((p) => String(p.id) === String(form.package_id));
-  const maint = maintenancePlans.find(
-    (m) => String(m.id) === String(form.maintenance_id)
-  );
+    const pkg = packages.find((p) => String(p.id) === String(form.package_id));
+    const maint = maintenancePlans.find(
+      (m) => String(m.id) === String(form.maintenance_id)
+    );
 
-  const packagePrice =
-    form.pricing_mode === "monthly"
-      ? toNum(pkg?.price_monthly, 0)
-      : toNum(pkg?.price_oneoff, 0);
+    const packagePrice =
+      form.pricing_mode === "monthly"
+        ? toNum(pkg?.price_monthly, 0)
+        : toNum(pkg?.price_oneoff, 0);
 
-  const maintenancePrice = toNum(maint?.price, 0);
+    const maintenancePrice = toNum(maint?.price, 0);
 
-  let deposit = 0;
-  let balance = 0;
+    let deposit = 0;
+    let balance = 0;
 
-  if (form.pricing_mode === "monthly") {
-    // Monthly → pay full first month of both
-    deposit = packagePrice + maintenancePrice;
-    balance = 0;
-  } else {
-    // One-off → 50% of package + first month maintenance upfront
-    deposit = packagePrice * 0.5 + maintenancePrice;
-    // Balance = remaining 50% of package only (maintenance already included)
-    balance = packagePrice * 0.5;
-  }
+    if (form.pricing_mode === "monthly") {
+      deposit = packagePrice + maintenancePrice;
+      balance = 0;
+    } else {
+      deposit = packagePrice * 0.5 + maintenancePrice;
+      balance = packagePrice * 0.5;
+    }
 
-  return { subtotal, afterDiscounts, deposit, balance };
-}, [form, packages, maintenancePlans]);
+    return { subtotal, afterDiscounts, deposit, balance };
+  }, [form, packages, maintenancePlans]);
 
-  // ──────────────────────────────
-  // Save / Delete / Close
-  // ──────────────────────────────
+  /* ------------------------------------------------------------
+     Save Quote
+  ------------------------------------------------------------ */
   async function handleSave(e) {
     e.preventDefault();
     setSaving(true);
@@ -287,26 +296,33 @@ const totals = useMemo(() => {
         items: form.items.map(({ id, ...r }) => r),
         notes: form.notes,
         package_id: form.package_id ? Number(form.package_id) : null,
+        maintenance_id: form.maintenance_id ? Number(form.maintenance_id) : null, // ✅ Added
         discount_percent: clampPct(form.discount_percent),
         pricing_mode: form.pricing_mode,
         deposit: Number((totals.deposit ?? 0).toFixed(2)),
       };
+
       const res = await fetch(`${API_BASE}/api/customers/${customerId}/quotes`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      if (!res.ok) throw new Error("Failed to save");
+
+      if (!res.ok) throw new Error("Failed to save quote");
+
       alert("✅ Quote created successfully!");
       navigate(`/admin/customers/${customerId}`);
     } catch (err) {
-      console.error(err);
-      alert("❌ Failed to create quote");
+      console.error("❌ Quote save failed:", err);
+      alert("Failed to create quote.");
     } finally {
       setSaving(false);
     }
   }
 
+  /* ------------------------------------------------------------
+     UI Handlers
+  ------------------------------------------------------------ */
   function handleDelete() {
     if (!confirm("Delete this quote draft?")) return;
     navigate(`/admin/customers/${customerId}`);
@@ -317,14 +333,18 @@ const totals = useMemo(() => {
     alert("📁 Quote closed (visual only — handled post-save).");
   }
 
-  // ──────────────────────────────
-  // Render
-  // ──────────────────────────────
-  if (!customer) return <div className="p-10 text-pjh-muted">Loading customer…</div>;
+  /* ------------------------------------------------------------
+     Render
+  ------------------------------------------------------------ */
+  if (!customer)
+    return <div className="p-10 text-pjh-muted">Loading customer…</div>;
 
   return (
     <div className="min-h-screen bg-pjh-charcoal text-pjh-light p-10">
-      <a href={`/admin/customers/${customerId}`} className="text-sm text-pjh-muted hover:text-pjh-blue">
+      <a
+        href={`/admin/customers/${customerId}`}
+        className="text-sm text-pjh-muted hover:text-pjh-blue"
+      >
         ← Back to {customer.business || customer.name}
       </a>
 
@@ -333,6 +353,7 @@ const totals = useMemo(() => {
       </h1>
 
       <form onSubmit={handleSave} className="space-y-8">
+        {/* Packages & Maintenance */}
         <div className="bg-pjh-gray p-6 rounded-xl grid sm:grid-cols-2 gap-4">
           <div className="sm:col-span-2">
             <label className="text-sm text-pjh-muted">Website Package</label>
@@ -344,7 +365,8 @@ const totals = useMemo(() => {
               <option value="">— Select package —</option>
               {packages.map((p) => (
                 <option key={p.id} value={p.id}>
-                  {p.name} (One-off £{money(toNum(p.price_oneoff))} • Monthly £{money(toNum(p.price_monthly))})
+                  {p.name} (One-off £{money(toNum(p.price_oneoff))} • Monthly £
+                  {money(toNum(p.price_monthly))})
                 </option>
               ))}
             </select>
@@ -512,7 +534,8 @@ const totals = useMemo(() => {
                 After discounts: <b>£{money(totals.afterDiscounts)}</b>
               </p>
               <p className="text-lg">
-                Deposit {form.pricing_mode === "monthly" ? "(first month)" : "(50%)"}:{" "}
+                Deposit{" "}
+                {form.pricing_mode === "monthly" ? "(first month)" : "(50%)"}:{" "}
                 <b>£{money(totals.deposit)}</b>
               </p>
               <p className="text-lg">
