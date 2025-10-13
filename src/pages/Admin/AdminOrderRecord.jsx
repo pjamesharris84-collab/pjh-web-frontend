@@ -1,22 +1,37 @@
 /**
  * ============================================================
- * PJH Web Services — Admin Order Record (Final Unified 2025)
+ * PJH Web Services — Admin Order Record (Unified 2025 • Full)
  * ============================================================
  * Features:
  *  ✅ Accurate 5-key financials (Total, Deposit, Paid, Refunds, Balance)
- *  ✅ Stripe & Bacs checkout actions
- *  ✅ Direct Debit visibility (maintenance plan + mandate)
- *  ✅ Manual re-charge trigger (maintenance)
- *  ✅ Full payment history tab
- *  ✅ Refund + re-charge awareness
- *  ✅ Delete + refresh order buttons
- *  ✅ Start Monthly Billing (moved here from quote record)
+ *  ✅ Stripe & Bacs checkout actions (deposit/balance + DD setup)
+ *  ✅ Direct Debit visibility (status + mandate + optional Stripe IDs)
+ *  ✅ Manual maintenance re-charge trigger (automation endpoint)
+ *  ✅ Payments tab (history with statuses: paid/processing/failed/refunded)
+ *  ✅ Refund actions (deposit/balance)
+ *  ✅ Order updates / admin notes panel (GET/POST /api/diary/:orderId)
+ *  ✅ 20s polling to reflect Stripe webhook updates without reload
  * ============================================================
  */
 
 import { useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 
+/* ============================================================
+   Helpers
+============================================================ */
+function fmtMoney(n) {
+  const v = Number(n || 0);
+  return `£${v.toFixed(2)}`;
+}
+
+function cx(...classes) {
+  return classes.filter(Boolean).join(" ");
+}
+
+/* ============================================================
+   Main Component
+============================================================ */
 export default function AdminOrderRecord() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -32,30 +47,35 @@ export default function AdminOrderRecord() {
   const [tab, setTab] = useState("overview");
 
   /* ============================================================
-     🔐 Admin Guard + Load
+     Admin Guard + Initial Load + Poller
   ============================================================ */
-useEffect(() => {
-  if (!id) return;
-  refreshOrder();
+  useEffect(() => {
+    if (!id) return;
+    // optional guard — if you still gate with localStorage
+    if (localStorage.getItem("isAdmin") !== "true") {
+      window.location.href = "/admin";
+      return;
+    }
+    refreshAll();
 
-  // 🕒 Poll for Stripe updates every 20 seconds
-  const interval = setInterval(() => {
-    loadPayments();
-    loadSummary();
-  }, 20000);
+    // poll every 20s for webhook-driven updates
+    const interval = setInterval(() => {
+      loadPayments();
+      loadSummary();
+    }, 20000);
 
-  return () => clearInterval(interval);
-}, [id]);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
 
-
-  async function refreshOrder() {
+  async function refreshAll() {
     await loadOrder();
     await loadPayments();
     await loadSummary();
   }
 
   /* ============================================================
-     🧱 Loaders
+     Loaders
   ============================================================ */
   async function loadOrder() {
     try {
@@ -64,7 +84,7 @@ useEffect(() => {
       const data = await res.json();
       const o = data.data || data.order || {};
       setOrder(o);
-      if (o.quote_id) await loadLinkedQuote(o.quote_id);
+      if (o.quote_id) loadLinkedQuote(o.quote_id);
     } catch (err) {
       console.error("❌ Failed to load order:", err);
       setError("Failed to load order details.");
@@ -78,7 +98,7 @@ useEffect(() => {
       const data = await res.json();
       setLinkedQuote(data.quote || data.data || data);
     } catch (err) {
-      console.warn("⚠️ Linked quote fetch failed:", err.message);
+      console.warn("⚠️ Linked quote fetch failed:", err?.message);
     }
   }
 
@@ -105,7 +125,7 @@ useEffect(() => {
   }
 
   /* ============================================================
-     🗑️ Delete Order
+     Delete Order
   ============================================================ */
   async function handleDeleteOrder() {
     if (!confirm("Are you sure you want to delete this order?")) return;
@@ -124,7 +144,7 @@ useEffect(() => {
   }
 
   /* ============================================================
-     💳 Checkout + Refund
+     Checkout + Refund
   ============================================================ */
   async function handleCreateCheckout(flow, type) {
     if (!order) return;
@@ -156,7 +176,7 @@ useEffect(() => {
         const msg =
           flow === "bacs_setup"
             ? "This will open Stripe's Direct Debit setup page. No charge will occur."
-            : `This will charge £${(data.amount ?? payload.amount ?? 0).toFixed(2)}. Continue?`;
+            : `This will charge ${fmtMoney(data.amount ?? payload.amount ?? 0)}. Continue?`;
         if (confirm(msg)) window.open(data.url, "_blank");
       } else {
         alert(`❌ Checkout error: ${data.error || "Unknown error"}`);
@@ -177,7 +197,7 @@ useEffect(() => {
     if (!payment) return alert(`No paid ${type} payment found.`);
 
     const amount = Math.abs(Number(payment.amount || 0));
-    if (!confirm(`Refund £${amount.toFixed(2)} ${type}?`)) return;
+    if (!confirm(`Refund ${fmtMoney(amount)} ${type}?`)) return;
 
     setWorking(true);
     try {
@@ -189,7 +209,7 @@ useEffect(() => {
       const data = await res.json();
       if (res.ok) {
         alert("✅ Refund processed successfully.");
-        refreshOrder();
+        refreshAll();
       } else {
         alert(`❌ Refund failed: ${data.error}`);
       }
@@ -202,7 +222,7 @@ useEffect(() => {
   }
 
   /* ============================================================
-     ⚡ Manual Direct Debit Charge (Maintenance Re-run)
+     Manual Direct Debit Charge (Maintenance Re-run)
   ============================================================ */
   async function handleManualMaintenanceCharge() {
     if (!order || !summary?.direct_debit_active) {
@@ -213,7 +233,7 @@ useEffect(() => {
     if (!(amt > 0)) return alert("No monthly maintenance amount set.");
 
     const confirmCharge = confirm(
-      `Run Direct Debit maintenance charge of £${amt.toFixed(2)} now?`
+      `Run Direct Debit maintenance charge of ${fmtMoney(amt)} now?`
     );
     if (!confirmCharge) return;
 
@@ -224,7 +244,8 @@ useEffect(() => {
       );
       if (!res.ok) throw new Error("Failed to trigger maintenance charge");
       alert("✅ Maintenance charge initiated. It will appear once Stripe confirms.");
-      refreshOrder();
+      // payments will update via polling; we can also refresh now:
+      refreshAll();
     } catch (err) {
       console.error("❌ Maintenance charge error:", err);
       alert("❌ Failed to trigger maintenance charge.");
@@ -234,7 +255,7 @@ useEffect(() => {
   }
 
   /* ============================================================
-     💳 Start Monthly Billing via Stripe Checkout
+     Start Monthly Billing via Stripe Checkout (Subscriptions)
   ============================================================ */
   async function startMonthlyBilling() {
     if (!order) return alert("Order not loaded yet.");
@@ -275,7 +296,7 @@ useEffect(() => {
   }
 
   /* ============================================================
-     💰 Figures
+     Figures (Total / Deposit / Paid / Refunds / Balance)
   ============================================================ */
   const figures = useMemo(() => {
     if (!order)
@@ -293,7 +314,7 @@ useEffect(() => {
   }, [order]);
 
   /* ============================================================
-     🖥️ Render
+     Render
   ============================================================ */
   if (error) return <div className="p-10 text-red-400">{error}</div>;
   if (!order)
@@ -313,7 +334,7 @@ useEffect(() => {
           Order #{order.id} — {order.title}
         </h1>
         <div className="flex flex-wrap gap-2">
-          <button onClick={refreshOrder} className="text-xs text-pjh-muted hover:text-pjh-blue">
+          <button onClick={refreshAll} className="text-xs text-pjh-muted hover:text-pjh-blue">
             🔁 Refresh
           </button>
           <button
@@ -336,13 +357,19 @@ useEffect(() => {
       <div className="mt-6 border-b border-white/10 flex gap-6 text-sm">
         <button
           onClick={() => setTab("overview")}
-          className={`pb-2 ${tab === "overview" ? "text-pjh-blue border-b border-pjh-blue" : "text-pjh-muted"}`}
+          className={cx(
+            "pb-2",
+            tab === "overview" ? "text-pjh-blue border-b border-pjh-blue" : "text-pjh-muted"
+          )}
         >
           Overview
         </button>
         <button
           onClick={() => setTab("payments")}
-          className={`pb-2 ${tab === "payments" ? "text-pjh-blue border-b border-pjh-blue" : "text-pjh-muted"}`}
+          className={cx(
+            "pb-2",
+            tab === "payments" ? "text-pjh-blue border-b border-pjh-blue" : "text-pjh-muted"
+          )}
         >
           Payments
         </button>
@@ -352,11 +379,11 @@ useEffect(() => {
         <>
           {/* Totals */}
           <div className="mt-5 grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-            <SummaryCard label="Total Order Value" value={`£${figures.total.toFixed(2)}`} />
-            <SummaryCard label="Deposit Required" value={`£${figures.deposit.toFixed(2)}`} />
-            <SummaryCard label="Payments Made" value={`£${figures.paid.toFixed(2)}`} accent="text-green-300" />
-            <SummaryCard label="Refunds" value={`£${figures.refunded.toFixed(2)}`} accent="text-red-300" />
-            <SummaryCard label="Balance Remaining" value={`£${figures.balance.toFixed(2)}`} accent="text-amber-300" />
+            <SummaryCard label="Total Order Value" value={fmtMoney(figures.total)} />
+            <SummaryCard label="Deposit Required" value={fmtMoney(figures.deposit)} />
+            <SummaryCard label="Payments Made" value={fmtMoney(figures.paid)} accent="text-green-300" />
+            <SummaryCard label="Refunds" value={fmtMoney(figures.refunded)} accent="text-red-300" />
+            <SummaryCard label="Balance Remaining" value={fmtMoney(figures.balance)} accent="text-amber-300" />
           </div>
 
           {/* Direct Debit & Maintenance */}
@@ -367,7 +394,7 @@ useEffect(() => {
                 <span className="text-sm text-pjh-muted">Status:</span>
                 {summary.direct_debit_active ? (
                   <span className="px-2 py-1 text-xs rounded bg-green-600/30 text-green-300 border border-green-500/20">
-                    ✅ Active {summary.mandate_id ? `(Mandate: ${String(summary.mandate_id).slice(0, 8)}…)` : ""}
+                    ✅ Active {summary.mandate_id ? `(Mandate: ${String(summary.mandate_id).slice(0, 10)}…)` : ""}
                   </span>
                 ) : (
                   <span className="px-2 py-1 text-xs rounded bg-red-600/30 text-red-300 border border-red-500/20">
@@ -376,7 +403,7 @@ useEffect(() => {
                 )}
               </div>
               <p className="text-sm text-pjh-muted">
-                Maintenance Plan: £{monthlyAmount.toFixed(2)}/month
+                Maintenance Plan: {fmtMoney(monthlyAmount)}/month
               </p>
 
               {/* Start Monthly Billing */}
@@ -394,10 +421,34 @@ useEffect(() => {
                 <button
                   onClick={handleManualMaintenanceCharge}
                   disabled={working}
-                  className="btn bg-pjh-blue hover:bg-pjh-blue-dark mt-3"
+                  className="btn bg-pjh-blue hover:bg-pjh-blue-dark mt-3 ml-2"
                 >
                   ⚡ Run Maintenance Charge Now
                 </button>
+              )}
+
+              {/* Direct Debit Details Card */}
+              {summary?.direct_debit_active && (
+                <div className="mt-6 bg-pjh-gray p-5 rounded-xl border border-white/10">
+                  <h3 className="text-lg font-semibold text-pjh-blue mb-2">Direct Debit Mandate Details</h3>
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 text-sm text-pjh-muted">
+                    <div>
+                      <span className="font-semibold text-white">Mandate ID:</span>{" "}
+                      {summary.mandate_id ? summary.mandate_id : "N/A"}
+                    </div>
+                    <div>
+                      <span className="font-semibold text-white">Stripe Customer ID:</span>{" "}
+                      {order?.stripe_customer_id || "N/A"}
+                    </div>
+                    <div>
+                      <span className="font-semibold text-white">Payment Method ID:</span>{" "}
+                      {order?.stripe_payment_method_id || "N/A"}
+                    </div>
+                  </div>
+                  <div className="mt-2 text-xs text-pjh-muted">
+                    💡 View the customer’s full mandate & transactions in Stripe (Customers → this customer).
+                  </div>
+                </div>
               )}
             </div>
           )}
@@ -473,6 +524,9 @@ useEffect(() => {
       {tab === "payments" && (
         <PaymentsTab order={order} payments={payments} summary={summary} />
       )}
+
+      {/* Order Updates Section */}
+      <OrderUpdates orderId={order.id} />
     </div>
   );
 }
@@ -486,10 +540,11 @@ function PaymentsTab({ order, payments, summary }) {
   return (
     <div className="mt-6 bg-pjh-slate p-6 rounded-xl border border-white/10">
       <h2 className="text-xl font-semibold text-pjh-blue mb-4">Payments Overview</h2>
+
       <div className="grid sm:grid-cols-3 gap-3 text-sm mb-4">
-        <div>Deposit Outstanding: £{Number(summary?.deposit_outstanding || 0).toFixed(2)}</div>
-        <div>Balance Outstanding: £{Number(summary?.balance_outstanding || 0).toFixed(2)}</div>
-        <div>Monthly Maintenance: £{monthly.toFixed(2)}</div>
+        <div>Deposit Outstanding: {fmtMoney(summary?.deposit_outstanding || 0)}</div>
+        <div>Balance Outstanding: {fmtMoney(summary?.balance_outstanding || 0)}</div>
+        <div>Monthly Maintenance: {fmtMoney(monthly)}</div>
       </div>
 
       <table className="min-w-full text-sm border border-white/10 rounded-lg">
@@ -508,7 +563,7 @@ function PaymentsTab({ order, payments, summary }) {
               <td className="p-2">{new Date(p.created_at).toLocaleDateString()}</td>
               <td className="p-2 capitalize">{p.type}</td>
               <td className="p-2 uppercase">{p.method}</td>
-              <td className="p-2">£{Number(p.amount).toFixed(2)}</td>
+              <td className="p-2">{fmtMoney(p.amount)}</td>
               <td className="p-2">
                 {p.status === "paid" && <span className="text-green-400">Paid</span>}
                 {p.status === "processing" && <span className="text-amber-300">Processing</span>}
@@ -531,13 +586,104 @@ function PaymentsTab({ order, payments, summary }) {
 }
 
 /* ============================================================
-   SummaryCard
+   Order Updates (Admin Notes)
+============================================================ */
+function OrderUpdates({ orderId }) {
+  const API_BASE =
+    import.meta.env.VITE_API_URL || "https://pjh-web-backend-1.onrender.com";
+  const [updates, setUpdates] = useState([]);
+  const [note, setNote] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    loadUpdates();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orderId]);
+
+  async function loadUpdates() {
+    try {
+      const res = await fetch(`${API_BASE}/api/diary/${orderId}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setUpdates(data.entries || data.data || []);
+    } catch (err) {
+      console.warn("⚠️ Failed to load order diary:", err);
+    }
+  }
+
+  async function addUpdate() {
+    if (!note.trim()) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/diary/${orderId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: note }),
+      });
+      if (res.ok) {
+        setNote("");
+        loadUpdates();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        alert(`❌ Failed to add update${data.error ? `: ${data.error}` : ""}`);
+      }
+    } catch (err) {
+      console.error("❌ Failed to add update:", err);
+      alert("❌ Failed to add update.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="mt-10 bg-pjh-slate p-6 rounded-xl border border-white/10">
+      <h2 className="text-xl font-semibold text-pjh-blue mb-3">Order Updates & Notes</h2>
+
+      <div className="flex gap-2 mb-4">
+        <input
+          type="text"
+          placeholder="Add an update or note..."
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          className="flex-grow bg-pjh-gray text-white p-2 rounded-md border border-white/10"
+        />
+        <button
+          onClick={addUpdate}
+          disabled={loading}
+          className="bg-pjh-blue hover:bg-pjh-blue-dark px-4 py-2 rounded-md text-sm font-semibold"
+        >
+          {loading ? "Saving..." : "Add"}
+        </button>
+      </div>
+
+      {updates.length === 0 ? (
+        <p className="text-sm text-pjh-muted">No updates recorded yet.</p>
+      ) : (
+        <ul className="divide-y divide-white/10 text-sm">
+          {updates.map((u) => (
+            <li key={u.id} className="py-2">
+              <div className="flex justify-between items-center">
+                <span className="text-white">{u.text}</span>
+                <span className="text-xs text-pjh-muted">
+                  {new Date(u.created_at).toLocaleString()}
+                </span>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+/* ============================================================
+   Summary Card
 ============================================================ */
 function SummaryCard({ label, value, accent }) {
   return (
     <div className="bg-pjh-gray rounded-xl p-4 border border-white/10 text-center">
       <div className="text-pjh-muted text-xs mb-1">{label}</div>
-      <div className={`text-xl font-semibold ${accent || ""}`}>{value}</div>
+      <div className={cx("text-xl font-semibold", accent)}>{value}</div>
     </div>
   );
 }
