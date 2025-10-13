@@ -1,285 +1,251 @@
 /**
  * ============================================================
- * PJH Web Services — Main App (Public Frontend, Local Focused)
+ * PJH Web Services — Package Details Page (Enhanced 2025)
  * ============================================================
- * Homepage layout for PJH Web Services.
- * Updated to include:
- *   • Local business focus & plain-English messaging
- *   • Clearer flow to detailed package pages (no pricing page)
- *   • Maintenance & footer fully restored
+ * Works with seeded packages (Starter, Business, Premium)
+ *  • Fetches /api/packages/:id or /api/packages/slug/:slug
+ *  • Displays name, tagline, pricing, features, and full description
+ *  • Includes local fallback data if API unavailable
  * ============================================================
  */
 
-import Navbar from "../components/Navbar";
-import CookieBanner from "../components/CookieBanner";
-import SEO from "../components/SEO";
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
+import Navbar from "../components/Navbar";
+import SEO from "../components/SEO";
+import CookieBanner from "../components/CookieBanner";
 
-export default function App() {
-  const [packages, setPackages] = useState([]);
+export default function PackageDetails() {
+  const { id } = useParams(); // can be numeric ID or slug
+  const [pkg, setPkg] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
+  /* ------------------------------------------------------------
+     Fetch package from backend
+  ------------------------------------------------------------ */
   useEffect(() => {
-    const apiUrl = `${import.meta.env.VITE_API_URL}/api/packages`;
+    async function fetchPackage() {
+      setLoading(true);
+      setError(null);
+      try {
+        const apiBase = import.meta.env.VITE_API_URL;
+        const isNumeric = /^\d+$/.test(id);
 
-    fetch(apiUrl)
-      .then((res) => res.json())
-      .then((data) => {
-        const list = Array.isArray(data)
-          ? data
-          : Array.isArray(data.packages)
-          ? data.packages
-          : Array.isArray(data.data)
-          ? data.data
-          : [];
-        setPackages(list);
-      })
-      .catch(() => {
-        setPackages([
-          {
-            id: 1,
-            name: "Starter",
-            tagline: "Perfect for small local businesses",
-            price_oneoff: 900,
-            price_monthly: 60,
-            term_months: 24,
-            features: [
-              "5-page custom website",
-              "Mobile responsive design",
-              "SEO setup & Google optimisation",
-              "Social media links",
-              "Hosting & domain management",
-            ],
-          },
-          {
-            id: 2,
-            name: "Business",
-            tagline: "For growing local companies ready to scale",
-            price_oneoff: 2600,
-            price_monthly: 140,
-            term_months: 24,
-            features: [
-              "All Starter features",
-              "Custom CRM core",
-              "Booking form / scheduler",
-              "Integrated invoicing",
-              "On-page SEO",
-            ],
-          },
-          {
-            id: 3,
-            name: "Premium",
-            tagline: "Full bespoke CRM + automation suite",
-            price_oneoff: 6000,
-            price_monthly: 300,
-            term_months: 24,
-            features: [
-              "All Business features",
-              "Full bespoke CRM & booking systems",
-              "Online payments",
-              "Automated workflows",
-              "Priority support",
-            ],
-          },
-        ]);
-      });
-  }, []);
+        const endpoint = isNumeric
+          ? `${apiBase}/api/packages/${id}`
+          : `${apiBase}/api/packages/slug/${encodeURIComponent(id)}`;
 
-  // 🔹 Unified Button Classes
+        const res = await fetch(endpoint);
+        if (!res.ok) throw new Error(`Server returned ${res.status}`);
+        const data = await res.json();
+
+        // Backend structure = { success: true, data: [...] or data: {...} }
+        const found =
+          Array.isArray(data.data) && data.data.length > 0
+            ? data.data[0]
+            : data.data || data.package || data;
+
+        if (!found || !found.name) throw new Error("Package not found");
+        setPkg(found);
+      } catch (err) {
+        console.error("❌ Error loading package:", err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchPackage();
+  }, [id]);
+
+  /* ------------------------------------------------------------
+     Local fallback (for offline or failed API)
+  ------------------------------------------------------------ */
+  const fallbackPackages = {
+    starter: {
+      name: "Starter",
+      tagline: "Perfect for local sole traders and small businesses",
+      price_oneoff: 900,
+      price_monthly: 60,
+      term_months: 24,
+      description: `
+        The Starter package is perfect for tradesmen, small shops, and local sole traders
+        who simply want a professional, modern website that works. No buzzwords, no gimmicks —
+        just clean design, real SEO, and a trusted online presence that helps customers find you.
+
+        We cut through the marketing noise that tells small businesses they “need a funnel”,
+        “need daily ads”, or “need to go viral”. You don’t. You need a reliable,
+        Google-friendly website that actually converts local enquiries into paying customers —
+        and we deliver exactly that.
+      `,
+      features: [
+        "5-page custom-built website",
+        "Mobile responsive and lightning-fast performance",
+        "Local SEO setup and Google optimisation",
+        "Integrated contact form, maps, and social links",
+        "Domain registration and managed hosting",
+        "Ongoing updates available via WebCare",
+      ],
+    },
+    business: {
+      name: "Business",
+      tagline: "For growing companies ready to scale",
+      price_oneoff: 2600,
+      price_monthly: 140,
+      term_months: 24,
+      description: `
+        The Business package is built for companies that are outgrowing “just a website”.
+        You need proper tools — quoting, booking, tracking, and automating the things
+        that eat into your time. We build custom CRM systems that fit your business
+        (not the other way around) so you can manage everything from one place.
+
+        While everyone else is chasing social-media trends and overcomplicated marketing,
+        we focus on what actually builds your business: visibility, credibility, and trust.
+        Our job is to handle the digital side — so you can keep doing what you do best.
+      `,
+      features: [
+        "All Starter features",
+        "Custom CRM core with quoting, booking & invoicing",
+        "Online scheduling system with automated emails",
+        "Advanced on-page SEO & Google Business integration",
+        "Optional blog and content modules",
+        "Real-time dashboard & reporting tools",
+      ],
+    },
+    premium: {
+      name: "Premium",
+      tagline: "Complete digital systems — websites, CRMs, automation & care",
+      price_oneoff: 6000,
+      price_monthly: 300,
+      term_months: 24,
+      description: `
+        The Premium package is for serious operators who want their digital presence
+        to do more than look good — it should work hard. This is a complete custom
+        business platform built around your daily operations: from first enquiry
+        to payment, automation, and follow-up.
+
+        We combine design, CRM, automation, and ongoing strategy under one roof.
+        No outsourcing, no “we’ll get back to you next week” support.
+        Just a single team that keeps your system secure, compliant, and up-to-date —
+        so you don’t have to.
+      `,
+      features: [
+        "All Business features",
+        "Bespoke CRM and workflow automation suite",
+        "Online payments and recurring billing",
+        "Customer portals with secure login",
+        "Automated email & SMS notifications",
+        "Priority support and active maintenance",
+      ],
+    },
+  };
+
+  const slug = (id || "").toLowerCase();
+  const displayPkg =
+    pkg ||
+    fallbackPackages[slug] ||
+    Object.values(fallbackPackages).find(
+      (p) => p.name.toLowerCase() === slug
+    );
+
   const buttonPrimary =
     "inline-block px-8 py-3 bg-blue-700 hover:bg-blue-800 text-white font-semibold rounded-xl transition-all duration-300 shadow-sm hover:shadow-blue-900/30";
   const buttonOutline =
     "inline-block px-8 py-3 border border-blue-600 text-white hover:bg-blue-700 rounded-xl font-medium transition-all duration-300";
-  const buttonSubtle =
-    "inline-block px-8 py-3 bg-blue-800/50 hover:bg-blue-800 text-white rounded-xl font-medium transition-all duration-300";
 
+  /* ------------------------------------------------------------
+     Render
+  ------------------------------------------------------------ */
   return (
     <div className="bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white min-h-screen flex flex-col font-inter">
       <SEO
-        title="PJH Web Services | Suffolk Web Design for Local Businesses"
-        description="PJH Web Services builds modern, SEO-optimised websites and CRMs for Suffolk and UK small businesses — cutting through the noise with honest, effective digital solutions."
-        url="https://www.pjhwebservices.co.uk"
+        title={
+          displayPkg
+            ? `${displayPkg.name} Package | PJH Web Services`
+            : "Loading Package | PJH Web Services"
+        }
+        description={
+          displayPkg
+            ? `Full details for the ${displayPkg.name} package — ${displayPkg.tagline}`
+            : "View package details from PJH Web Services."
+        }
+        url={`https://www.pjhwebservices.co.uk/packages/${id}`}
         image="https://www.pjhwebservices.co.uk/pjh-logo-light.png"
       />
 
       <Navbar />
 
-      <main className="flex-grow">
-        {/* HERO SECTION */}
-        <section className="relative flex flex-col items-center text-center pt-32 pb-28 px-6">
-          <img
-            src="/pjh-logo-light.png"
-            alt="PJH Web Services logo"
-            className="w-60 sm:w-80 lg:w-96 mb-10 opacity-95"
-            loading="lazy"
-          />
-
-          <p className="text-gray-400 uppercase tracking-[0.25em] text-sm mb-8">
-            Local Websites • Real Results
-          </p>
-
-          <h1 className="text-5xl sm:text-6xl font-bold leading-tight mb-8 tracking-tight">
-            Modern Websites & CRMs <br className="hidden sm:block" /> for Local
-            Businesses That Mean Business
-          </h1>
-
-          <p className="max-w-2xl text-gray-300 text-lg mb-12 leading-relaxed">
-            At <span className="text-blue-400 font-semibold">PJH Web Services</span>, we
-            help small businesses cut through the digital noise and stand out
-            online. We build clear, fast, SEO-ready websites that work hard for
-            your business — and we stay on top of trends, so you don’t have to.
-          </p>
-
-          <div className="flex flex-wrap justify-center gap-4">
-            <a href="#services" className={buttonOutline}>
-              View Services
-            </a>
-            <a href="#packages" className={buttonPrimary}>
-              View Packages
-            </a>
-            <Link to="/maintenance" className={buttonSubtle}>
-              Website Care Plans
+      <main className="flex-grow py-24 px-6">
+        {loading ? (
+          <div className="text-center text-gray-400 animate-pulse">
+            Loading package details…
+          </div>
+        ) : error && !displayPkg ? (
+          <div className="text-center text-red-400">
+            <p className="text-lg font-semibold mb-4">Unable to load package</p>
+            <p className="mb-8 text-gray-400">{error}</p>
+            <Link to="/" className={buttonOutline}>
+              ← Back to Home
             </Link>
           </div>
-        </section>
+        ) : (
+          displayPkg && (
+            <div className="max-w-4xl mx-auto bg-slate-900/70 rounded-3xl border border-white/10 p-10 shadow-lg shadow-blue-900/10">
+              <h1 className="text-4xl font-bold text-blue-400 mb-3">
+                {displayPkg.name}
+              </h1>
+              <p className="text-gray-400 mb-6 text-lg">
+                {displayPkg.tagline}
+              </p>
 
-        {/* SERVICES SECTION */}
-        <section id="services" className="py-24 px-6 border-t border-white/10">
-          <h2 className="text-3xl sm:text-4xl font-bold text-center mb-16">
-            What We Do for Local Businesses
-          </h2>
-
-          <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-10">
-            {[
-              {
-                title: "Local Website Design",
-                desc: "We turn your local business goals into modern, responsive websites that attract customers and rank well on Google.",
-              },
-              {
-                title: "Custom CRM Systems",
-                desc: "Simplify your daily tasks with custom-built CRM systems that automate quotes, bookings, and invoices — saving you time every day.",
-              },
-              {
-                title: "Maintenance & WebCare",
-                desc: "Your website deserves long-term care. We handle updates, security, and performance so your business stays online and stress-free.",
-              },
-            ].map((s, i) => (
-              <div
-                key={i}
-                className="group bg-slate-900/70 rounded-2xl border border-white/10 p-8 hover:border-blue-600 transition-all duration-300 hover:-translate-y-1 shadow-sm hover:shadow-blue-900/20"
-              >
-                <h3 className="text-xl font-semibold text-blue-400 mb-3 group-hover:text-blue-300 transition">
-                  {s.title}
-                </h3>
-                <p className="text-gray-400 leading-relaxed">{s.desc}</p>
+              <div className="text-gray-300 text-lg mb-10">
+                <p className="font-semibold">
+                  £{displayPkg.price_oneoff?.toLocaleString()} one-off setup
+                </p>
+                {displayPkg.price_monthly && (
+                  <p>
+                    or £{displayPkg.price_monthly?.toLocaleString()}/month for{" "}
+                    {displayPkg.term_months || 24} months
+                  </p>
+                )}
               </div>
-            ))}
-          </div>
 
-          <div className="text-center mt-16">
-            <Link to="/maintenance" className={buttonPrimary}>
-              Explore Maintenance Plans
-            </Link>
-          </div>
-        </section>
-
-        {/* PACKAGES SECTION */}
-        <section
-          id="packages"
-          className="py-24 px-6 border-t border-white/10 bg-slate-900/50"
-        >
-          <h2 className="text-3xl sm:text-4xl font-bold text-center mb-12">
-            Packages for Every Local Business
-          </h2>
-
-          <p className="text-center text-gray-400 mb-10">
-            Click a package below to view full details and inclusions.
-          </p>
-
-          {packages.length > 0 ? (
-            <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-10">
-              {packages.map((pkg) => (
-                <div
-                  key={pkg.id || pkg.name}
-                  className="bg-slate-900/70 rounded-2xl border border-white/10 p-8 hover:border-blue-500 transition-all duration-300 hover:-translate-y-1 shadow-sm hover:shadow-blue-900/20"
-                >
-                  <h3 className="text-xl font-semibold text-blue-400 mb-1">
-                    {pkg.name}
-                  </h3>
-                  <p className="text-gray-400 mb-3 text-sm">
-                    {pkg.tagline || "Perfect for growing local businesses"}
-                  </p>
-                  <p className="text-gray-300 text-lg font-semibold mb-4">
-                    £{pkg.price_oneoff} one-off <br />
-                    or £{pkg.price_monthly}/month
-                  </p>
-                  <ul className="text-gray-500 text-sm mb-6 list-disc list-inside leading-relaxed">
-                    {(pkg.features || []).slice(0, 2).map((f, i) => (
-                      <li key={i}>{f}</li>
-                    ))}
-                  </ul>
-                  <Link
-                    to={`/packages/${encodeURIComponent(pkg.name.toLowerCase())}`}
-                    className="inline-block w-full text-center px-6 py-3 bg-blue-700 hover:bg-blue-800 text-white font-semibold rounded-xl transition-all duration-300 shadow-sm hover:shadow-blue-900/30"
-                  >
-                    View Details →
-                  </Link>
+              {displayPkg.description && (
+                <div className="text-gray-400 mb-10 leading-relaxed whitespace-pre-line">
+                  {displayPkg.description.trim()}
                 </div>
-              ))}
+              )}
+
+              <h2 className="text-2xl font-semibold text-blue-300 mb-4">
+                What’s Included
+              </h2>
+              <ul className="list-disc list-inside text-gray-400 leading-relaxed mb-10">
+                {(displayPkg.features || []).map((feature, index) => (
+                  <li key={index}>{feature}</li>
+                ))}
+              </ul>
+
+              <div className="flex flex-wrap justify-center gap-4">
+                <Link to="/contact" className={buttonPrimary}>
+                  Enquire Now
+                </Link>
+                <Link to="/" className={buttonOutline}>
+                  Back to Packages
+                </Link>
+              </div>
             </div>
-          ) : (
-            <p className="text-center text-gray-500">No packages available.</p>
-          )}
-        </section>
-
-        {/* ABOUT SECTION */}
-        <section
-          id="about"
-          className="py-24 px-6 text-center border-t border-white/10"
-        >
-          <h2 className="text-3xl sm:text-4xl font-bold mb-8">
-            About PJH Web Services
-          </h2>
-          <p className="max-w-3xl mx-auto text-gray-400 leading-relaxed text-lg">
-            We’re a Suffolk-based web design and development agency helping
-            local businesses grow online. From builders and landscapers to
-            salons and shops, we create fast, functional, and future-ready
-            websites that attract customers and build trust. <br />
-            <br />
-            We cut through the online confusion, focus on what really matters,
-            and stay on top of the latest digital trends — so you don’t have to.
-          </p>
-        </section>
-
-        {/* CONTACT CTA */}
-        <section className="py-24 text-center border-t border-white/10 bg-slate-900/60">
-          <h2 className="text-3xl sm:text-4xl font-bold mb-6">
-            Ready to Stand Out Online?
-          </h2>
-          <p className="text-gray-400 mb-10 max-w-2xl mx-auto leading-relaxed">
-            Let’s simplify your digital world and build something that actually
-            works for your business — secure, modern, and built to perform.
-          </p>
-          <div className="flex justify-center flex-wrap gap-4">
-            <Link to="/contact" className={buttonPrimary}>
-              Contact Us
-            </Link>
-            <Link to="/maintenance" className={buttonOutline}>
-              View Maintenance Plans
-            </Link>
-          </div>
-        </section>
+          )
+        )}
       </main>
 
       <CookieBanner />
 
-      {/* FOOTER */}
-      <footer className="border-t border-white/10 py-10 text-center text-sm text-gray-500 space-y-4 bg-slate-950">
+      <footer className="border-t border-white/10 py-10 text-center text-sm text-gray-500 bg-slate-950">
         <p>
           © {new Date().getFullYear()} PJH Web Services — All rights reserved.
         </p>
-
-        <div className="flex justify-center flex-wrap gap-4 text-xs uppercase tracking-wide">
+        <div className="flex justify-center flex-wrap gap-4 text-xs uppercase tracking-wide mt-3">
           <Link to="/legal/privacy" className="hover:text-blue-400 transition">
             Privacy
           </Link>
@@ -290,12 +256,6 @@ export default function App() {
             Terms
           </Link>
           <Link
-            to="/legal/monthly-terms"
-            className="hover:text-blue-400 transition"
-          >
-            Monthly Terms
-          </Link>
-          <Link
             to="/legal/direct-debit-policy"
             className="hover:text-blue-400 transition"
           >
@@ -303,12 +263,6 @@ export default function App() {
           </Link>
           <Link to="/security" className="hover:text-blue-400 transition">
             Security
-          </Link>
-          <Link to="/maintenance" className="hover:text-blue-400 transition">
-            Maintenance
-          </Link>
-          <Link to="/admin" className="hover:text-blue-400 transition">
-            Admin
           </Link>
         </div>
       </footer>

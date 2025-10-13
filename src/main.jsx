@@ -1,13 +1,14 @@
 /**
  * ============================================================
- * PJH Web Services — Frontend Router (React 19 + Vite Stable)
+ * PJH Web Services — Frontend Router (Static + Admin Split)
  * ============================================================
- * Centralized route management for all public + admin pages.
- *  • Fully React 19 compatible
+ * Simplified for static customer pages:
+ *  • /packages/starter, /packages/business, /packages/premium
+ *  • No dynamic PackageDetails fetching
+ *  • Fully React 19 + Vite compatible
  *  • Lazy-loaded admin routes for performance
  *  • Includes react-helmet-async for SEO handling
- *  • Optimized Suspense fallback and browser router structure
- *  • Now includes Security Policy & FAQ for SEO and trust-building
+ *  • Preserves all admin, legal, and payment routes
  * ============================================================
  */
 
@@ -25,14 +26,10 @@ import ThankYou from "./pages/ThankYou.jsx";
 import Cookies from "./pages/legal/Cookies.jsx";
 import Privacy from "./pages/legal/Privacy.jsx";
 import Terms from "./pages/legal/Terms.jsx";
-import Pricing from "./pages/Pricing.jsx";
 import LegalMonthlyTerms from "./pages/legal/LegalMonthlyTerms.jsx";
-import PackageDetails from "./pages/PackageDetails.jsx";
 import DirectDebitPolicy from "./pages/legal/direct-debit-policy.jsx";
-import SetupComplete from "./pages/SetupComplete.jsx";
-import DirectDebitSetup from "./pages/direct-debit-setup.jsx";
 import FAQ from "./pages/FAQ.jsx";
-import Security from "./pages/Security.jsx"; // ✅ New Security Policy page
+import Security from "./pages/Security.jsx";
 
 // 💳 Payment Pages
 import PaymentSuccess from "./pages/PaymentSuccess.jsx";
@@ -43,6 +40,11 @@ import PaymentFailed from "./pages/PaymentFailed.jsx";
 import Maintenance from "./pages/Maintenance.jsx";
 import MaintenanceCompare from "./pages/MaintenanceCompare.jsx";
 import MaintenanceThankYou from "./pages/MaintenanceThankYou.jsx";
+
+// 📦 Static Package Pages
+import Starter from "./pages/packages/Starter.jsx";
+import Business from "./pages/packages/Business.jsx";
+import Premium from "./pages/packages/Premium.jsx";
 
 // =======================
 // 💤 Lazy-Loaded Admin Pages
@@ -96,18 +98,24 @@ ReactDOM.createRoot(document.getElementById("root")).render(
             <Route path="/" element={<App />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/thank-you" element={<ThankYou />} />
-            <Route path="/pricing" element={<Pricing />} />
-            <Route path="/packages/:name" element={<PackageDetails />} />
+
+            {/* 📦 Static Packages */}
+            <Route path="/packages/starter" element={<Starter />} />
+            <Route path="/packages/business" element={<Business />} />
+            <Route path="/packages/premium" element={<Premium />} />
+
+            {/* FAQ, Security, Setup, Direct Debit */}
             <Route path="/faq" element={<FAQ />} />
-            <Route path="/security" element={<Security />} /> {/* ✅ Added Security route */}
-            <Route path="/setup-complete" element={<SetupComplete />} />
-            <Route path="/direct-debit-setup" element={<DirectDebitSetup />} />
+            <Route path="/security" element={<Security />} />
 
             {/* 🧾 Legal */}
             <Route path="/legal/cookies" element={<Cookies />} />
             <Route path="/legal/privacy" element={<Privacy />} />
             <Route path="/legal/terms" element={<Terms />} />
-            <Route path="/legal/monthly-terms" element={<LegalMonthlyTerms />} />
+            <Route
+              path="/legal/monthly-terms"
+              element={<LegalMonthlyTerms />}
+            />
             <Route
               path="/legal/direct-debit-policy"
               element={<DirectDebitPolicy />}
@@ -152,7 +160,10 @@ ReactDOM.createRoot(document.getElementById("root")).render(
               element={<AdminQuoteRecord />}
             />
             <Route path="/admin/quotes" element={<AdminQuotes />} />
-            <Route path="/admin/quotes/:quoteId" element={<AdminQuoteRecord />} />
+            <Route
+              path="/admin/quotes/:quoteId"
+              element={<AdminQuoteRecord />}
+            />
 
             {/* 📦 Orders & Invoices */}
             <Route path="/admin/orders" element={<AdminOrders />} />
@@ -171,7 +182,8 @@ ReactDOM.createRoot(document.getElementById("root")).render(
                     404 — Page Not Found
                   </h1>
                   <p className="text-pjh-muted mb-6 max-w-md">
-                    The page you’re looking for doesn’t exist or may have been moved.
+                    The page you’re looking for doesn’t exist or may have been
+                    moved.
                   </p>
                   <a
                     href="/"

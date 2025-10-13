@@ -1,97 +1,75 @@
 /**
  * ============================================================
- * PJH Web Services — Main App (Public Frontend, Local Focused)
+ * PJH Web Services — Main App (Static Frontend, Local Focused)
  * ============================================================
- * Homepage layout for PJH Web Services.
- * Updated to include:
- *   • Local business focus & plain-English messaging
- *   • Clearer flow to detailed package pages
- *   • Removed redundant “See Full Pricing” link
- *   • Restored footer, maintenance, and CookieBanner
+ * Frontend now fully decoupled from backend APIs.
+ *  • Static, hardcoded package info (no fetch)
+ *  • Direct links to /packages/starter, /packages/business, /packages/premium
+ *  • Cleaner, faster, simpler to maintain
  * ============================================================
  */
 
 import Navbar from "./components/Navbar";
 import CookieBanner from "./components/CookieBanner";
 import SEO from "./components/SEO";
-import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 export default function App() {
-  const [packages, setPackages] = useState([]);
-
-  useEffect(() => {
-    const apiUrl = `${import.meta.env.VITE_API_URL}/api/packages`;
-
-    fetch(apiUrl)
-      .then((res) => res.json())
-      .then((data) => {
-        const list = Array.isArray(data)
-          ? data
-          : Array.isArray(data.packages)
-          ? data.packages
-          : Array.isArray(data.data)
-          ? data.data
-          : [];
-        setPackages(list);
-      })
-      .catch(() => {
-        setPackages([
-          {
-            id: 1,
-            name: "Starter",
-            tagline: "Perfect for small local businesses",
-            price_oneoff: 900,
-            price_monthly: 60,
-            term_months: 24,
-            features: [
-              "5-page custom website",
-              "Mobile responsive design",
-              "SEO setup & Google optimisation",
-              "Social media links",
-              "Hosting & domain management",
-            ],
-          },
-          {
-            id: 2,
-            name: "Business",
-            tagline: "For growing local companies ready to scale",
-            price_oneoff: 2600,
-            price_monthly: 140,
-            term_months: 24,
-            features: [
-              "All Starter features",
-              "Custom CRM core",
-              "Booking form / scheduler",
-              "Integrated invoicing",
-              "On-page SEO",
-            ],
-          },
-          {
-            id: 3,
-            name: "Premium",
-            tagline: "Full bespoke CRM + automation suite",
-            price_oneoff: 6000,
-            price_monthly: 300,
-            term_months: 24,
-            features: [
-              "All Business features",
-              "Full bespoke CRM & booking systems",
-              "Online payments",
-              "Automated workflows",
-              "Priority support",
-            ],
-          },
-        ]);
-      });
-  }, []);
-
   const buttonPrimary =
     "inline-block px-8 py-3 bg-blue-700 hover:bg-blue-800 text-white font-semibold rounded-xl transition-all duration-300 shadow-sm hover:shadow-blue-900/30";
   const buttonOutline =
     "inline-block px-8 py-3 border border-blue-600 text-white hover:bg-blue-700 rounded-xl font-medium transition-all duration-300";
   const buttonSubtle =
     "inline-block px-8 py-3 bg-blue-800/50 hover:bg-blue-800 text-white rounded-xl font-medium transition-all duration-300";
+
+  // Simple static package definitions (no backend calls)
+  const packages = [
+    {
+      id: "starter",
+      name: "Starter",
+      tagline: "Perfect for small local businesses",
+      price_oneoff: 900,
+      price_monthly: 60,
+      term_months: 24,
+      features: [
+        "5-page custom website",
+        "Mobile responsive design",
+        "SEO setup & Google optimisation",
+        "Social media links",
+        "Hosting & domain management",
+      ],
+    },
+    {
+      id: "business",
+      name: "Business",
+      tagline: "For growing local companies ready to scale",
+      price_oneoff: 2600,
+      price_monthly: 140,
+      term_months: 24,
+      features: [
+        "All Starter features",
+        "Custom CRM core",
+        "Booking form / scheduler",
+        "Integrated invoicing",
+        "On-page SEO",
+      ],
+    },
+    {
+      id: "premium",
+      name: "Premium",
+      tagline: "Full bespoke CRM + automation suite",
+      price_oneoff: 6000,
+      price_monthly: 300,
+      term_months: 24,
+      features: [
+        "All Business features",
+        "Full bespoke CRM & booking systems",
+        "Online payments",
+        "Automated workflows",
+        "Priority support",
+      ],
+    },
+  ];
 
   return (
     <div className="bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white min-h-screen flex flex-col font-inter">
@@ -196,51 +174,42 @@ export default function App() {
             Click a package below to view full details and inclusions.
           </p>
 
-          {packages.length > 0 ? (
-            <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-10">
-              {packages.map((pkg) => (
-                <div
-                  key={pkg.id || pkg.name}
-                  className="bg-slate-900/70 rounded-2xl border border-white/10 p-8 hover:border-blue-500 transition-all duration-300 hover:-translate-y-1 shadow-sm hover:shadow-blue-900/20"
+          <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-10">
+            {packages.map((pkg) => (
+              <div
+                key={pkg.id}
+                className="bg-slate-900/70 rounded-2xl border border-white/10 p-8 hover:border-blue-500 transition-all duration-300 hover:-translate-y-1 shadow-sm hover:shadow-blue-900/20"
+              >
+                <h3 className="text-xl font-semibold text-blue-400 mb-1">
+                  {pkg.name}
+                </h3>
+
+                <p className="text-gray-400 mb-3 text-sm">{pkg.tagline}</p>
+
+                <p className="text-gray-300 text-lg font-semibold mb-4">
+                  £{pkg.price_oneoff} one-off <br />
+                  or £{pkg.price_monthly}/month
+                </p>
+
+                <ul className="text-gray-500 text-sm mb-6 list-disc list-inside leading-relaxed">
+                  {pkg.features.slice(0, 2).map((f, i) => (
+                    <li key={i}>{f}</li>
+                  ))}
+                </ul>
+
+                <Link
+                  to={`/packages/${pkg.id}`}
+                  className="inline-block w-full text-center px-6 py-3 bg-blue-700 hover:bg-blue-800 text-white font-semibold rounded-xl transition-all duration-300 shadow-sm hover:shadow-blue-900/30"
                 >
-                  <h3 className="text-xl font-semibold text-blue-400 mb-1">
-                    {pkg.name}
-                  </h3>
-
-                  <p className="text-gray-400 mb-3 text-sm">
-                    {pkg.tagline || "Perfect for growing local businesses"}
-                  </p>
-
-                  <p className="text-gray-300 text-lg font-semibold mb-4">
-                    £{pkg.price_oneoff} one-off <br />
-                    or £{pkg.price_monthly}/month
-                  </p>
-
-                  <ul className="text-gray-500 text-sm mb-6 list-disc list-inside leading-relaxed">
-                    {(pkg.features || []).slice(0, 2).map((f, i) => (
-                      <li key={i}>{f}</li>
-                    ))}
-                  </ul>
-
-                  <Link
-                    to={`/packages/${encodeURIComponent(pkg.name.toLowerCase())}`}
-                    className="inline-block w-full text-center px-6 py-3 bg-blue-700 hover:bg-blue-800 text-white font-semibold rounded-xl transition-all duration-300 shadow-sm hover:shadow-blue-900/30"
-                  >
-                    View Details →
-                  </Link>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-center text-gray-500">No packages available.</p>
-          )}
+                  View Details →
+                </Link>
+              </div>
+            ))}
+          </div>
         </section>
 
         {/* ABOUT SECTION */}
-        <section
-          id="about"
-          className="py-24 px-6 text-center border-t border-white/10"
-        >
+        <section id="about" className="py-24 px-6 text-center border-t border-white/10">
           <h2 className="text-3xl sm:text-4xl font-bold mb-8">
             About PJH Web Services
           </h2>
@@ -248,7 +217,8 @@ export default function App() {
             We’re a Suffolk-based web design and development agency helping
             local businesses grow online. From builders and landscapers to
             salons and shops, we create fast, functional, and future-ready
-            websites that attract customers and build trust. <br />
+            websites that attract customers and build trust.
+            <br />
             <br />
             We cut through the online confusion, focus on what really matters,
             and stay on top of the latest digital trends — so you don’t have to.
@@ -279,41 +249,17 @@ export default function App() {
 
       {/* FOOTER */}
       <footer className="border-t border-white/10 py-10 text-center text-sm text-gray-500 space-y-4 bg-slate-950">
-        <p>
-          © {new Date().getFullYear()} PJH Web Services — All rights reserved.
-        </p>
+        <p>© {new Date().getFullYear()} PJH Web Services — All rights reserved.</p>
 
         <div className="flex justify-center flex-wrap gap-4 text-xs uppercase tracking-wide">
-          <Link to="/legal/privacy" className="hover:text-blue-400 transition">
-            Privacy
-          </Link>
-          <Link to="/legal/cookies" className="hover:text-blue-400 transition">
-            Cookies
-          </Link>
-          <Link to="/legal/terms" className="hover:text-blue-400 transition">
-            Terms
-          </Link>
-          <Link
-            to="/legal/monthly-terms"
-            className="hover:text-blue-400 transition"
-          >
-            Monthly Terms
-          </Link>
-          <Link
-            to="/legal/direct-debit-policy"
-            className="hover:text-blue-400 transition"
-          >
-            Direct Debit
-          </Link>
-          <Link to="/security" className="hover:text-blue-400 transition">
-            Security
-          </Link>
-          <Link to="/maintenance" className="hover:text-blue-400 transition">
-            Maintenance
-          </Link>
-          <Link to="/admin" className="hover:text-blue-400 transition">
-            Admin
-          </Link>
+          <Link to="/legal/privacy" className="hover:text-blue-400 transition">Privacy</Link>
+          <Link to="/legal/cookies" className="hover:text-blue-400 transition">Cookies</Link>
+          <Link to="/legal/terms" className="hover:text-blue-400 transition">Terms</Link>
+          <Link to="/legal/monthly-terms" className="hover:text-blue-400 transition">Monthly Terms</Link>
+          <Link to="/legal/direct-debit-policy" className="hover:text-blue-400 transition">Direct Debit</Link>
+          <Link to="/security" className="hover:text-blue-400 transition">Security</Link>
+          <Link to="/maintenance" className="hover:text-blue-400 transition">Maintenance</Link>
+          <Link to="/admin" className="hover:text-blue-400 transition">Admin</Link>
         </div>
       </footer>
     </div>
