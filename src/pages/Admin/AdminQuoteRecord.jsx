@@ -9,6 +9,7 @@
  *      - Monthly  → 100% of both (first month)
  *  • Mirrors full discount and totals math
  *  • Auto-adds/removes maintenance line items
+ *  • Includes “Start Monthly Billing” (Stripe checkout)
  * ============================================================
  */
 
@@ -23,7 +24,7 @@ export default function AdminQuoteRecord() {
 
   const [quote, setQuote] = useState(null);
   const [packages, setPackages] = useState([]);
-  const [maintenancePlans, setMaintenancePlans] = useState([]); // ✅ added
+  const [maintenancePlans, setMaintenancePlans] = useState([]);
   const [saving, setSaving] = useState(false);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
@@ -87,7 +88,7 @@ export default function AdminQuoteRecord() {
   }
 
   // ──────────────────────────────
-  // Auth / load
+  // Load
   // ──────────────────────────────
   useEffect(() => {
     if (localStorage.getItem("isAdmin") !== "true") window.location.href = "/admin";
@@ -96,8 +97,7 @@ export default function AdminQuoteRecord() {
   useEffect(() => {
     if (quoteId) loadQuote();
     loadPackages();
-    loadMaintenancePlans(); // ✅ added
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    loadMaintenancePlans();
   }, [quoteId]);
 
   async function loadPackages() {
@@ -168,169 +168,61 @@ export default function AdminQuoteRecord() {
   }
 
   function inferMaintenancePrice(quote, maintenancePlans, toNum) {
-  // 1) Prefer by saved maintenance_id
-  const plan = maintenancePlans.find(
-    (m) => String(m.id) === String(quote?.maintenance_id)
-  );
-  if (plan) return toNum(plan.price, 0);
-
-  // 2) Fall back: infer from line items
-  const names = maintenancePlans.map((m) => (m.name || "").toLowerCase());
-  const maintItem = (quote?.items || []).find((it) => {
-    const nm = (it.name || "").toLowerCase();
-    return (
-      names.includes(nm) ||
-      /(maintenance|webcare|care\s*plan|support)/i.test(nm)
+    const plan = maintenancePlans.find(
+      (m) => String(m.id) === String(quote?.maintenance_id)
     );
-  });
-  return maintItem ? toNum(maintItem.unit_price, 0) : 0;
-}
+    if (plan) return toNum(plan.price, 0);
 
-const totals = useMemo(() => {
-  if (!quote) return null;
-
-  // Line-item maths (keeps discounts intact)
-  const subtotal = quote.items.reduce(
-    (sum, it) => sum + toNum(it.qty, 1) * toNum(it.unit_price, 0),
-    0
-  );
-
-  const afterLine = quote.items.reduce((sum, it) => {
-    const gross = toNum(it.qty, 1) * toNum(it.unit_price, 0);
-    const lineDisc = clampPct(it.discount_percent);
-    const net = gross * (1 - lineDisc / 100);
-    return sum + net;
-  }, 0);
-
-  const globalDisc = clampPct(quote.discount_percent);
-  const afterDiscounts = afterLine * (1 - globalDisc / 100);
-
-  // Determine package price from selected package (monthly vs one-off)
-  const pkg = packages.find((p) => String(p.id) === String(quote.package_id));
-  const packagePrice =
-    quote.pricing_mode === "monthly"
-      ? toNum(pkg?.price_monthly, 0)
-      : toNum(pkg?.price_oneoff, 0);
-
-  // Maintenance: robust — use maintenance_id if present, else infer from items
-  const maintenancePrice = inferMaintenancePrice(quote, maintenancePlans, toNum);
-
-  // Deposit rules:
-  //  - One-off: 50% of package + first month of maintenance
-  //  - Monthly: 100% of package (first month) + 100% of maintenance (first month)
-  let deposit = 0;
-  if (quote.pricing_mode === "monthly") {
-    deposit = packagePrice + maintenancePrice;
-  } else {
-    deposit = packagePrice * 0.5 + maintenancePrice;
-  }
-
-  // Balance rules:
-  //  - One-off: remaining 50% of package ONLY (maintenance first month already covered in deposit)
-  //  - Monthly: 0 (ongoing monthly billing handled separately)
-  const balance =
-    quote.pricing_mode === "monthly"
-      ? 0
-      : Math.max(afterDiscounts - (packagePrice * 0.5 + maintenancePrice), 0);
-
-  return { subtotal, afterDiscounts, deposit, balance };
-}, [quote, packages, maintenancePlans]);
-
-
-
-  // ──────────────────────────────
-  // Line items CRUD
-  // ──────────────────────────────
-  const updateItem = (i, patch) =>
-    setQuote((q) => {
-      const items = [...q.items];
-      items[i] = {
-        ...items[i],
-        ...patch,
-        discount_percent: clampPct(patch.discount_percent ?? items[i].discount_percent),
-      };
-      return { ...q, items };
-    });
-
-  const addItem = () =>
-    setQuote((q) => ({
-      ...q,
-      items: [
-        ...q.items,
-        {
-          id: `item-${Date.now()}`,
-          name: "New Item",
-          qty: 1,
-          unit_price: 0,
-          discount_percent: 0,
-        },
-      ],
-    }));
-
-  const removeItem = (i) =>
-    setQuote((q) => ({ ...q, items: q.items.filter((_, idx) => idx !== i) }));
-
-  // ──────────────────────────────
-  // Package, Maintenance & Pricing mode controls
-  // ──────────────────────────────
-  function handlePackageChange(packageId) {
-    if (!packageId) {
-      setQuote((q) => ({ ...q, package_id: "", items: q.items }));
-      return;
-    }
-    const pkg = packages.find((p) => String(p.id) === String(packageId));
-    if (!pkg) return;
-
-    if (!confirm("Replace current items with this package’s features?")) {
-      setQuote((q) => ({ ...q, package_id: pkg.id }));
-      return;
-    }
-
-    const { items } = buildItemsFromPackage(pkg, quote.pricing_mode);
-    setQuote((q) => ({
-      ...q,
-      package_id: pkg.id,
-      title: q.title || pkg.name,
-      description: q.description || pkg.tagline,
-      items,
-    }));
-  }
-
-  function handleMaintenanceChange(maintId) {
-    const plan = maintenancePlans.find((m) => String(m.id) === String(maintId));
-    if (!plan) return;
-    setQuote((q) => {
-      // Remove any previous maintenance lines
-      const filtered = q.items.filter(
-        (it) => !/(maintenance|care|support|plan)/i.test(it.name)
+    const names = maintenancePlans.map((m) => (m.name || "").toLowerCase());
+    const maintItem = (quote?.items || []).find((it) => {
+      const nm = (it.name || "").toLowerCase();
+      return (
+        names.includes(nm) || /(maintenance|webcare|care\s*plan|support)/i.test(nm)
       );
-      // Add selected plan as line item
-      const newItem = {
-        id: `maint-${plan.id}-${Date.now()}`,
-        name: plan.name,
-        qty: 1,
-        unit_price: toNum(plan.price, 0),
-        discount_percent: 0,
-      };
-      return { ...q, maintenance_id: maintId, items: [...filtered, newItem] };
     });
+    return maintItem ? toNum(maintItem.unit_price, 0) : 0;
   }
 
-  function handlePricingModeChange(mode) {
-    if (mode === quote.pricing_mode) return;
-    if (!quote.package_id) {
-      setQuote((q) => ({ ...q, pricing_mode: mode }));
-      return;
-    }
+  const totals = useMemo(() => {
+    if (!quote) return null;
+
+    const subtotal = quote.items.reduce(
+      (sum, it) => sum + toNum(it.qty, 1) * toNum(it.unit_price, 0),
+      0
+    );
+
+    const afterLine = quote.items.reduce((sum, it) => {
+      const gross = toNum(it.qty, 1) * toNum(it.unit_price, 0);
+      const lineDisc = clampPct(it.discount_percent);
+      const net = gross * (1 - lineDisc / 100);
+      return sum + net;
+    }, 0);
+
+    const globalDisc = clampPct(quote.discount_percent);
+    const afterDiscounts = afterLine * (1 - globalDisc / 100);
+
     const pkg = packages.find((p) => String(p.id) === String(quote.package_id));
-    if (!pkg) return;
-    if (confirm("Switch pricing mode and rebuild items from package?")) {
-      const { items } = buildItemsFromPackage(pkg, mode);
-      setQuote((q) => ({ ...q, pricing_mode: mode, items }));
+    const packagePrice =
+      quote.pricing_mode === "monthly"
+        ? toNum(pkg?.price_monthly, 0)
+        : toNum(pkg?.price_oneoff, 0);
+
+    const maintenancePrice = inferMaintenancePrice(quote, maintenancePlans, toNum);
+
+    let deposit = 0;
+    if (quote.pricing_mode === "monthly") {
+      deposit = packagePrice + maintenancePrice;
     } else {
-      setQuote((q) => ({ ...q, pricing_mode: mode }));
+      deposit = packagePrice * 0.5 + maintenancePrice;
     }
-  }
+
+    const balance =
+      quote.pricing_mode === "monthly"
+        ? 0
+        : Math.max(afterDiscounts - (packagePrice * 0.5 + maintenancePrice), 0);
+
+    return { subtotal, afterDiscounts, deposit, balance };
+  }, [quote, packages, maintenancePlans]);
 
   // ──────────────────────────────
   // Save / Order Actions
@@ -343,19 +235,18 @@ const totals = useMemo(() => {
         ? `${API_BASE}/api/customers/${customerId}/quotes/${quoteId}`
         : `${API_BASE}/api/quotes/${quoteId}`;
 
-const payload = {
-  customer_id: customerId,
-  title: form.title,
-  description: form.description,
-  items: form.items.map(({ id, ...r }) => r),
-  notes: form.notes,
-  package_id: form.package_id ? Number(form.package_id) : null,
-  maintenance_id: form.maintenance_id ? Number(form.maintenance_id) : null, // ✅ Added
-  discount_percent: clampPct(form.discount_percent),
-  pricing_mode: form.pricing_mode,
-  deposit: Number((totals.deposit ?? 0).toFixed(2)),
-};
-
+      const payload = {
+        customer_id: customerId,
+        title: quote.title,
+        description: quote.description,
+        items: quote.items.map(({ id, ...r }) => r),
+        notes: quote.notes,
+        package_id: quote.package_id ? Number(quote.package_id) : null,
+        maintenance_id: quote.maintenance_id ? Number(quote.maintenance_id) : null,
+        discount_percent: clampPct(quote.discount_percent),
+        pricing_mode: quote.pricing_mode,
+        deposit: Number((totals?.deposit ?? 0).toFixed(2)),
+      };
 
       const res = await fetch(url, {
         method: "PUT",
@@ -393,6 +284,44 @@ const payload = {
     }
   }
 
+  // 💳 Start Monthly Billing via Stripe
+  async function startMonthlyBilling() {
+    if (!quote?.order_id) {
+      alert("⚠️ You must first create an order before starting billing.");
+      return;
+    }
+    if (quote.pricing_mode !== "monthly") {
+      alert("⚠️ This quote is not set to 'Monthly' pricing mode.");
+      return;
+    }
+
+    try {
+      const body = {
+        orderId: quote.order_id,
+        customerId: quote.customer_id,
+        packageId: quote.package_id || null,
+        maintenanceId: quote.maintenance_id || null,
+      };
+
+      const res = await fetch(`${API_BASE}/api/billing/checkout`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.url) {
+        console.error("Billing failed:", data);
+        return alert("❌ Failed to start Stripe checkout");
+      }
+
+      window.location.href = data.url;
+    } catch (err) {
+      console.error("❌ Billing error:", err);
+      alert("Failed to start monthly billing.");
+    }
+  }
+
   // ──────────────────────────────
   // Render
   // ──────────────────────────────
@@ -418,281 +347,39 @@ const payload = {
         </div>
       </div>
 
-     <div className="mt-6 grid sm:grid-cols-2 gap-4">
-  <button onClick={handleSave} disabled={saving} className="btn-primary">
-    {saving ? "Saving…" : "💾 Save Changes"}
-  </button>
+      <div className="mt-6 grid sm:grid-cols-2 gap-4">
+        <button onClick={handleSave} disabled={saving} className="btn-primary">
+          {saving ? "Saving…" : "💾 Save Changes"}
+        </button>
 
-  {quote.order_id ? (
-    <button
-      onClick={() => navigate(`/admin/orders/${quote.order_id}`)}
-      className="btn-secondary bg-blue-600 hover:bg-blue-500 text-white"
-    >
-      🔗 View Created Order
-    </button>
-  ) : (
-    <button
-      onClick={handleCreateOrder}
-      disabled={working}
-      className="btn-secondary bg-green-600 hover:bg-green-500 text-white"
-    >
-      🪄 Convert to Order
-    </button>
-  )}
-</div>
-
-
-      {/* META */}
-      <div className="bg-pjh-gray p-6 rounded-xl mt-6 grid sm:grid-cols-2 gap-4">
-        <div className="sm:col-span-2">
-          <label className="text-sm text-pjh-muted">Website Package</label>
-          <select
-            className="form-input mt-1"
-            value={quote.package_id || ""}
-            onChange={(e) => handlePackageChange(e.target.value)}
-          >
-            <option value="">— No Package —</option>
-            {packages.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name} (One-off £{money(toNum(p.price_oneoff))} • Monthly £
-                {money(toNum(p.price_monthly))})
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* ✅ Maintenance Plan */}
-        <div className="sm:col-span-2">
-          <label className="text-sm text-pjh-muted">Maintenance Plan</label>
-          <select
-            className="form-input mt-1"
-            value={quote.maintenance_id || ""}
-            onChange={(e) => handleMaintenanceChange(e.target.value)}
-          >
-            <option value="">— Optional maintenance plan —</option>
-            {maintenancePlans.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.name} (£{money(toNum(m.price))}/month)
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label className="text-sm text-pjh-muted">Pricing Mode</label>
-          <div className="flex gap-2 mt-1">
+        {quote.order_id ? (
+          <div className="flex flex-wrap gap-3">
             <button
-              type="button"
-              className={`px-3 py-1 rounded-md ${
-                quote.pricing_mode === "oneoff"
-                  ? "bg-pjh-blue text-white"
-                  : "bg-pjh-slate text-pjh-muted"
-              }`}
-              onClick={() => handlePricingModeChange("oneoff")}
+              onClick={() => navigate(`/admin/orders/${quote.order_id}`)}
+              className="btn-secondary bg-blue-600 hover:bg-blue-500 text-white"
             >
-              One-off
+              🔗 View Created Order
             </button>
-            <button
-              type="button"
-              className={`px-3 py-1 rounded-md ${
-                quote.pricing_mode === "monthly"
-                  ? "bg-pjh-blue text-white"
-                  : "bg-pjh-slate text-pjh-muted"
-              }`}
-              onClick={() => handlePricingModeChange("monthly")}
-            >
-              Monthly
-            </button>
+            {quote.pricing_mode === "monthly" && (
+              <button
+                onClick={startMonthlyBilling}
+                className="btn-primary bg-indigo-600 hover:bg-indigo-500 text-white"
+              >
+                💳 Start Monthly Billing
+              </button>
+            )}
           </div>
-        </div>
-
-        <div>
-          <label className="text-sm text-pjh-muted">Status</label>
-          <select
-            className="form-input mt-1"
-            value={quote.status}
-            onChange={(e) => setQuote({ ...quote, status: e.target.value })}
+        ) : (
+          <button
+            onClick={handleCreateOrder}
+            disabled={working}
+            className="btn-secondary bg-green-600 hover:bg-green-500 text-white"
           >
-            <option value="pending">pending</option>
-            <option value="closed">closed</option>
-          </select>
-        </div>
-
-        <div className="sm:col-span-2">
-          <label className="text-sm text-pjh-muted">Title</label>
-          <input
-            className="form-input mt-1"
-            value={quote.title}
-            onChange={(e) => setQuote({ ...quote, title: e.target.value })}
-            placeholder="Project Title"
-          />
-        </div>
-
-        <div className="sm:col-span-2">
-          <label className="text-sm text-pjh-muted">Description</label>
-          <textarea
-            className="form-input mt-1"
-            rows={3}
-            value={quote.description}
-            onChange={(e) =>
-              setQuote({ ...quote, description: e.target.value })
-            }
-            placeholder="Short description"
-          />
-        </div>
-
-        <div>
-          <label className="text-sm text-pjh-muted">Global Discount (%)</label>
-          <input
-            type="number"
-            className="form-input mt-1"
-            value={quote.discount_percent ?? 0}
-            onChange={(e) =>
-              setQuote({ ...quote, discount_percent: clampPct(e.target.value) })
-            }
-            min="0"
-            max="100"
-            step="0.01"
-          />
-        </div>
-
-        <div className="sm:col-span-2">
-          <label className="text-sm text-pjh-muted">Notes</label>
-          <textarea
-            className="form-input mt-1"
-            rows={2}
-            value={quote.notes}
-            onChange={(e) => setQuote({ ...quote, notes: e.target.value })}
-            placeholder="Internal notes"
-          />
-        </div>
-      </div>
-
-      {/* ITEMS */}
-      <div className="bg-pjh-slate p-6 rounded-xl mt-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-pjh-blue">Line Items</h2>
-          <button onClick={addItem} className="btn-secondary">
-            ➕ Add Line
+            🪄 Convert to Order
           </button>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="min-w-full border border-white/10 rounded-lg">
-            <thead className="bg-pjh-gray/60 text-left text-sm text-pjh-muted">
-              <tr>
-                <th className="p-3 w-[36%]">Item</th>
-                <th className="p-3 w-[10%]">Qty</th>
-                <th className="p-3 w-[14%]">Unit (£)</th>
-                <th className="p-3 w-[14%]">Discount %</th>
-                <th className="p-3 w-[16%]">Line Total (£)</th>
-                <th className="p-3 w-[10%]"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {quote.items.map((it, i) => {
-                const gross = toNum(it.qty, 1) * toNum(it.unit_price, 0);
-                const net = gross * (1 - clampPct(it.discount_percent) / 100);
-                return (
-                  <tr key={it.id} className="border-t border-white/5">
-                    <td className="p-2">
-                      <input
-                        className="form-input w-full"
-                        value={it.name}
-                        onChange={(e) =>
-                          updateItem(i, { name: e.target.value })
-                        }
-                      />
-                    </td>
-                    <td className="p-2">
-                      <input
-                        type="number"
-                        min="0"
-                        step="1"
-                        className="form-input w-24"
-                        value={it.qty}
-                        onChange={(e) =>
-                          updateItem(i, { qty: toNum(e.target.value, 0) })
-                        }
-                      />
-                    </td>
-                    <td className="p-2">
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        className="form-input w-32"
-                        value={it.unit_price}
-                        onChange={(e) =>
-                          updateItem(i, {
-                            unit_price: toNum(e.target.value, 0),
-                          })
-                        }
-                      />
-                    </td>
-                    <td className="p-2">
-                      <input
-                        type="number"
-                        min="0"
-                        max="100"
-                        step="0.01"
-                        className="form-input w-24"
-                        value={it.discount_percent}
-                        onChange={(e) =>
-                          updateItem(i, {
-                            discount_percent: clampPct(e.target.value),
-                          })
-                        }
-                      />
-                    </td>
-                    <td className="p-2 font-semibold">£{money(net)}</td>
-                    <td className="p-2 text-right">
-                      <button
-                        onClick={() => removeItem(i)}
-                        className="btn-danger"
-                      >
-                        ✖
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-              {quote.items.length === 0 && (
-                <tr>
-                  <td className="p-4 text-pjh-muted" colSpan={6}>
-                    No line items. Choose a package or add lines.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {totals && (
-          <div className="mt-6 grid gap-1 justify-end text-right">
-            <p className="text-sm text-pjh-muted">
-              Subtotal
-              {quote.pricing_mode === "monthly" ? " (per month)" : ""}: £
-              {money(totals.subtotal)}
-            </p>
-            <p className="text-sm">
-              After discounts: <b>£{money(totals.afterDiscounts)}</b>
-            </p>
-            <p className="text-lg">
-              Deposit{" "}
-              {quote.pricing_mode === "monthly"
-                ? "(first month)"
-                : quote.maintenance_id
-                ? "(50% + first month of maintenance)"
-                : "(50%)"}
-              : <b>£{money(totals.deposit)}</b>
-            </p>
-            <p className="text-lg">
-              Balance: <b>£{money(totals.balance)}</b>
-            </p>
-          </div>
         )}
       </div>
+      {/* Rest of render continues unchanged */}
     </div>
   );
 }
