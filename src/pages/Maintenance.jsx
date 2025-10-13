@@ -1,16 +1,6 @@
 /**
- * ============================================================
- * PJH Web Services — Maintenance Landing Page (Local Focus)
- * ============================================================
- * Displays the maintenance marketing stack:
- * Hero → Features → Plans → CTA → Back to Home
- * Updated messaging:
- *   • Focused on local businesses
- *   • Highlights clarity, simplicity, and ongoing support
- *   • Reinforces “we handle the tech so you don’t have to”
- * ============================================================
+ * PJH Web Services — Maintenance Landing Page (Refined)
  */
-
 import MaintenanceHero from "../components/MaintenanceHero";
 import MaintenanceFeatures from "../components/MaintenanceFeatures";
 import MaintenancePlans from "../components/MaintenancePlans";
@@ -20,56 +10,54 @@ import { Link } from "react-router-dom";
 export default function Maintenance() {
   return (
     <main className="bg-slate-950 text-white min-h-screen flex flex-col">
-      {/* HERO — clear local business message */}
+      {/* HERO */}
       <MaintenanceHero
         title="Website Care Plans for Local Businesses"
-        subtitle="Stay secure, fast, and worry-free — we keep your site ahead of the curve while you focus on running your business."
-        tagline="We stay on top of digital trends, updates, and threats — so you don’t have to."
-        ctaPrimary={{ text: "View Care Plans", to: "#plans" }}
+        subtitle="Let us keep your website secure, updated, and performing — so you can focus on your business."
+        tagline="We watch the tech so you don’t have to — updates, backups, security, performance."
+        ctaPrimary={{ text: "See Care Plans", to: "#plans" }}
         ctaSecondary={{ text: "Contact Us", to: "/contact" }}
       />
 
-      {/* FEATURES — local, plain-English explanation */}
+      {/* FEATURES */}
       <MaintenanceFeatures
-        title="Built for Real Businesses — Not Buzzwords"
-        intro="Your website is one of your most valuable assets, and it deserves proper care. 
-        We don’t just handle technical updates — we keep your site optimised, secure, and performing perfectly, month after month."
+        title="What We Do — In Plain English"
+        intro="Websites are living systems. Without proper care, they slow, break, or become vulnerable. We handle all the behind-the-scenes work so your site stays fast, safe, and up to date."
         features={[
           {
             title: "Security & Backups",
-            desc: "We keep your site safe with daily backups, plugin updates, and proactive monitoring — no jargon, no panic.",
+            desc: "We run daily backups, apply core/plugin updates, and watch for vulnerabilities.",
           },
           {
-            title: "Performance Monitoring",
-            desc: "Stay fast and mobile-friendly across every update. We handle performance tuning and optimisations for you.",
+            title: "Performance & Speed",
+            desc: "We monitor and tune your site so it stays fast and responsive after updates.",
           },
           {
-            title: "Local Support You Can Reach",
-            desc: "We’re Suffolk-based, not some faceless support bot. Get real help when you need it — in plain English.",
+            title: "Local, Reachable Support",
+            desc: "You won’t wait on bots. As a Suffolk-based team, we respond in real time.",
           },
           {
-            title: "Trend-Ready Upgrades",
-            desc: "As the web evolves, so does your site. We stay ahead of new tools and features so your business always looks current.",
+            title: "Ongoing Trend Updates",
+            desc: "We evolve your site with the web — new tech, mobile changes, modern best practices.",
           },
         ]}
       />
 
-      {/* PLANS — unchanged functionality */}
+      {/* PLANS */}
       <MaintenancePlans
-        title="Simple, Honest Care Plans"
-        subtitle="Choose a monthly plan that fits your business — no confusing tech talk, no hidden fees, just straightforward support."
+        title="Straightforward, Honest Care Plans"
+        subtitle="No confusing levels — pick what fits your site. All plans include essential hosting, updates, and security."
       />
 
-      {/* CTA — aligned with overall brand tone */}
+      {/* CTA */}
       <MaintenanceCTA
-        title="Cut Through the Noise. Keep Your Website in Safe Hands."
-        text="There’s no need to chase every new trend or worry about website updates. 
-        With PJH Web Services, your website stays protected, up-to-date, and ready for whatever comes next — so you can focus on what you do best."
-        primaryCta={{ text: "Get Started Today", to: "/contact" }}
-        secondaryCta={{ text: "View All Services", to: "/" }}
+        title="Stop Worrying. Start Growing."
+        text="Don’t let your site fall behind. Our care plans keep your site healthy, secure, and tuned — while you get on with running your business."
+        primaryCta={{ text: "Get Started", to: "/contact" }}
+        secondaryCta={{ text: "View Services", to: "/" }}
       />
 
-      {/* BACK TO HOME */}
+      {/* Back to Home */}
       <div className="text-center py-12 border-t border-slate-800 mt-10">
         <Link
           to="/"

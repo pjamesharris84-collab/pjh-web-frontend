@@ -1,52 +1,42 @@
-/**
- * ============================================================
- * PJH Web Services — Maintenance Plan Comparison Page (2025)
- * ============================================================
- * Updated to use unified blue/white premium design system.
- * Matches homepage, navbar, and maintenance landing styles.
- * ============================================================
- */
-
 import { Link } from "react-router-dom";
 
 export default function MaintenanceCompare() {
   const features = [
     { name: "Weekly Backups", essential: "✅", performance: "✅", total: "✅" },
-    { name: "Plugin / CMS Updates", essential: "✅", performance: "✅", total: "✅" },
+    { name: "Core / Plugin / CMS Updates", essential: "✅", performance: "✅", total: "✅" },
     { name: "Uptime & Security Monitoring", essential: "✅", performance: "✅", total: "✅" },
-    { name: "Malware Scans", essential: "✅", performance: "✅", total: "✅" },
-    { name: "Website Speed Checks", essential: "❌", performance: "✅", total: "✅" },
-    { name: "Monthly SEO Health Check", essential: "❌", performance: "✅", total: "✅" },
+    { name: "Malware / Vulnerability Scans", essential: "✅", performance: "✅", total: "✅" },
+    { name: "Speed / Performance Checks", essential: "❌", performance: "✅", total: "✅" },
+    { name: "Monthly SEO / Health Audit", essential: "❌", performance: "✅", total: "✅" },
     { name: "Monthly Performance Report", essential: "❌", performance: "✅", total: "✅" },
-    { name: "Content Edits (per month)", essential: "❌", performance: "1 hr", total: "3 hrs" },
-    { name: "Priority Support", essential: "❌", performance: "48 h", total: "24 h" },
-    { name: "Emergency Fixes", essential: "❌", performance: "Optional (£50)", total: "Included" },
-    { name: "Analytics Dashboard", essential: "❌", performance: "Optional", total: "✅" },
-    { name: "Strategy Call (Quarterly)", essential: "❌", performance: "❌", total: "✅" },
+    { name: "Content Updates (hrs/month)", essential: "❌", performance: "1 hr", total: "3 hrs" },
+    { name: "Priority Support", essential: "❌", performance: "48h", total: "24h" },
+    { name: "Emergency Fixes Included", essential: "❌", performance: "Optional", total: "✅" },
+    { name: "Analytics / Dashboard Access", essential: "❌", performance: "Optional", total: "✅" },
+    { name: "Strategy / Review Call (quarterly)", essential: "❌", performance: "❌", total: "✅" },
   ];
 
   const plans = [
     {
       key: "essential",
       label: "Essential Care",
-      price: "£45 / mo (ex VAT)",
-      sub: "or £420 / yr (£35 eq.)",
+      price: "£45 / mo",
+      sub: "or £420 / yr",
     },
     {
       key: "performance",
       label: "Performance Care",
-      price: "£95 / mo (ex VAT)",
-      sub: "or £1 020 / yr (£85 eq.)",
+      price: "£95 / mo",
+      sub: "or £1,020 / yr",
     },
     {
       key: "total",
       label: "Total WebCare",
-      price: "£195 / mo (ex VAT)",
-      sub: "or £2 100 / yr (£175 eq.)",
+      price: "£195 / mo",
+      sub: "or £2,100 / yr",
     },
   ];
 
-  // Unified button styles
   const buttonPrimary =
     "inline-block px-8 py-3 bg-blue-700 hover:bg-blue-800 text-white font-semibold rounded-xl transition-all duration-300 shadow-sm hover:shadow-blue-900/30";
   const buttonOutline =
@@ -57,23 +47,21 @@ export default function MaintenanceCompare() {
   return (
     <main className="bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white py-20 px-4">
       <div className="max-w-6xl mx-auto">
-        {/* === Heading === */}
+        {/* Heading */}
         <h1 className="text-4xl sm:text-5xl font-bold text-center mb-6 tracking-tight">
-          Compare Maintenance Plans
+          Compare Website Care Plans
         </h1>
 
         <p className="text-center text-gray-400 mb-4 max-w-2xl mx-auto leading-relaxed">
-          Choose the level of ongoing care that fits your business.  
-          All prices ex VAT · annual payments include ~20% discount.
+          Pick the level of ongoing care that’s right for your business. All plans exclude VAT; yearly plans include a discount.
         </p>
 
-        {/* === Eligibility Disclaimer === */}
         <p className="text-center text-gray-500 text-sm italic mb-12 max-w-2xl mx-auto">
-          *WebCare Maintenance Plans are exclusive add-ons for websites built or actively managed by PJH Web Services.*
+          *Care plans are available for websites built or actively managed by PJH Web Services.*
         </p>
 
-        {/* === Comparison Table === */}
-        <div className="overflow-x-auto border border-white/10 rounded-2xl shadow-lg bg-slate-900/60 backdrop-blur-sm">
+        {/* Comparison Table */}
+        <div className="overflow-x-auto border border-white/10 rounded-2xl shadow-lg bg-slate-900/60">
           <table className="w-full border-collapse text-sm sm:text-base">
             <thead className="bg-slate-900/80 border-b border-white/10">
               <tr>
@@ -92,7 +80,6 @@ export default function MaintenanceCompare() {
                 ))}
               </tr>
             </thead>
-
             <tbody>
               {features.map((row, i) => (
                 <tr
@@ -102,8 +89,12 @@ export default function MaintenanceCompare() {
                   }`}
                 >
                   <td className="p-4 font-medium text-gray-300">{row.name}</td>
-                  <td className="p-4 text-center text-gray-100">{row.essential}</td>
-                  <td className="p-4 text-center text-gray-100">{row.performance}</td>
+                  <td className="p-4 text-center text-gray-100">
+                    {row.essential}
+                  </td>
+                  <td className="p-4 text-center text-gray-100">
+                    {row.performance}
+                  </td>
                   <td className="p-4 text-center text-gray-100">{row.total}</td>
                 </tr>
               ))}
@@ -111,10 +102,10 @@ export default function MaintenanceCompare() {
           </table>
         </div>
 
-        {/* === CTA Buttons === */}
+        {/* CTAs */}
         <div className="text-center mt-16 flex flex-wrap justify-center gap-4">
           <Link to="/maintenance" className={buttonPrimary}>
-            Back to Overview
+            View Plans
           </Link>
           <Link to="/contact" className={buttonOutline}>
             Get Started

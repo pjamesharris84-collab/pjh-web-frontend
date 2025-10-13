@@ -1,10 +1,10 @@
 /**
  * ============================================================
- * PJH Web Services — Business Package Page
+ * PJH Web Services — Business Package Page (Refined 2025)
  * ============================================================
- * For growing companies who are ready to scale up.
+ * Bespoke web design for growing companies ready to scale.
  * Includes everything from Starter plus CRM, automation, and
- * time-saving tools to help manage your day-to-day business.
+ * digital systems designed to save time and streamline work.
  * ============================================================
  */
 
@@ -23,7 +23,7 @@ export default function Business() {
     <div className="bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white min-h-screen flex flex-col font-inter">
       <SEO
         title="Business Package | PJH Web Services"
-        description="For growing companies ready to scale — full CRM, automation, and marketing efficiency without the noise."
+        description="Bespoke websites with CRM, automation, and advanced business tools — designed for growing companies who need more than just a website."
         url="https://www.pjhwebservices.co.uk/packages/business"
       />
 
@@ -35,39 +35,56 @@ export default function Business() {
             Business Package
           </h1>
           <p className="text-gray-400 mb-6 text-lg">
-            For growing local companies who are ready to scale up.
+            For growing companies who need a bespoke, scalable website that
+            works as hard as they do.
           </p>
 
           <p className="text-gray-300 text-lg font-semibold mb-10">
-            £2,600 one-off setup or £140/month for 24 months
+            £1,495 one-off setup or £85/month for 24 months
           </p>
 
           <p className="text-gray-400 mb-10 leading-relaxed whitespace-pre-line">
-            When your business starts growing, you need more than a brochure
-            site — you need tools that actually save you time.
-            {"\n\n"}
-            The Business Package gives you all the polish of our Starter plan,
-            plus a built-in CRM and automation features that make managing jobs,
-            customers, and payments effortless.
-            {"\n\n"}
-            And just like everything else we do, it’s built with honesty and
-            practicality. No pointless “funnels” or flashy dashboards — just a
-            reliable system that works for how *you* run your business.
+            As your business grows, your website should do more than look good — it should
+            help you save time, capture leads, and manage your day-to-day workflow.{"\n\n"}
+            The Business Package includes everything from our Starter plan plus a fully
+            integrated CRM, quoting, invoicing, and automation tools — designed around
+            your business, not a template.{"\n\n"}
+            Every project is built from scratch with modern frameworks and a focus on
+            clarity, speed, and usability. We cut through the jargon and deliver a
+            digital system that’s efficient, intuitive, and ready to evolve as you grow.
           </p>
 
           <h2 className="text-2xl font-semibold text-blue-300 mb-4">
             What’s Included
           </h2>
           <ul className="list-disc list-inside text-gray-400 leading-relaxed mb-10">
-            <li>All Starter features included</li>
-            <li>Custom CRM dashboard with lead & job tracking</li>
-            <li>Integrated quoting and invoicing tools</li>
-            <li>Booking forms & smart enquiry handling</li>
-            <li>Automated email responses for customers</li>
-            <li>Google Analytics & search console integration</li>
-            <li>Secure customer data management</li>
-            <li>On-page SEO and local keyword setup</li>
+            <li>All features from the Starter Package</li>
+            <li>Bespoke CRM dashboard for leads, clients & job tracking</li>
+            <li>Integrated quoting and invoicing system</li>
+            <li>Automated email responses & smart enquiry handling</li>
+            <li>Booking forms for services, consultations, or jobs</li>
+            <li>Google Analytics & Search Console integration</li>
+            <li>On-page SEO setup with local keyword targeting</li>
+            <li>Secure customer data storage & management tools</li>
+            <li>12 months of hosting, SSL, and WebCare maintenance included</li>
           </ul>
+
+          <h2 className="text-2xl font-semibold text-blue-300 mb-4">
+            Optional Add-Ons
+          </h2>
+          <ul className="list-disc list-inside text-gray-400 leading-relaxed mb-10">
+            <li>Custom dashboard reports & analytics views — from £120</li>
+            <li>Automated SMS notifications & reminders — from £95</li>
+            <li>Team management / multi-user CRM access — £50 setup</li>
+            <li>SEO Boost Package (keyword strategy + content optimisation) — £200</li>
+            <li>WebCare Plus — £25/month (proactive updates, uptime monitoring & monthly performance reports)</li>
+          </ul>
+
+          <p className="text-gray-400 mb-10 leading-relaxed">
+            Built with the latest tools and frameworks, your Business Package website
+            will keep up with modern digital trends — ensuring your brand always looks
+            sharp, runs fast, and performs seamlessly across every device.
+          </p>
 
           <div className="flex flex-wrap justify-center gap-4">
             <Link to="/contact" className={buttonPrimary}>

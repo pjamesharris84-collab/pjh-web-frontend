@@ -1,10 +1,10 @@
 /**
  * ============================================================
- * PJH Web Services — Premium Package Page
+ * PJH Web Services — Premium Package Page (Refined 2025)
  * ============================================================
- * Our top-tier, fully bespoke automation and CRM suite.
- * For businesses that want everything in one unified system:
- * bookings, payments, invoices, and smart workflows.
+ * Fully bespoke automation and CRM suite for established businesses.
+ * Designed to unify bookings, payments, and workflows into one
+ * seamless, scalable platform — built from scratch, no templates.
  * ============================================================
  */
 
@@ -23,7 +23,7 @@ export default function Premium() {
     <div className="bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white min-h-screen flex flex-col font-inter">
       <SEO
         title="Premium Package | PJH Web Services"
-        description="The full automation suite — a complete CRM, booking, and payments platform designed around your business."
+        description="Our flagship bespoke automation suite — CRM, bookings, payments, and client portals built around your business from the ground up."
         url="https://www.pjhwebservices.co.uk/packages/premium"
       />
 
@@ -35,40 +35,59 @@ export default function Premium() {
             Premium Package
           </h1>
           <p className="text-gray-400 mb-6 text-lg">
-            The full automation suite for established businesses.
+            Our flagship, fully bespoke digital platform — built for established
+            businesses that want everything connected and working seamlessly.
           </p>
 
           <p className="text-gray-300 text-lg font-semibold mb-10">
-            £6,000 one-off setup or £300/month for 24 months
+            £2,950 one-off setup or £160/month for 24 months
           </p>
 
           <p className="text-gray-400 mb-10 leading-relaxed whitespace-pre-line">
-            The Premium Package is our flagship system — a fully bespoke CRM and
-            automation platform built entirely around how your business runs.
-            {"\n\n"}
-            From online bookings and payments to recurring invoicing,
-            automated reminders, and client dashboards, everything works
-            seamlessly in one place.
-            {"\n\n"}
-            We take care of the tech, updates, and integrations — you focus on
-            running your business. No “growth hacks”, no social-media jargon,
-            just a rock-solid system that saves hours every week.
+            The Premium Package is the ultimate all-in-one solution for businesses
+            ready to automate, scale, and simplify their operations.{"\n\n"}
+            Every system is designed from scratch — no templates, no off-the-shelf
+            dashboards — giving you a completely tailored digital platform that fits
+            how your business actually works.{"\n\n"}
+            From bookings and payments to client logins, invoicing, and reporting,
+            everything runs through one intuitive interface. We handle the automation,
+            integrations, and hosting so you can focus on running your business.
           </p>
 
           <h2 className="text-2xl font-semibold text-blue-300 mb-4">
             What’s Included
           </h2>
           <ul className="list-disc list-inside text-gray-400 leading-relaxed mb-10">
-            <li>All Business features included</li>
-            <li>Fully bespoke CRM and project management suite</li>
-            <li>Online payments and recurring billing (Stripe/GoCardless)</li>
-            <li>Customer login & portal access</li>
-            <li>Automated invoicing and reminders</li>
-            <li>Advanced reporting & analytics dashboard</li>
-            <li>Team user roles and permissions</li>
-            <li>Priority phone & email support</li>
-            <li>Free domain renewals during active term</li>
+            <li>All Business Package features included</li>
+            <li>Fully bespoke CRM & project management system</li>
+            <li>Online bookings, payments, and recurring billing (Stripe / GoCardless)</li>
+            <li>Client login area & secure customer portal</li>
+            <li>Automated invoicing, reminders, and follow-ups</li>
+            <li>Advanced analytics & performance dashboard</li>
+            <li>Team roles, access control, and multi-user management</li>
+            <li>12 months hosting, SSL, and WebCare Premium maintenance included</li>
+            <li>Priority support — direct phone & email access</li>
+            <li>Free domain renewals while under active WebCare plan</li>
           </ul>
+
+          <h2 className="text-2xl font-semibold text-blue-300 mb-4">
+            Optional Add-Ons
+          </h2>
+          <ul className="list-disc list-inside text-gray-400 leading-relaxed mb-10">
+            <li>Custom data dashboards & KPI reports — from £200</li>
+            <li>API integrations (QuickBooks, HubSpot, etc.) — from £250</li>
+            <li>Automated SMS & WhatsApp notifications — from £150</li>
+            <li>Team training & onboarding sessions — from £95</li>
+            <li>WebCare Premium+ — £45/month (priority fixes, uptime SLA, detailed monthly insights)</li>
+          </ul>
+
+          <p className="text-gray-400 mb-10 leading-relaxed">
+            Built using modern frameworks and scalable cloud infrastructure, the
+            Premium Package is your all-in-one digital command centre — engineered
+            for performance, automation, and long-term reliability.{"\n\n"}
+            No jargon, no unnecessary fluff — just technology that works for your
+            business and keeps you ahead of digital trends.
+          </p>
 
           <div className="flex flex-wrap justify-center gap-4">
             <Link to="/contact" className={buttonPrimary}>
