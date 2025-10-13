@@ -6,7 +6,7 @@
  *  ✅ Accurate 5-key financials (Total, Deposit, Paid, Refunds, Balance)
  *  ✅ Stripe & Bacs checkout actions
  *  ✅ Direct Debit visibility (maintenance plan + mandate)
- *  ✅ Manual re-charge trigger for maintenance billing
+ *  ✅ Manual re-charge trigger (maintenance)
  *  ✅ Full payment history tab
  *  ✅ Refund + re-charge awareness
  *  ✅ Delete + refresh order buttons
@@ -41,6 +41,7 @@ export default function AdminOrderRecord() {
     if (id) {
       refreshOrder();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   async function refreshOrder() {
@@ -151,7 +152,7 @@ export default function AdminOrderRecord() {
         const msg =
           flow === "bacs_setup"
             ? "This will open Stripe's Direct Debit setup page. No charge will occur."
-            : `This will charge £${data.amount?.toFixed(2) || 0}. Continue?`;
+            : `This will charge £${(data.amount ?? payload.amount ?? 0).toFixed(2)}. Continue?`;
         if (confirm(msg)) window.open(data.url, "_blank");
       } else {
         alert(`❌ Checkout error: ${data.error || "Unknown error"}`);
@@ -204,10 +205,11 @@ export default function AdminOrderRecord() {
       return alert("No active Direct Debit found for this order.");
     }
 
+    const amt = Number(summary?.maintenance_monthly || 0);
+    if (!(amt > 0)) return alert("No monthly maintenance amount set.");
+
     const confirmCharge = confirm(
-      `Run Direct Debit maintenance charge of £${summary.maintenance_monthly?.toFixed(
-        2
-      )}?`
+      `Run Direct Debit maintenance charge of £${amt.toFixed(2)} now?`
     );
     if (!confirmCharge) return;
 
@@ -217,9 +219,7 @@ export default function AdminOrderRecord() {
         `${API_BASE}/api/automation/directdebit/run?orderId=${order.id}`
       );
       if (!res.ok) throw new Error("Failed to trigger maintenance charge");
-      alert(
-        "✅ Maintenance charge initiated. It will appear once Stripe confirms."
-      );
+      alert("✅ Maintenance charge initiated. It will appear once Stripe confirms.");
       refreshOrder();
     } catch (err) {
       console.error("❌ Maintenance charge error:", err);
@@ -289,13 +289,17 @@ export default function AdminOrderRecord() {
       <div className="mt-6 border-b border-white/10 flex gap-6 text-sm">
         <button
           onClick={() => setTab("overview")}
-          className={`pb-2 ${tab === "overview" ? "text-pjh-blue border-b border-pjh-blue" : "text-pjh-muted"}`}
+          className={`pb-2 ${
+            tab === "overview" ? "text-pjh-blue border-b border-pjh-blue" : "text-pjh-muted"
+          }`}
         >
           Overview
         </button>
         <button
           onClick={() => setTab("payments")}
-          className={`pb-2 ${tab === "payments" ? "text-pjh-blue border-b border-pjh-blue" : "text-pjh-muted"}`}
+          className={`pb-2 ${
+            tab === "payments" ? "text-pjh-blue border-b border-pjh-blue" : "text-pjh-muted"
+          }`}
         >
           Payments
         </button>
@@ -320,7 +324,7 @@ export default function AdminOrderRecord() {
                 <span className="text-sm text-pjh-muted">Status:</span>
                 {summary.direct_debit_active ? (
                   <span className="px-2 py-1 text-xs rounded bg-green-600/30 text-green-300 border border-green-500/20">
-                    ✅ Active (Mandate: {summary.mandate_id?.slice(0, 8)}…)
+                    ✅ Active {summary.mandate_id ? `(Mandate: ${String(summary.mandate_id).slice(0, 8)}…)` : ""}
                   </span>
                 ) : (
                   <span className="px-2 py-1 text-xs rounded bg-red-600/30 text-red-300 border border-red-500/20">
@@ -329,11 +333,11 @@ export default function AdminOrderRecord() {
                 )}
               </div>
               <p className="text-sm text-pjh-muted">
-                Maintenance Plan: £{summary.maintenance_monthly?.toFixed(2)}/month
+                Maintenance Plan: £{Number(summary.maintenance_monthly || 0).toFixed(2)}/month
               </p>
 
               {/* Manual Direct Debit Re-run */}
-              {summary.direct_debit_active && summary.maintenance_monthly > 0 && (
+              {summary.direct_debit_active && Number(summary.maintenance_monthly || 0) > 0 && (
                 <button
                   onClick={handleManualMaintenanceCharge}
                   disabled={working}
@@ -348,19 +352,39 @@ export default function AdminOrderRecord() {
           {/* Payment Actions */}
           <div className="mt-10 space-y-6">
             <div className="flex flex-wrap gap-3">
-              <button onClick={() => handleCreateCheckout("card_payment", "deposit")} disabled={working} className="btn bg-green-600 hover:bg-green-700">
+              <button
+                onClick={() => handleCreateCheckout("card_payment", "deposit")}
+                disabled={working}
+                className="btn bg-green-600 hover:bg-green-700"
+              >
                 💳 Card — Deposit
               </button>
-              <button onClick={() => handleCreateCheckout("card_payment", "balance")} disabled={working} className="btn bg-green-700 hover:bg-green-800">
+              <button
+                onClick={() => handleCreateCheckout("card_payment", "balance")}
+                disabled={working}
+                className="btn bg-green-700 hover:bg-green-800"
+              >
                 💳 Card — Balance
               </button>
-              <button onClick={() => handleCreateCheckout("bacs_payment", "deposit")} disabled={working} className="btn bg-blue-600 hover:bg-blue-700">
+              <button
+                onClick={() => handleCreateCheckout("bacs_payment", "deposit")}
+                disabled={working}
+                className="btn bg-blue-600 hover:bg-blue-700"
+              >
                 🏦 Bacs — Deposit
               </button>
-              <button onClick={() => handleCreateCheckout("bacs_payment", "balance")} disabled={working} className="btn bg-blue-700 hover:bg-blue-800">
+              <button
+                onClick={() => handleCreateCheckout("bacs_payment", "balance")}
+                disabled={working}
+                className="btn bg-blue-700 hover:bg-blue-800"
+              >
                 🏦 Bacs — Balance
               </button>
-              <button onClick={() => handleCreateCheckout("bacs_setup")} disabled={working} className="btn bg-indigo-600 hover:bg-indigo-700">
+              <button
+                onClick={() => handleCreateCheckout("bacs_setup")}
+                disabled={working}
+                className="btn bg-indigo-600 hover:bg-indigo-700"
+              >
                 🧾 Setup Direct Debit
               </button>
             </div>
@@ -370,12 +394,20 @@ export default function AdminOrderRecord() {
               <div className="border-t border-white/10 pt-4 flex flex-wrap gap-3">
                 <h3 className="text-sm text-pjh-muted w-full">Refunds</h3>
                 {payments.some((p) => p.type?.toLowerCase() === "deposit" && p.status === "paid") && (
-                  <button onClick={() => handleRefund("deposit")} disabled={working} className="btn bg-red-600 hover:bg-red-700">
+                  <button
+                    onClick={() => handleRefund("deposit")}
+                    disabled={working}
+                    className="btn bg-red-600 hover:bg-red-700"
+                  >
                     💸 Refund Deposit
                   </button>
                 )}
                 {payments.some((p) => p.type?.toLowerCase() === "balance" && p.status === "paid") && (
-                  <button onClick={() => handleRefund("balance")} disabled={working} className="btn bg-red-700 hover:bg-red-800">
+                  <button
+                    onClick={() => handleRefund("balance")}
+                    disabled={working}
+                    className="btn bg-red-700 hover:bg-red-800"
+                  >
                     💸 Refund Balance
                   </button>
                 )}
@@ -400,9 +432,9 @@ function PaymentsTab({ order, payments, summary }) {
       <h2 className="text-xl font-semibold text-pjh-blue mb-4">Payments Overview</h2>
       {summary && (
         <div className="grid sm:grid-cols-3 gap-3 text-sm mb-4">
-          <div>Deposit Outstanding: £{summary.deposit_outstanding.toFixed(2)}</div>
-          <div>Balance Outstanding: £{summary.balance_outstanding.toFixed(2)}</div>
-          <div>Monthly Maintenance: £{summary.maintenance_monthly.toFixed(2)}</div>
+          <div>Deposit Outstanding: £{Number(summary.deposit_outstanding || 0).toFixed(2)}</div>
+          <div>Balance Outstanding: £{Number(summary.balance_outstanding || 0).toFixed(2)}</div>
+          <div>Monthly Maintenance: £{Number(summary.maintenance_monthly || 0).toFixed(2)}</div>
         </div>
       )}
 
