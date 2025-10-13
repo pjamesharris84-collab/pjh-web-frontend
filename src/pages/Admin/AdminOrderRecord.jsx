@@ -10,6 +10,7 @@
  *  ✅ Full payment history tab
  *  ✅ Refund + re-charge awareness
  *  ✅ Delete + refresh order buttons
+ *  ✅ Start Monthly Billing (moved here from quote record)
  * ============================================================
  */
 
@@ -38,9 +39,7 @@ export default function AdminOrderRecord() {
       window.location.href = "/admin";
       return;
     }
-    if (id) {
-      refreshOrder();
-    }
+    if (id) refreshOrder();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
@@ -205,7 +204,7 @@ export default function AdminOrderRecord() {
       return alert("No active Direct Debit found for this order.");
     }
 
-    const amt = Number(summary?.maintenance_monthly || 0);
+    const amt = Number(summary?.maintenance_monthly || order.maintenance_monthly || 0);
     if (!(amt > 0)) return alert("No monthly maintenance amount set.");
 
     const confirmCharge = confirm(
@@ -226,6 +225,47 @@ export default function AdminOrderRecord() {
       alert("❌ Failed to trigger maintenance charge.");
     } finally {
       setWorking(false);
+    }
+  }
+
+  /* ============================================================
+     💳 Start Monthly Billing via Stripe Checkout
+  ============================================================ */
+  async function startMonthlyBilling() {
+    if (!order) return alert("Order not loaded yet.");
+
+    if (!order.maintenance_name && order.pricing_mode !== "monthly") {
+      return alert("No recurring billing found for this order.");
+    }
+
+    try {
+      const body = {
+        orderId: order.id,
+        customerId: order.customer_id,
+        packageId:
+          order.pricing_mode === "monthly" ? order.package_id || null : null,
+        maintenanceId: order.maintenance_id || null,
+        mode:
+          order.pricing_mode === "monthly"
+            ? "full-monthly"
+            : order.maintenance_name
+            ? "maintenance-only"
+            : "oneoff",
+      };
+
+      const res = await fetch(`${API_BASE}/api/billing/checkout`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.url) throw new Error("Stripe checkout failed");
+
+      window.location.href = data.url;
+    } catch (err) {
+      console.error("❌ Billing error:", err);
+      alert("❌ Failed to start monthly billing.");
     }
   }
 
@@ -253,6 +293,8 @@ export default function AdminOrderRecord() {
   if (error) return <div className="p-10 text-red-400">{error}</div>;
   if (!order)
     return <div className="p-10 text-pjh-muted animate-pulse">Loading order details…</div>;
+
+  const monthlyAmount = Number(summary?.maintenance_monthly || order?.maintenance_monthly || 0);
 
   return (
     <div className="p-10 text-white bg-pjh-charcoal min-h-screen">
@@ -289,17 +331,13 @@ export default function AdminOrderRecord() {
       <div className="mt-6 border-b border-white/10 flex gap-6 text-sm">
         <button
           onClick={() => setTab("overview")}
-          className={`pb-2 ${
-            tab === "overview" ? "text-pjh-blue border-b border-pjh-blue" : "text-pjh-muted"
-          }`}
+          className={`pb-2 ${tab === "overview" ? "text-pjh-blue border-b border-pjh-blue" : "text-pjh-muted"}`}
         >
           Overview
         </button>
         <button
           onClick={() => setTab("payments")}
-          className={`pb-2 ${
-            tab === "payments" ? "text-pjh-blue border-b border-pjh-blue" : "text-pjh-muted"
-          }`}
+          className={`pb-2 ${tab === "payments" ? "text-pjh-blue border-b border-pjh-blue" : "text-pjh-muted"}`}
         >
           Payments
         </button>
@@ -316,7 +354,7 @@ export default function AdminOrderRecord() {
             <SummaryCard label="Balance Remaining" value={`£${figures.balance.toFixed(2)}`} accent="text-amber-300" />
           </div>
 
-          {/* Direct Debit */}
+          {/* Direct Debit & Maintenance */}
           {summary && (
             <div className="mt-8 bg-pjh-slate p-6 rounded-xl border border-white/10 space-y-3">
               <h2 className="text-xl font-semibold text-pjh-blue">Direct Debit & Maintenance</h2>
@@ -333,11 +371,21 @@ export default function AdminOrderRecord() {
                 )}
               </div>
               <p className="text-sm text-pjh-muted">
-                Maintenance Plan: £{Number(summary.maintenance_monthly || 0).toFixed(2)}/month
+                Maintenance Plan: £{monthlyAmount.toFixed(2)}/month
               </p>
 
-              {/* Manual Direct Debit Re-run */}
-              {summary.direct_debit_active && Number(summary.maintenance_monthly || 0) > 0 && (
+              {/* Start Monthly Billing */}
+              {(order.pricing_mode === "monthly" || order.maintenance_name) && (
+                <button
+                  onClick={startMonthlyBilling}
+                  className="btn bg-indigo-600 hover:bg-indigo-500 mt-3"
+                >
+                  💳 Start Monthly Billing
+                </button>
+              )}
+
+              {/* Manual Maintenance Re-run */}
+              {summary.direct_debit_active && monthlyAmount > 0 && (
                 <button
                   onClick={handleManualMaintenanceCharge}
                   disabled={working}
@@ -417,26 +465,27 @@ export default function AdminOrderRecord() {
         </>
       )}
 
-      {/* ======================================================== */}
-      {tab === "payments" && <PaymentsTab order={order} payments={payments} summary={summary} />}
+      {tab === "payments" && (
+        <PaymentsTab order={order} payments={payments} summary={summary} />
+      )}
     </div>
   );
 }
 
 /* ============================================================
-   PaymentsTab — shows full ledger and outstanding balances
+   PaymentsTab
 ============================================================ */
 function PaymentsTab({ order, payments, summary }) {
+  const monthly = Number(summary?.maintenance_monthly || order?.maintenance_monthly || 0);
+
   return (
     <div className="mt-6 bg-pjh-slate p-6 rounded-xl border border-white/10">
       <h2 className="text-xl font-semibold text-pjh-blue mb-4">Payments Overview</h2>
-      {summary && (
-        <div className="grid sm:grid-cols-3 gap-3 text-sm mb-4">
-          <div>Deposit Outstanding: £{Number(summary.deposit_outstanding || 0).toFixed(2)}</div>
-          <div>Balance Outstanding: £{Number(summary.balance_outstanding || 0).toFixed(2)}</div>
-          <div>Monthly Maintenance: £{Number(summary.maintenance_monthly || 0).toFixed(2)}</div>
-        </div>
-      )}
+      <div className="grid sm:grid-cols-3 gap-3 text-sm mb-4">
+        <div>Deposit Outstanding: £{Number(summary?.deposit_outstanding || 0).toFixed(2)}</div>
+        <div>Balance Outstanding: £{Number(summary?.balance_outstanding || 0).toFixed(2)}</div>
+        <div>Monthly Maintenance: £{monthly.toFixed(2)}</div>
+      </div>
 
       <table className="min-w-full text-sm border border-white/10 rounded-lg">
         <thead className="bg-pjh-gray/60 text-left text-pjh-muted">

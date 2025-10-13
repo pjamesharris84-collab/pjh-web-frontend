@@ -292,43 +292,6 @@ export default function AdminQuoteRecord() {
     }
   }
 
-async function startMonthlyBilling() {
-  if (!quote?.order_id) {
-    alert("⚠️ You must first create an order before starting billing.");
-    return;
-  }
-
-  try {
-    const body = {
-      orderId: quote.order_id,
-      customerId: quote.customer_id,
-      packageId:
-        quote.pricing_mode === "monthly" ? quote.package_id || null : null,
-      maintenanceId: quote.maintenance_id || null,
-      mode:
-        quote.pricing_mode === "monthly"
-          ? "full-monthly"
-          : quote.maintenance_id
-          ? "maintenance-only"
-          : "oneoff",
-    };
-
-    const res = await fetch(`${API_BASE}/api/billing/checkout`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-
-    const data = await res.json();
-    if (!res.ok || !data.url) throw new Error("Stripe checkout failed");
-    window.location.href = data.url;
-  } catch (err) {
-    console.error("❌ Billing error:", err);
-    alert("❌ Failed to start billing.");
-  }
-}
-
-
   /* ============================================================
      Render
   ============================================================ */
@@ -389,16 +352,7 @@ async function startMonthlyBilling() {
           🔗 View Created Order
         </button>
 
-        {/* 💳 Show if monthly package OR maintenance plan */}
-        {(quote.pricing_mode === "monthly" || quote.maintenance_id) && (
-          <button
-            onClick={startMonthlyBilling}
-            className="btn-primary bg-indigo-600 hover:bg-indigo-500 text-white"
-          >
-            💳 Start Monthly Billing
-          </button>
-        )}
-      </>
+            </>
     ) : (
       <>
         <button
