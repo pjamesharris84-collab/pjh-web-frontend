@@ -6,9 +6,8 @@
  *  ✅ Accurate 5-key financials (Total, Deposit, Paid, Refunds, Balance)
  *  ✅ Syncs with linked quote in real-time
  *  ✅ Stripe & BACS checkout actions
- *  ✅ Full refund + payment awareness
- *  ✅ Delete order button
- *  ✅ Refresh + dynamic recalculation
+ *  ✅ Full refund + re-charge awareness
+ *  ✅ Delete + refresh order buttons
  * ============================================================
  */
 
@@ -26,7 +25,7 @@ export default function AdminOrderRecord() {
   const [error, setError] = useState("");
 
   const API_BASE =
-    import.meta.env.VITE_API_URL || "https://pjh-web-backend.onrender.com";
+    import.meta.env.VITE_API_URL || "https://pjh-web-backend-1.onrender.com";
 
   /* ============================================================
      🔐 Admin Guard + Initial Data Load
@@ -82,13 +81,8 @@ export default function AdminOrderRecord() {
   }
 
   async function refreshOrder() {
-    try {
-      await loadOrder();
-      await loadPayments();
-      console.log("🔁 Order refreshed");
-    } catch (err) {
-      console.error("❌ Refresh error:", err);
-    }
+    await loadOrder();
+    await loadPayments();
   }
 
   /* ============================================================
@@ -110,67 +104,98 @@ export default function AdminOrderRecord() {
     }
   }
 
-const figures = useMemo(() => {
-  if (!order)
-    return { total: 0, deposit: 0, paid: 0, refunded: 0, balance: 0 };
+  /* ============================================================
+     💰 Financial Figures
+  ============================================================ */
+  const figures = useMemo(() => {
+    if (!order)
+      return { total: 0, deposit: 0, paid: 0, refunded: 0, balance: 0 };
 
-  // Pull directly from backend when possible
-  const deposit = Number(order.deposit || 0);
-  const balance = Number(order.balance || 0);
-  const paid = Number(order.total_paid || 0);
-  const refunded = Number(order.refunded_total || 0);
+    const deposit = Number(order.deposit || 0);
+    const baseBalance = Number(order.balance || 0);
+    const paid = Number(order.total_paid || 0);
+    const refunded = Math.abs(Number(order.refunded_total || 0));
 
-  // Compute total and remaining balance dynamically
-  const total = deposit + balance;
-  const remaining = Math.max(total - (paid - refunded), 0);
+    const total = deposit + baseBalance;
+    const netPaid = paid - refunded;
+    const remaining = Math.max(total - netPaid, 0);
 
-  return { total, deposit, paid, refunded, balance: remaining };
-}, [order]);
+    return { total, deposit, paid, refunded, balance: remaining };
+  }, [order]);
 
+  /* ============================================================
+     💳 Stripe Actions + Refunds (updated for recharges)
+  ============================================================ */
+  async function handleCreateCheckout(flow, type) {
+    if (!order) return;
+    setWorking(true);
 
+    try {
+      const payload =
+        flow === "bacs_setup"
+          ? { orderId: order.id, flow }
+          : {
+              orderId: order.id,
+              flow,
+              type,
+              amount:
+                type === "deposit"
+                  ? Number(order.deposit || 0)
+                  : Number(order.balance || 0),
+            };
 
- /* ============================================================
-   💳 Stripe Actions + Refunds (updated for balance accuracy)
-============================================================ */
-async function handleCreateCheckout(flow, type) {
-  if (!order) return;
-  setWorking(true);
+      const res = await fetch(`${API_BASE}/api/payments/create-checkout`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
-  try {
-    const payload = {
-      orderId: order.id,
-      flow,
-      type,
-      // 💡 Pass explicit amount values for clarity
-      amount:
-        type === "deposit"
-          ? Number(order.deposit || 0)
-          : Number(order.balance || 0),
-    };
+      const data = await res.json();
 
-    console.log("🧾 Checkout payload:", payload);
-
-    const res = await fetch(`${API_BASE}/api/payments/create-checkout`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    const data = await res.json();
-
-    if (res.ok && data.url) {
-      window.open(data.url, "_blank");
-    } else {
-      alert(`❌ Checkout error: ${data.error || "Unknown error"}`);
+      if (res.ok && data.url) {
+        window.open(data.url, "_blank");
+      } else {
+        alert(`❌ Checkout error: ${data.error || "Unknown error"}`);
+      }
+    } catch (err) {
+      console.error("❌ Checkout error:", err);
+      alert("❌ Failed to create checkout session.");
+    } finally {
+      setWorking(false);
     }
-  } catch (err) {
-    console.error("❌ Checkout error:", err);
-    alert("❌ Failed to create checkout session.");
-  } finally {
-    setWorking(false);
   }
-}
 
+  async function handleRefund(type) {
+    if (!order) return;
+    const payment = payments.find(
+      (p) => p.type?.toLowerCase() === type && p.status === "paid"
+    );
+    if (!payment) return alert(`No paid ${type} payment found.`);
+
+    const amount = Math.abs(Number(payment.amount || 0));
+    if (!confirm(`Refund £${amount.toFixed(2)} ${type}?`)) return;
+
+    setWorking(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/payments/refund`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ payment_id: payment.id, amount }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert("✅ Refund processed successfully.");
+        refreshOrder();
+      } else {
+        alert(`❌ Refund failed: ${data.error}`);
+      }
+    } catch (err) {
+      console.error("❌ Refund error:", err);
+      alert("❌ Refund request failed.");
+    } finally {
+      setWorking(false);
+    }
+  }
 
   /* ============================================================
      🖥️ Render
@@ -190,10 +215,7 @@ async function handleCreateCheckout(flow, type) {
           Order #{order.id} — {order.title}
         </h1>
         <div className="flex flex-wrap gap-2">
-          <button
-            onClick={refreshOrder}
-            className="text-xs text-pjh-muted hover:text-pjh-blue transition"
-          >
+          <button onClick={refreshOrder} className="text-xs text-pjh-muted hover:text-pjh-blue">
             🔁 Refresh
           </button>
           <button
@@ -212,7 +234,7 @@ async function handleCreateCheckout(flow, type) {
         </p>
       )}
 
-      {/* Corrected Totals */}
+      {/* Totals */}
       <div className="mt-5 grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         <SummaryCard label="Total Order Value" value={`£${figures.total.toFixed(2)}`} />
         <SummaryCard label="Deposit Required" value={`£${figures.deposit.toFixed(2)}`} />
@@ -240,64 +262,35 @@ async function handleCreateCheckout(flow, type) {
 
       {/* Actions */}
       <div className="mt-10 space-y-6">
-        {/* Checkout Buttons */}
         <div className="flex flex-wrap gap-3">
-          <button
-            onClick={() => handleCreateCheckout("card_payment", "deposit")}
-            disabled={working}
-            className="btn bg-green-600 hover:bg-green-700"
-          >
+          <button onClick={() => handleCreateCheckout("card_payment", "deposit")} disabled={working} className="btn bg-green-600 hover:bg-green-700">
             💳 Card — Deposit
           </button>
-          <button
-            onClick={() => handleCreateCheckout("card_payment", "balance")}
-            disabled={working}
-            className="btn bg-green-700 hover:bg-green-800"
-          >
+          <button onClick={() => handleCreateCheckout("card_payment", "balance")} disabled={working} className="btn bg-green-700 hover:bg-green-800">
             💳 Card — Balance
           </button>
-          <button
-            onClick={() => handleCreateCheckout("bacs_payment", "deposit")}
-            disabled={working}
-            className="btn bg-blue-600 hover:bg-blue-700"
-          >
+          <button onClick={() => handleCreateCheckout("bacs_payment", "deposit")} disabled={working} className="btn bg-blue-600 hover:bg-blue-700">
             🏦 Bacs — Deposit
           </button>
-          <button
-            onClick={() => handleCreateCheckout("bacs_payment", "balance")}
-            disabled={working}
-            className="btn bg-blue-700 hover:bg-blue-800"
-          >
+          <button onClick={() => handleCreateCheckout("bacs_payment", "balance")} disabled={working} className="btn bg-blue-700 hover:bg-blue-800">
             🏦 Bacs — Balance
           </button>
-          <button
-            onClick={() => handleCreateCheckout("bacs_setup")}
-            disabled={working}
-            className="btn bg-indigo-600 hover:bg-indigo-700"
-          >
+          <button onClick={() => handleCreateCheckout("bacs_setup")} disabled={working} className="btn bg-indigo-600 hover:bg-indigo-700">
             🧾 Setup Direct Debit
           </button>
         </div>
 
-        {/* Refund Buttons */}
+        {/* Refunds */}
         {payments.length > 0 && (
           <div className="border-t border-white/10 pt-4 flex flex-wrap gap-3">
             <h3 className="text-sm text-pjh-muted w-full">Refunds</h3>
             {payments.some((p) => p.type?.toLowerCase() === "deposit" && p.status === "paid") && (
-              <button
-                onClick={() => handleRefund("deposit")}
-                disabled={working}
-                className="btn bg-red-600 hover:bg-red-700"
-              >
+              <button onClick={() => handleRefund("deposit")} disabled={working} className="btn bg-red-600 hover:bg-red-700">
                 💸 Refund Deposit
               </button>
             )}
             {payments.some((p) => p.type?.toLowerCase() === "balance" && p.status === "paid") && (
-              <button
-                onClick={() => handleRefund("balance")}
-                disabled={working}
-                className="btn bg-red-700 hover:bg-red-800"
-              >
+              <button onClick={() => handleRefund("balance")} disabled={working} className="btn bg-red-700 hover:bg-red-800">
                 💸 Refund Balance
               </button>
             )}
@@ -309,7 +302,7 @@ async function handleCreateCheckout(flow, type) {
 }
 
 /* ============================================================
-   Subcomponents
+   Subcomponent
 ============================================================ */
 function SummaryCard({ label, value, accent }) {
   return (
