@@ -34,14 +34,19 @@ export default function AdminOrderRecord() {
   /* ============================================================
      🔐 Admin Guard + Load
   ============================================================ */
-  useEffect(() => {
-    if (localStorage.getItem("isAdmin") !== "true") {
-      window.location.href = "/admin";
-      return;
-    }
-    if (id) refreshOrder();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+useEffect(() => {
+  if (!id) return;
+  refreshOrder();
+
+  // 🕒 Poll for Stripe updates every 20 seconds
+  const interval = setInterval(() => {
+    loadPayments();
+    loadSummary();
+  }, 20000);
+
+  return () => clearInterval(interval);
+}, [id]);
+
 
   async function refreshOrder() {
     await loadOrder();
