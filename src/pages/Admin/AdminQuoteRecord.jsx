@@ -292,38 +292,42 @@ export default function AdminQuoteRecord() {
     }
   }
 
-  async function startMonthlyBilling() {
-    if (!quote?.order_id) {
-      alert("⚠️ You must create an order before starting billing.");
-      return;
-    }
-    if (quote.pricing_mode !== "monthly") {
-      alert("⚠️ This quote is not set to monthly mode.");
-      return;
-    }
-
-    try {
-      const body = {
-        orderId: quote.order_id,
-        customerId: quote.customer_id,
-        packageId: quote.package_id || null,
-        maintenanceId: quote.maintenance_id || null,
-      };
-
-      const res = await fetch(`${API_BASE}/api/billing/checkout`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-
-      const data = await res.json();
-      if (!res.ok || !data.url) throw new Error("Stripe checkout failed");
-      window.location.href = data.url;
-    } catch (err) {
-      console.error("❌ Billing error:", err);
-      alert("❌ Failed to start monthly billing.");
-    }
+async function startMonthlyBilling() {
+  if (!quote?.order_id) {
+    alert("⚠️ You must first create an order before starting billing.");
+    return;
   }
+
+  try {
+    const body = {
+      orderId: quote.order_id,
+      customerId: quote.customer_id,
+      packageId:
+        quote.pricing_mode === "monthly" ? quote.package_id || null : null,
+      maintenanceId: quote.maintenance_id || null,
+      mode:
+        quote.pricing_mode === "monthly"
+          ? "full-monthly"
+          : quote.maintenance_id
+          ? "maintenance-only"
+          : "oneoff",
+    };
+
+    const res = await fetch(`${API_BASE}/api/billing/checkout`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+
+    const data = await res.json();
+    if (!res.ok || !data.url) throw new Error("Stripe checkout failed");
+    window.location.href = data.url;
+  } catch (err) {
+    console.error("❌ Billing error:", err);
+    alert("❌ Failed to start billing.");
+  }
+}
+
 
   /* ============================================================
      Render
@@ -369,39 +373,65 @@ export default function AdminQuoteRecord() {
         </div>
       </div>
 
-      {/* ACTIONS */}
-      <div className="mt-6 grid sm:grid-cols-2 gap-4">
-        <button onClick={handleSave} disabled={saving} className="btn-primary">
-          {saving ? "Saving…" : "💾 Save Changes"}
+{/* ACTIONS */}
+<div className="mt-6 grid sm:grid-cols-2 gap-4">
+  <button onClick={handleSave} disabled={saving} className="btn-primary">
+    {saving ? "Saving…" : "💾 Save Changes"}
+  </button>
+
+  <div className="flex flex-wrap gap-3">
+    {quote.order_id ? (
+      <>
+        <button
+          onClick={() => navigate(`/admin/orders/${quote.order_id}`)}
+          className="btn-secondary bg-blue-600 hover:bg-blue-500 text-white"
+        >
+          🔗 View Created Order
         </button>
 
-        {quote.order_id ? (
-          <div className="flex flex-wrap gap-3">
-            <button
-              onClick={() => navigate(`/admin/orders/${quote.order_id}`)}
-              className="btn-secondary bg-blue-600 hover:bg-blue-500 text-white"
-            >
-              🔗 View Created Order
-            </button>
-            {quote.pricing_mode === "monthly" && (
-              <button
-                onClick={startMonthlyBilling}
-                className="btn-primary bg-indigo-600 hover:bg-indigo-500 text-white"
-              >
-                💳 Start Monthly Billing
-              </button>
-            )}
-          </div>
-        ) : (
+        {/* 💳 Show if monthly package OR maintenance plan */}
+        {(quote.pricing_mode === "monthly" || quote.maintenance_id) && (
           <button
-            onClick={handleCreateOrder}
-            disabled={working}
-            className="btn-secondary bg-green-600 hover:bg-green-500 text-white"
+            onClick={startMonthlyBilling}
+            className="btn-primary bg-indigo-600 hover:bg-indigo-500 text-white"
           >
-            🪄 Convert to Order
+            💳 Start Monthly Billing
           </button>
         )}
-      </div>
+      </>
+    ) : (
+      <>
+        <button
+          onClick={handleCreateOrder}
+          disabled={working}
+          className="btn-secondary bg-green-600 hover:bg-green-500 text-white"
+        >
+          🪄 Convert to Order
+        </button>
+
+        {/* 💳 Optionally show even before order creation */}
+        {(quote.pricing_mode === "monthly" || quote.maintenance_id) && (
+          <button
+            onClick={async () => {
+              if (
+                confirm(
+                  "No order exists yet. Create one and start billing automatically?"
+                )
+              ) {
+                await handleCreateOrder();
+                setTimeout(() => startMonthlyBilling(), 1200);
+              }
+            }}
+            className="btn-primary bg-indigo-600 hover:bg-indigo-500 text-white"
+          >
+            💳 Start Monthly Billing
+          </button>
+        )}
+      </>
+    )}
+  </div>
+</div>
+
 
       {/* FORM FIELDS */}
       <div className="mt-8 space-y-6">
