@@ -41,6 +41,7 @@ export default function AdminOrderRecord() {
   const [order, setOrder] = useState(null);
   const [linkedQuote, setLinkedQuote] = useState(null);
   const [payments, setPayments] = useState([]);
+  const [refundAmount, setRefundAmount] = useState("");
   const [summary, setSummary] = useState(null);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
@@ -175,33 +176,43 @@ export default function AdminOrderRecord() {
     }
   }
 
-  async function handleRefund(type) {
-    if (!order) return;
-    const payment = payments.find(
-      (p) => p.type?.toLowerCase() === type && p.status === "paid"
-    );
-    if (!payment) return alert(`No paid ${type} payment found.`);
-    const amount = Math.abs(Number(payment.amount || 0));
-    if (!confirm(`Refund ${fmtMoney(amount)} ${type}?`)) return;
-    setWorking(true);
-    try {
-      const res = await fetch(`${API_BASE}/api/payments/refund`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ payment_id: payment.id, amount }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        alert("✅ Refund processed.");
-        refreshAll();
-      } else alert(`❌ Refund failed: ${data.error}`);
-    } catch (err) {
-      console.error("❌ Refund error:", err);
-      alert("❌ Refund request failed.");
-    } finally {
-      setWorking(false);
-    }
+ /* ============================================================
+   💸 Manual Refund (Admin-controlled)
+============================================================ */
+async function handleRefund() {
+  if (!order) return alert("Order not loaded.");
+  const amount = Number(refundAmount);
+  if (!(amount > 0)) return alert("Please enter a valid refund amount.");
+  if (!confirm(`Refund £${amount.toFixed(2)} now?`)) return;
+
+  setWorking(true);
+  try {
+    // Find the most recent payment (so we have a Stripe reference)
+    const paid = payments.find((p) => p.status === "paid");
+    if (!paid) throw new Error("No Stripe payment found to refund.");
+
+    const res = await fetch(`${API_BASE}/api/payments/refund`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        payment_id: paid.id,
+        amount,
+      }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Refund failed");
+
+    alert(`✅ Refunded £${amount.toFixed(2)} successfully.`);
+    setRefundAmount("");
+    await refreshAll();
+  } catch (err) {
+    console.error("❌ Refund error:", err);
+    alert(`❌ Failed to process refund: ${err.message}`);
+  } finally {
+    setWorking(false);
   }
+}
 
   /* ============================================================
      Manual Direct Debit Charges (Maintenance + Build)
@@ -259,42 +270,6 @@ export default function AdminOrderRecord() {
       alert("❌ Failed to trigger monthly build charge.");
     } finally {
       setWorking(false);
-    }
-  }
-
-
-  /* ============================================================
-     Monthly Subscription Start (Stripe Checkout)
-  ============================================================ */
-  async function startMonthlyBilling() {
-    if (!order) return alert("Order not loaded yet.");
-    if (!order.maintenance_name && order.pricing_mode !== "monthly")
-      return alert("No recurring billing for this order.");
-    try {
-      const body = {
-        orderId: order.id,
-        customerId: order.customer_id,
-        packageId:
-          order.pricing_mode === "monthly" ? order.package_id || null : null,
-        maintenanceId: order.maintenance_id || null,
-        mode:
-          order.pricing_mode === "monthly"
-            ? "full-monthly"
-            : order.maintenance_name
-            ? "maintenance-only"
-            : "oneoff",
-      };
-      const res = await fetch(`${API_BASE}/api/billing/checkout`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.url) throw new Error("Stripe checkout failed");
-      window.location.href = data.url;
-    } catch (err) {
-      console.error("❌ Billing error:", err);
-      alert("❌ Failed to start monthly billing.");
     }
   }
 
@@ -395,16 +370,6 @@ export default function AdminOrderRecord() {
               <p className="text-sm text-pjh-muted">
                 Maintenance: {fmtMoney(monthlyMaintenance)}/month
               </p>
-
-              {/* Start Monthly Billing */}
-              {(order.pricing_mode === "monthly" || order.maintenance_name) && (
-                <button
-                  onClick={startMonthlyBilling}
-                  className="btn bg-indigo-600 hover:bg-indigo-500 mt-3"
-                >
-                  💳 Start Monthly Billing
-                </button>
-              )}
 
               {/* Manual re-run buttons */}
               {summary.direct_debit_active && (
