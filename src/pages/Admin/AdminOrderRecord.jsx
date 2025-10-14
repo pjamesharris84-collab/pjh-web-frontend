@@ -230,25 +230,38 @@ export default function AdminOrderRecord() {
 
   async function handleManualMonthlyBuildCharge() {
     if (!order || !summary?.direct_debit_active)
-      return alert("No active Direct Debit found.");
+      return alert("No active Direct Debit found for this customer.");
+
     const amt = Number(order?.monthly_amount || 0);
-    if (!(amt > 0)) return alert("No monthly build amount set.");
-    if (!confirm(`Run monthly build charge of ${fmtMoney(amt)} now?`)) return;
+    if (!(amt > 0)) return alert("No monthly build amount set on this order.");
+
+    if (!confirm(`Run monthly build Direct Debit charge of ${fmtMoney(amt)} now?`))
+      return;
+
     setWorking(true);
     try {
       const res = await fetch(
-        `${API_BASE}/api/automation/directdebit/build-run?orderId=${order.id}`
+        `${API_BASE}/api/automation/directdebit/build-run?orderId=${order.id}`,
+        { method: "GET" }
       );
-      if (!res.ok) throw new Error("Failed");
-      alert("✅ Monthly build charge initiated.");
-      refreshAll();
+      const data = await res.json().catch(() => ({}));
+
+      if (res.ok && data.success) {
+        console.log("✅ Build run response:", data);
+        alert("✅ Monthly build Direct Debit initiated successfully.");
+        await refreshAll();
+      } else {
+        console.error("❌ Build run error:", data);
+        alert(`❌ Failed to initiate monthly build charge — ${data.error || "unknown error"}`);
+      }
     } catch (err) {
-      console.error("❌ Monthly build error:", err);
+      console.error("❌ Monthly build automation error:", err);
       alert("❌ Failed to trigger monthly build charge.");
     } finally {
       setWorking(false);
     }
   }
+
 
   /* ============================================================
      Monthly Subscription Start (Stripe Checkout)
