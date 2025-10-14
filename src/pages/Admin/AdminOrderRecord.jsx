@@ -5,12 +5,13 @@
  * Features:
  *  ✅ Accurate 5-key financials (Total, Deposit, Paid, Refunds, Balance)
  *  ✅ Stripe & Bacs checkout actions (deposit/balance + DD setup)
- *  ✅ Direct Debit visibility (status + mandate + optional Stripe IDs)
+ *  ✅ Direct Debit visibility (status + mandate + Stripe IDs from summary)
  *  ✅ Manual maintenance re-charge trigger (automation endpoint)
- *  ✅ Payments tab (history with statuses: paid/processing/failed/refunded)
+ *  ✅ Manual monthly build re-charge trigger (automation endpoint)
+ *  ✅ Payments tab (history with statuses)
  *  ✅ Refund actions (deposit/balance)
- *  ✅ Order updates / admin notes panel (GET/POST /api/diary/:orderId)
- *  ✅ 20s polling to reflect Stripe webhook updates without reload
+ *  ✅ Admin notes panel (/api/diary/:orderId)
+ *  ✅ 20s polling to reflect Stripe webhook updates
  * ============================================================
  */
 
@@ -24,7 +25,6 @@ function fmtMoney(n) {
   const v = Number(n || 0);
   return `£${v.toFixed(2)}`;
 }
-
 function cx(...classes) {
   return classes.filter(Boolean).join(" ");
 }
@@ -47,25 +47,20 @@ export default function AdminOrderRecord() {
   const [tab, setTab] = useState("overview");
 
   /* ============================================================
-     Admin Guard + Initial Load + Poller
+     Loaders + Polling
   ============================================================ */
   useEffect(() => {
     if (!id) return;
-    // optional guard — if you still gate with localStorage
     if (localStorage.getItem("isAdmin") !== "true") {
       window.location.href = "/admin";
       return;
     }
     refreshAll();
-
-    // poll every 20s for webhook-driven updates
     const interval = setInterval(() => {
       loadPayments();
       loadSummary();
     }, 20000);
-
     return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   async function refreshAll() {
@@ -74,9 +69,6 @@ export default function AdminOrderRecord() {
     await loadSummary();
   }
 
-  /* ============================================================
-     Loaders
-  ============================================================ */
   async function loadOrder() {
     try {
       const res = await fetch(`${API_BASE}/api/orders/${id}`);
@@ -120,7 +112,7 @@ export default function AdminOrderRecord() {
       const data = await res.json();
       setSummary(data.data);
     } catch (err) {
-      console.warn("⚠️ Failed to load payments summary:", err);
+      console.warn("⚠️ Failed to load summary:", err);
     }
   }
 
@@ -149,7 +141,6 @@ export default function AdminOrderRecord() {
   async function handleCreateCheckout(flow, type) {
     if (!order) return;
     setWorking(true);
-
     try {
       const payload =
         flow === "bacs_setup"
@@ -163,24 +154,19 @@ export default function AdminOrderRecord() {
                   ? Number(order.deposit || 0)
                   : Number(order.balance || 0),
             };
-
       const res = await fetch(`${API_BASE}/api/payments/create-checkout`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-
       const data = await res.json();
-
       if (res.ok && data.url) {
         const msg =
           flow === "bacs_setup"
-            ? "This will open Stripe's Direct Debit setup page. No charge will occur."
-            : `This will charge ${fmtMoney(data.amount ?? payload.amount ?? 0)}. Continue?`;
+            ? "This opens Stripe’s Direct Debit setup — no charge yet."
+            : `Charge ${fmtMoney(data.amount ?? payload.amount ?? 0)} now?`;
         if (confirm(msg)) window.open(data.url, "_blank");
-      } else {
-        alert(`❌ Checkout error: ${data.error || "Unknown error"}`);
-      }
+      } else alert(`❌ Checkout error: ${data.error || "Unknown error"}`);
     } catch (err) {
       console.error("❌ Checkout error:", err);
       alert("❌ Failed to create checkout session.");
@@ -195,10 +181,8 @@ export default function AdminOrderRecord() {
       (p) => p.type?.toLowerCase() === type && p.status === "paid"
     );
     if (!payment) return alert(`No paid ${type} payment found.`);
-
     const amount = Math.abs(Number(payment.amount || 0));
     if (!confirm(`Refund ${fmtMoney(amount)} ${type}?`)) return;
-
     setWorking(true);
     try {
       const res = await fetch(`${API_BASE}/api/payments/refund`, {
@@ -208,11 +192,9 @@ export default function AdminOrderRecord() {
       });
       const data = await res.json();
       if (res.ok) {
-        alert("✅ Refund processed successfully.");
+        alert("✅ Refund processed.");
         refreshAll();
-      } else {
-        alert(`❌ Refund failed: ${data.error}`);
-      }
+      } else alert(`❌ Refund failed: ${data.error}`);
     } catch (err) {
       console.error("❌ Refund error:", err);
       alert("❌ Refund request failed.");
@@ -222,29 +204,21 @@ export default function AdminOrderRecord() {
   }
 
   /* ============================================================
-     Manual Direct Debit Charge (Maintenance Re-run)
+     Manual Direct Debit Charges (Maintenance + Build)
   ============================================================ */
   async function handleManualMaintenanceCharge() {
-    if (!order || !summary?.direct_debit_active) {
-      return alert("No active Direct Debit found for this order.");
-    }
-
-    const amt = Number(summary?.maintenance_monthly || order.maintenance_monthly || 0);
-    if (!(amt > 0)) return alert("No monthly maintenance amount set.");
-
-    const confirmCharge = confirm(
-      `Run Direct Debit maintenance charge of ${fmtMoney(amt)} now?`
-    );
-    if (!confirmCharge) return;
-
+    if (!order || !summary?.direct_debit_active)
+      return alert("No active Direct Debit found.");
+    const amt = Number(summary?.maintenance_monthly || order?.maintenance_monthly || 0);
+    if (!(amt > 0)) return alert("No maintenance amount set.");
+    if (!confirm(`Run maintenance Direct Debit for ${fmtMoney(amt)} now?`)) return;
     setWorking(true);
     try {
       const res = await fetch(
         `${API_BASE}/api/automation/directdebit/run?orderId=${order.id}`
       );
-      if (!res.ok) throw new Error("Failed to trigger maintenance charge");
-      alert("✅ Maintenance charge initiated. It will appear once Stripe confirms.");
-      // payments will update via polling; we can also refresh now:
+      if (!res.ok) throw new Error("Failed");
+      alert("✅ Maintenance charge initiated.");
       refreshAll();
     } catch (err) {
       console.error("❌ Maintenance charge error:", err);
@@ -254,16 +228,35 @@ export default function AdminOrderRecord() {
     }
   }
 
+  async function handleManualMonthlyBuildCharge() {
+    if (!order || !summary?.direct_debit_active)
+      return alert("No active Direct Debit found.");
+    const amt = Number(order?.monthly_amount || 0);
+    if (!(amt > 0)) return alert("No monthly build amount set.");
+    if (!confirm(`Run monthly build charge of ${fmtMoney(amt)} now?`)) return;
+    setWorking(true);
+    try {
+      const res = await fetch(
+        `${API_BASE}/api/automation/directdebit/build-run?orderId=${order.id}`
+      );
+      if (!res.ok) throw new Error("Failed");
+      alert("✅ Monthly build charge initiated.");
+      refreshAll();
+    } catch (err) {
+      console.error("❌ Monthly build error:", err);
+      alert("❌ Failed to trigger monthly build charge.");
+    } finally {
+      setWorking(false);
+    }
+  }
+
   /* ============================================================
-     Start Monthly Billing via Stripe Checkout (Subscriptions)
+     Monthly Subscription Start (Stripe Checkout)
   ============================================================ */
   async function startMonthlyBilling() {
     if (!order) return alert("Order not loaded yet.");
-
-    if (!order.maintenance_name && order.pricing_mode !== "monthly") {
-      return alert("No recurring billing found for this order.");
-    }
-
+    if (!order.maintenance_name && order.pricing_mode !== "monthly")
+      return alert("No recurring billing for this order.");
     try {
       const body = {
         orderId: order.id,
@@ -278,16 +271,13 @@ export default function AdminOrderRecord() {
             ? "maintenance-only"
             : "oneoff",
       };
-
       const res = await fetch(`${API_BASE}/api/billing/checkout`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-
       const data = await res.json();
       if (!res.ok || !data.url) throw new Error("Stripe checkout failed");
-
       window.location.href = data.url;
     } catch (err) {
       console.error("❌ Billing error:", err);
@@ -296,12 +286,11 @@ export default function AdminOrderRecord() {
   }
 
   /* ============================================================
-     Figures (Total / Deposit / Paid / Refunds / Balance)
+     Figures
   ============================================================ */
   const figures = useMemo(() => {
     if (!order)
       return { total: 0, deposit: 0, paid: 0, refunded: 0, balance: 0 };
-
     const deposit = Number(order.deposit || 0);
     const baseBalance = Number(order.balance || 0);
     const paid = Number(order.total_paid || 0);
@@ -309,7 +298,6 @@ export default function AdminOrderRecord() {
     const total = deposit + baseBalance;
     const netPaid = paid - refunded;
     const remaining = Math.max(total - netPaid, 0);
-
     return { total, deposit, paid, refunded, balance: remaining };
   }, [order]);
 
@@ -318,9 +306,10 @@ export default function AdminOrderRecord() {
   ============================================================ */
   if (error) return <div className="p-10 text-red-400">{error}</div>;
   if (!order)
-    return <div className="p-10 text-pjh-muted animate-pulse">Loading order details…</div>;
+    return <div className="p-10 text-pjh-muted animate-pulse">Loading order…</div>;
 
-  const monthlyAmount = Number(summary?.maintenance_monthly || order?.maintenance_monthly || 0);
+  const monthlyMaintenance = Number(summary?.maintenance_monthly || 0);
+  const monthlyBuild = Number(order?.monthly_amount || 0);
 
   return (
     <div className="p-10 text-white bg-pjh-charcoal min-h-screen">
@@ -347,32 +336,20 @@ export default function AdminOrderRecord() {
         </div>
       </div>
 
-      {linkedQuote && (
-        <p className="text-xs text-pjh-muted mt-1">
-          🔗 Linked to Quote #{linkedQuote.id} ({linkedQuote.title})
-        </p>
-      )}
-
-      {/* Tabs */}
+      {/* Overview + Tabs */}
       <div className="mt-6 border-b border-white/10 flex gap-6 text-sm">
-        <button
-          onClick={() => setTab("overview")}
-          className={cx(
-            "pb-2",
-            tab === "overview" ? "text-pjh-blue border-b border-pjh-blue" : "text-pjh-muted"
-          )}
-        >
-          Overview
-        </button>
-        <button
-          onClick={() => setTab("payments")}
-          className={cx(
-            "pb-2",
-            tab === "payments" ? "text-pjh-blue border-b border-pjh-blue" : "text-pjh-muted"
-          )}
-        >
-          Payments
-        </button>
+        {["overview", "payments"].map((t) => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={cx(
+              "pb-2",
+              tab === t ? "text-pjh-blue border-b border-pjh-blue" : "text-pjh-muted"
+            )}
+          >
+            {t === "overview" ? "Overview" : "Payments"}
+          </button>
+        ))}
       </div>
 
       {tab === "overview" && (
@@ -394,7 +371,7 @@ export default function AdminOrderRecord() {
                 <span className="text-sm text-pjh-muted">Status:</span>
                 {summary.direct_debit_active ? (
                   <span className="px-2 py-1 text-xs rounded bg-green-600/30 text-green-300 border border-green-500/20">
-                    ✅ Active {summary.mandate_id ? `(Mandate: ${String(summary.mandate_id).slice(0, 10)}…)` : ""}
+                    ✅ Active
                   </span>
                 ) : (
                   <span className="px-2 py-1 text-xs rounded bg-red-600/30 text-red-300 border border-red-500/20">
@@ -403,7 +380,7 @@ export default function AdminOrderRecord() {
                 )}
               </div>
               <p className="text-sm text-pjh-muted">
-                Maintenance Plan: {fmtMoney(monthlyAmount)}/month
+                Maintenance: {fmtMoney(monthlyMaintenance)}/month
               </p>
 
               {/* Start Monthly Billing */}
@@ -416,28 +393,44 @@ export default function AdminOrderRecord() {
                 </button>
               )}
 
-              {/* Manual Maintenance Re-run */}
-              {summary.direct_debit_active && monthlyAmount > 0 && (
-                <button
-                  onClick={handleManualMaintenanceCharge}
-                  disabled={working}
-                  className="btn bg-pjh-blue hover:bg-pjh-blue-dark mt-3 ml-2"
-                >
-                  ⚡ Run Maintenance Charge Now
-                </button>
+              {/* Manual re-run buttons */}
+              {summary.direct_debit_active && (
+                <div className="flex flex-wrap gap-3 mt-3">
+                  {monthlyMaintenance > 0 && (
+                    <button
+                      onClick={handleManualMaintenanceCharge}
+                      disabled={working}
+                      className="btn bg-pjh-blue hover:bg-pjh-blue-dark"
+                    >
+                      ⚡ Run Maintenance Charge Now
+                    </button>
+                  )}
+                  {order.pricing_mode === "monthly" && monthlyBuild > 0 && (
+                    <button
+                      onClick={handleManualMonthlyBuildCharge}
+                      disabled={working}
+                      className="btn bg-amber-600 hover:bg-amber-700"
+                    >
+                      ⚡ Run Monthly Build Charge Now
+                    </button>
+                  )}
+                </div>
               )}
 
-              {/* Direct Debit Details Card */}
+              {/* Mandate Details */}
               {summary?.direct_debit_active && (
                 <div className="mt-6 bg-pjh-gray p-5 rounded-xl border border-white/10">
-<h3 className="text-lg font-semibold text-pjh-blue mb-2">
-  Direct Debit Mandate Details
-</h3>
-<div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 text-sm text-pjh-muted">
-  <div><b>Mandate ID:</b> {order?.stripe_mandate_id || "N/A"}</div>
-  <div><b>Stripe Customer ID:</b> {order?.stripe_customer_id || "N/A"}</div>
-  <div><b>Payment Method ID:</b> {order?.stripe_payment_method_id || "N/A"}</div>
-</div>
+                  <h3 className="text-lg font-semibold text-pjh-blue mb-2">
+                    Direct Debit Mandate Details
+                  </h3>
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 text-sm text-pjh-muted">
+                    <div><b>Mandate ID:</b> {summary?.mandate_id || "N/A"}</div>
+                    <div><b>Stripe Customer ID:</b> {summary?.stripe_customer_id || "N/A"}</div>
+                    <div><b>Payment Method ID:</b> {summary?.stripe_payment_method_id || "N/A"}</div>
+                  </div>
+                  <p className="mt-2 text-xs text-pjh-muted">
+                    💡 View full mandate & transactions in Stripe → Customer.
+                  </p>
                 </div>
               )}
             </div>
@@ -446,67 +439,22 @@ export default function AdminOrderRecord() {
           {/* Payment Actions */}
           <div className="mt-10 space-y-6">
             <div className="flex flex-wrap gap-3">
-              <button
-                onClick={() => handleCreateCheckout("card_payment", "deposit")}
-                disabled={working}
-                className="btn bg-green-600 hover:bg-green-700"
-              >
+              <button onClick={() => handleCreateCheckout("card_payment", "deposit")} className="btn bg-green-600 hover:bg-green-700">
                 💳 Card — Deposit
               </button>
-              <button
-                onClick={() => handleCreateCheckout("card_payment", "balance")}
-                disabled={working}
-                className="btn bg-green-700 hover:bg-green-800"
-              >
+              <button onClick={() => handleCreateCheckout("card_payment", "balance")} className="btn bg-green-700 hover:bg-green-800">
                 💳 Card — Balance
               </button>
-              <button
-                onClick={() => handleCreateCheckout("bacs_payment", "deposit")}
-                disabled={working}
-                className="btn bg-blue-600 hover:bg-blue-700"
-              >
+              <button onClick={() => handleCreateCheckout("bacs_payment", "deposit")} className="btn bg-blue-600 hover:bg-blue-700">
                 🏦 Bacs — Deposit
               </button>
-              <button
-                onClick={() => handleCreateCheckout("bacs_payment", "balance")}
-                disabled={working}
-                className="btn bg-blue-700 hover:bg-blue-800"
-              >
+              <button onClick={() => handleCreateCheckout("bacs_payment", "balance")} className="btn bg-blue-700 hover:bg-blue-800">
                 🏦 Bacs — Balance
               </button>
-              <button
-                onClick={() => handleCreateCheckout("bacs_setup")}
-                disabled={working}
-                className="btn bg-indigo-600 hover:bg-indigo-700"
-              >
+              <button onClick={() => handleCreateCheckout("bacs_setup")} className="btn bg-indigo-600 hover:bg-indigo-700">
                 🧾 Setup Direct Debit
               </button>
             </div>
-
-            {/* Refunds */}
-            {payments.length > 0 && (
-              <div className="border-t border-white/10 pt-4 flex flex-wrap gap-3">
-                <h3 className="text-sm text-pjh-muted w-full">Refunds</h3>
-                {payments.some((p) => p.type?.toLowerCase() === "deposit" && p.status === "paid") && (
-                  <button
-                    onClick={() => handleRefund("deposit")}
-                    disabled={working}
-                    className="btn bg-red-600 hover:bg-red-700"
-                  >
-                    💸 Refund Deposit
-                  </button>
-                )}
-                {payments.some((p) => p.type?.toLowerCase() === "balance" && p.status === "paid") && (
-                  <button
-                    onClick={() => handleRefund("balance")}
-                    disabled={working}
-                    className="btn bg-red-700 hover:bg-red-800"
-                  >
-                    💸 Refund Balance
-                  </button>
-                )}
-              </div>
-            )}
           </div>
         </>
       )}
@@ -515,7 +463,6 @@ export default function AdminOrderRecord() {
         <PaymentsTab order={order} payments={payments} summary={summary} />
       )}
 
-      {/* Order Updates Section */}
       <OrderUpdates orderId={order.id} />
     </div>
   );
@@ -526,17 +473,14 @@ export default function AdminOrderRecord() {
 ============================================================ */
 function PaymentsTab({ order, payments, summary }) {
   const monthly = Number(summary?.maintenance_monthly || order?.maintenance_monthly || 0);
-
   return (
     <div className="mt-6 bg-pjh-slate p-6 rounded-xl border border-white/10">
       <h2 className="text-xl font-semibold text-pjh-blue mb-4">Payments Overview</h2>
-
       <div className="grid sm:grid-cols-3 gap-3 text-sm mb-4">
         <div>Deposit Outstanding: {fmtMoney(summary?.deposit_outstanding || 0)}</div>
         <div>Balance Outstanding: {fmtMoney(summary?.balance_outstanding || 0)}</div>
         <div>Monthly Maintenance: {fmtMoney(monthly)}</div>
       </div>
-
       <table className="min-w-full text-sm border border-white/10 rounded-lg">
         <thead className="bg-pjh-gray/60 text-left text-pjh-muted">
           <tr>
@@ -587,7 +531,6 @@ function OrderUpdates({ orderId }) {
 
   useEffect(() => {
     loadUpdates();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orderId]);
 
   async function loadUpdates() {
@@ -597,7 +540,7 @@ function OrderUpdates({ orderId }) {
       const data = await res.json();
       setUpdates(data.entries || data.data || []);
     } catch (err) {
-      console.warn("⚠️ Failed to load order diary:", err);
+      console.warn("⚠️ Failed to load diary:", err);
     }
   }
 
@@ -618,7 +561,7 @@ function OrderUpdates({ orderId }) {
         alert(`❌ Failed to add update${data.error ? `: ${data.error}` : ""}`);
       }
     } catch (err) {
-      console.error("❌ Failed to add update:", err);
+      console.error("❌ Add update error:", err);
       alert("❌ Failed to add update.");
     } finally {
       setLoading(false);
@@ -628,7 +571,6 @@ function OrderUpdates({ orderId }) {
   return (
     <div className="mt-10 bg-pjh-slate p-6 rounded-xl border border-white/10">
       <h2 className="text-xl font-semibold text-pjh-blue mb-3">Order Updates & Notes</h2>
-
       <div className="flex gap-2 mb-4">
         <input
           type="text"
@@ -645,19 +587,16 @@ function OrderUpdates({ orderId }) {
           {loading ? "Saving..." : "Add"}
         </button>
       </div>
-
       {updates.length === 0 ? (
         <p className="text-sm text-pjh-muted">No updates recorded yet.</p>
       ) : (
         <ul className="divide-y divide-white/10 text-sm">
           {updates.map((u) => (
-            <li key={u.id} className="py-2">
-              <div className="flex justify-between items-center">
-                <span className="text-white">{u.text}</span>
-                <span className="text-xs text-pjh-muted">
-                  {new Date(u.created_at).toLocaleString()}
-                </span>
-              </div>
+            <li key={u.id} className="py-2 flex justify-between items-center">
+              <span className="text-white">{u.text}</span>
+              <span className="text-xs text-pjh-muted">
+                {new Date(u.created_at).toLocaleString()}
+              </span>
             </li>
           ))}
         </ul>
