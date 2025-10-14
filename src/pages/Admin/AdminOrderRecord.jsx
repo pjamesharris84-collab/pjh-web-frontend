@@ -183,13 +183,38 @@ async function handleRefund() {
   if (!order) return alert("Order not loaded.");
   const amount = Number(refundAmount);
   if (!(amount > 0)) return alert("Please enter a valid refund amount.");
+
+  // Calculate total paid & total refunded so far
+  const totalPaid = payments
+    .filter(p => p.status === "paid" && Number(p.amount) > 0)
+    .reduce((sum, p) => sum + Number(p.amount), 0);
+
+  const totalRefunded = payments
+    .filter(p => p.status === "refunded" || Number(p.amount) < 0)
+    .reduce((sum, p) => sum + Math.abs(Number(p.amount)), 0);
+
+  const remainingRefundable = totalPaid - totalRefunded;
+  if (remainingRefundable <= 0) {
+    return alert("⚠️ No refundable balance remaining for this order.");
+  }
+  if (amount > remainingRefundable) {
+    return alert(
+      `⚠️ Refund exceeds available refundable amount. You can refund up to £${remainingRefundable.toFixed(
+        2
+      )}.`
+    );
+  }
+
   if (!confirm(`Refund £${amount.toFixed(2)} now?`)) return;
 
   setWorking(true);
   try {
-    // Find the most recent payment (so we have a Stripe reference)
-    const paid = payments.find((p) => p.status === "paid");
-    if (!paid) throw new Error("No Stripe payment found to refund.");
+    // Find a paid Stripe payment to attach refund to
+    const paid = payments.find((p) => p.status === "paid" && p.reference);
+    if (!paid) {
+      alert("No paid Stripe charge found for this order to refund against.");
+      return;
+    }
 
     const res = await fetch(`${API_BASE}/api/payments/refund`, {
       method: "POST",
@@ -213,6 +238,23 @@ async function handleRefund() {
     setWorking(false);
   }
 }
+
+<p className="text-xs text-pjh-muted mt-2">
+  You can refund up to{" "}
+  <b>
+    £
+    {Math.max(
+      0,
+      (payments
+        .filter(p => p.status === "paid" && Number(p.amount) > 0)
+        .reduce((sum, p) => sum + Number(p.amount), 0)) -
+      (payments
+        .filter(p => p.status === "refunded" || Number(p.amount) < 0)
+        .reduce((sum, p) => sum + Math.abs(Number(p.amount)), 0))
+    ).toFixed(2)}
+  </b>{" "}
+  based on total payments received.
+</p>
 
   /* ============================================================
      Manual Direct Debit Charges (Maintenance + Build)
@@ -276,18 +318,31 @@ async function handleRefund() {
   /* ============================================================
      Figures
   ============================================================ */
-  const figures = useMemo(() => {
-    if (!order)
-      return { total: 0, deposit: 0, paid: 0, refunded: 0, balance: 0 };
-    const deposit = Number(order.deposit || 0);
-    const baseBalance = Number(order.balance || 0);
-    const paid = Number(order.total_paid || 0);
-    const refunded = Math.abs(Number(order.refunded_total || 0));
-    const total = deposit + baseBalance;
-    const netPaid = paid - refunded;
-    const remaining = Math.max(total - netPaid, 0);
-    return { total, deposit, paid, refunded, balance: remaining };
-  }, [order]);
+/* ============================================================
+   💰 Figures — dynamically derived from payments[]
+============================================================ */
+const figures = useMemo(() => {
+  if (!order)
+    return { total: 0, deposit: 0, paid: 0, refunded: 0, balance: 0 };
+
+  const deposit = Number(order.deposit || 0);
+  const baseBalance = Number(order.balance || 0);
+  const total = deposit + baseBalance;
+
+  // Calculate live totals from DB data
+  const paid = payments
+    .filter(p => p.status === "paid" && Number(p.amount) > 0)
+    .reduce((sum, p) => sum + Number(p.amount), 0);
+
+  const refunded = payments
+    .filter(p => p.status === "refunded" || Number(p.amount) < 0)
+    .reduce((sum, p) => sum + Math.abs(Number(p.amount)), 0);
+
+  const remaining = Math.max(total - (paid - refunded), 0);
+
+  return { total, deposit, paid, refunded, balance: remaining };
+}, [order, payments]);
+
 
   /* ============================================================
      Render
@@ -501,7 +556,12 @@ function PaymentsTab({ order, payments, summary }) {
               <td className="p-2">{new Date(p.created_at).toLocaleDateString()}</td>
               <td className="p-2 capitalize">{p.type}</td>
               <td className="p-2 uppercase">{p.method}</td>
-              <td className="p-2">{fmtMoney(p.amount)}</td>
+              <td className="p-2">
+  {p.type === "refund"
+    ? `−${fmtMoney(Math.abs(p.amount))}`
+    : fmtMoney(p.amount)}
+</td>
+
               <td className="p-2">
                 {p.status === "paid" && <span className="text-green-400">Paid</span>}
                 {p.status === "processing" && <span className="text-amber-300">Processing</span>}
