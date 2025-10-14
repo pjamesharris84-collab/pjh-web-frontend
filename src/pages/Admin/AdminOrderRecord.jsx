@@ -430,24 +430,14 @@ export default function AdminOrderRecord() {
               {/* Direct Debit Details Card */}
               {summary?.direct_debit_active && (
                 <div className="mt-6 bg-pjh-gray p-5 rounded-xl border border-white/10">
-                  <h3 className="text-lg font-semibold text-pjh-blue mb-2">Direct Debit Mandate Details</h3>
-                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 text-sm text-pjh-muted">
-                    <div>
-                      <span className="font-semibold text-white">Mandate ID:</span>{" "}
-                      {summary.mandate_id ? summary.mandate_id : "N/A"}
-                    </div>
-                    <div>
-                      <span className="font-semibold text-white">Stripe Customer ID:</span>{" "}
-                      {order?.stripe_customer_id || "N/A"}
-                    </div>
-                    <div>
-                      <span className="font-semibold text-white">Payment Method ID:</span>{" "}
-                      {order?.stripe_payment_method_id || "N/A"}
-                    </div>
-                  </div>
-                  <div className="mt-2 text-xs text-pjh-muted">
-                    💡 View the customer’s full mandate & transactions in Stripe (Customers → this customer).
-                  </div>
+<h3 className="text-lg font-semibold text-pjh-blue mb-2">
+  Direct Debit Mandate Details
+</h3>
+<div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 text-sm text-pjh-muted">
+  <div><b>Mandate ID:</b> {order?.stripe_mandate_id || "N/A"}</div>
+  <div><b>Stripe Customer ID:</b> {order?.stripe_customer_id || "N/A"}</div>
+  <div><b>Payment Method ID:</b> {order?.stripe_payment_method_id || "N/A"}</div>
+</div>
                 </div>
               )}
             </div>
