@@ -432,7 +432,33 @@ async function handleRefund() {
               <button onClick={() => handleCreateCheckout("bacs_setup")} className="btn bg-indigo-600 hover:bg-indigo-700">
                 🧾 Setup Direct Debit
               </button>
-            </div>
+ </div>
+
+  {/* Manual Refund Panel */}
+  <div className="bg-pjh-slate p-5 rounded-lg border border-white/10">
+    <h3 className="text-lg font-semibold text-pjh-blue mb-2">Manual Refund</h3>
+    <div className="flex flex-wrap items-center gap-3">
+      <input
+        type="number"
+        min="0"
+        step="0.01"
+        placeholder="Enter refund amount (£)"
+        value={refundAmount}
+        onChange={(e) => setRefundAmount(e.target.value)}
+        className="bg-pjh-gray text-white p-2 rounded-md border border-white/10 w-40"
+      />
+      <button
+        onClick={handleRefund}
+        disabled={working}
+        className="btn bg-red-700 hover:bg-red-800"
+      >
+        💸 Issue Refund
+      </button>
+    </div>
+    <p className="text-xs text-pjh-muted mt-2">
+      Refunds will appear as negative payments in the log and automatically
+      adjust balance figures.
+    </p>            </div>
           </div>
         </>
       )}
