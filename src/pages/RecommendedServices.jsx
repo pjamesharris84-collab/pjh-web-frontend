@@ -3,7 +3,7 @@ import React from "react";
 export default function RecommendedServices() {
   return (
     <section className="bg-slate-950 text-gray-100 min-h-screen py-16 px-6">
-      <div className="max-w-4xl mx-auto text-center">
+      <div className="max-w-6xl mx-auto text-center">
         <div className="mb-8 text-left">
           <a
             href="/"
@@ -23,11 +23,11 @@ export default function RecommendedServices() {
           at no extra cost to you.
         </p>
 
-        {/* === Single Card Grid === */}
-        <div className="flex justify-center mt-10">
+        {/* === Cards Grid === */}
+        <div className="grid sm:grid-cols-2 gap-8 mt-10">
           {/* === IONOS Card === */}
-          <div className="bg-slate-900 border border-white/10 rounded-2xl p-8 shadow-lg hover:shadow-blue-900/20 hover:-translate-y-1 transition-all duration-300 w-full sm:w-3/4 md:w-2/3 lg:w-1/2">
-            <div className="flex flex-col items-center">
+          <div className="bg-slate-900 border border-white/10 rounded-2xl p-8 shadow-lg hover:shadow-blue-900/20 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between h-full">
+            <div className="flex flex-col items-center flex-grow">
               {/* IONOS Affiliate Banner */}
               <div className="mb-4">
                 <a href="https://acn.ionos.co.uk/SHXf?file_id=85">
@@ -56,15 +56,56 @@ export default function RecommendedServices() {
                 Reliable, affordable hosting for small businesses — with great uptime,
                 free SSL, and UK-based support. Perfect for WordPress and email hosting.
               </p>
-              <a
-                href="https://acn.ionos.co.uk/SHXf?file_id=85"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-block bg-blue-700 hover:bg-blue-800 text-white px-6 py-2 rounded-lg font-medium transition-all duration-300"
-              >
-                Visit IONOS
-              </a>
             </div>
+
+            <a
+              href="https://acn.ionos.co.uk/SHXf?file_id=85"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-4 inline-block bg-blue-700 hover:bg-blue-800 text-white px-6 py-2 rounded-lg font-medium transition-all duration-300 self-center"
+            >
+              Visit IONOS
+            </a>
+          </div>
+
+          {/* === 123 Reg Card === */}
+          <div className="bg-slate-900 border border-white/10 rounded-2xl p-8 shadow-lg hover:shadow-blue-900/20 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between h-full">
+            <div className="flex flex-col items-center flex-grow">
+              {/* 123 Reg Affiliate Logo */}
+              <div className="mb-4">
+                <a
+                  href="https://www.jdoqocy.com/click-101567173-12398589"
+                  target="_top"
+                  rel="noopener noreferrer"
+                >
+                  <img
+                    src="https://www.ftjcfx.com/image-101567173-12398589"
+                    width="150"
+                    height="150"
+                    alt="domain names"
+                    border="0"
+                  />
+                </a>
+              </div>
+
+              <h2 className="text-2xl font-semibold text-white mb-3">
+                123 Reg Domains & Hosting
+              </h2>
+              <p className="text-gray-400 mb-6 text-sm leading-relaxed max-w-sm">
+                A long-established UK domain and hosting provider. Ideal for quick
+                domain registration, affordable email hosting, and straightforward
+                website management.
+              </p>
+            </div>
+
+            <a
+              href="https://www.tkqlhce.com/click-1-12398592"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-4 inline-block bg-blue-700 hover:bg-blue-800 text-white px-6 py-2 rounded-lg font-medium transition-all duration-300 self-center"
+            >
+              Visit 123 Reg
+            </a>
           </div>
         </div>
       </div>
