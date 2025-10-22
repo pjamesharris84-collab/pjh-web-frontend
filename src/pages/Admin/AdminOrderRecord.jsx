@@ -216,14 +216,17 @@ async function handleRefund() {
       return;
     }
 
-    const res = await fetch(`${API_BASE}/api/payments/refund`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        payment_id: paid.id,
-        amount,
-      }),
-    });
+const res = await fetch(`${API_BASE}/api/payments/refund`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    order_id: order.id,   // ✅ backend expects this
+    amount,               // refund amount
+    reason: "admin_manual_refund",
+    notes: "Refund initiated via AdminOrderRecord",
+  }),
+});
+
 
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "Refund failed");

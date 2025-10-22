@@ -30,6 +30,9 @@ import LegalMonthlyTerms from "./pages/legal/LegalMonthlyTerms.jsx";
 import DirectDebitPolicy from "./pages/legal/direct-debit-policy.jsx";
 import FAQ from "./pages/FAQ.jsx";
 import Security from "./pages/Security.jsx";
+import RecommendedServices from "./pages/RecommendedServices"; 
+import SuffolkBusinessDirectory from "./pages/SuffolkBusinessDirectory";
+
 
 // 💳 Payment Pages
 import PaymentSuccess from "./pages/PaymentSuccess.jsx";
@@ -98,6 +101,9 @@ ReactDOM.createRoot(document.getElementById("root")).render(
             <Route path="/" element={<App />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/thank-you" element={<ThankYou />} />
+            <Route path="/recommended-services" element={<RecommendedServices />} />
+            <Route path="/suffolk-business-directory" element={<SuffolkBusinessDirectory />} />
+
 
             {/* 📦 Static Packages */}
             <Route path="/packages/starter" element={<Starter />} />

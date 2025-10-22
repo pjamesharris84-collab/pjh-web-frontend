@@ -4,13 +4,17 @@
  * ============================================================
  * Full parity with AdminQuoteNew:
  *  • Loads Packages + Maintenance Plans
- *  • Smart deposit logic:
- *      - One-off  → 50% of package + 100% maintenance
- *      - Monthly  → 100% of both (first month)
+ *  • Dual billing modes:
+ *      BUILD:
+ *        - One-off  → 50% deposit
+ *        - Monthly  → 24-month term, deposit = first month
+ *      MAINTENANCE:
+ *        - One-off (annual) → 100% on quote
+ *        - Monthly          → 3-month minimum, deposit = first month
  *  • Mirrors discount and totals math
- *  • Auto-adds/removes maintenance line items
- *  • Includes “Start Monthly Billing” (Stripe checkout)
- *  • Fix: Proper rendering & full quote editor UI
+ *  • Auto-adds/removes maintenance line items (server-driven)
+ *  • Includes “Start Monthly Billing” (Stripe checkout) trigger placeholder
+ *  • Clean UI: white inputs (black text) on dark admin background
  * ============================================================
  */
 
@@ -102,6 +106,7 @@ export default function AdminQuoteRecord() {
 
   useEffect(() => {
     if (quoteId) loadQuote();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [quoteId]);
 
   async function loadPackages() {
@@ -162,7 +167,10 @@ export default function AdminQuoteRecord() {
         status: q.status || "pending",
         package_id: q.package_id || "",
         maintenance_id: q.maintenance_id || "",
+        // BUILD billing mode
         pricing_mode: q.pricing_mode === "monthly" ? "monthly" : "oneoff",
+        // MAINTENANCE billing mode (default to oneoff if absent)
+        maintenance_mode: q.maintenance_mode === "monthly" ? "monthly" : "oneoff",
         order_id: q.order_id || null,
       });
     } catch (err) {
@@ -174,23 +182,22 @@ export default function AdminQuoteRecord() {
   /* ============================================================
      Derived Totals
   ============================================================ */
-  function inferMaintenancePrice(quote, maintenancePlans, toNum) {
-    const plan = maintenancePlans.find(
-      (m) => String(m.id) === String(quote?.maintenance_id)
-    );
-    if (plan) return toNum(plan.price, 0);
+  function inferMaintenancePrice(q, plans, toNumber) {
+    const plan = plans.find((m) => String(m.id) === String(q?.maintenance_id));
+    if (plan) return toNumber(plan.price, 0);
 
-    const names = maintenancePlans.map((m) => (m.name || "").toLowerCase());
-    const maintItem = (quote?.items || []).find((it) => {
+    const names = plans.map((m) => (m.name || "").toLowerCase());
+    const maintItem = (q?.items || []).find((it) => {
       const nm = (it.name || "").toLowerCase();
       return names.includes(nm) || /(maintenance|webcare|care\s*plan|support)/i.test(nm);
     });
-    return maintItem ? toNum(maintItem.unit_price, 0) : 0;
+    return maintItem ? toNumber(maintItem.unit_price, 0) : 0;
   }
 
   const totals = useMemo(() => {
     if (!quote) return null;
 
+    // Base math (items + discounts)
     const subtotal = quote.items.reduce(
       (sum, it) => sum + toNum(it.qty, 1) * toNum(it.unit_price, 0),
       0
@@ -206,27 +213,74 @@ export default function AdminQuoteRecord() {
     const globalDisc = clampPct(quote.discount_percent);
     const afterDiscounts = afterLine * (1 - globalDisc / 100);
 
+    // Package prices
     const pkg = packages.find((p) => String(p.id) === String(quote.package_id));
-    const packagePrice =
-      quote.pricing_mode === "monthly"
-        ? toNum(pkg?.price_monthly, 0)
-        : toNum(pkg?.price_oneoff, 0);
+    const packagePriceMonthly = toNum(pkg?.price_monthly, 0);
+    const packagePriceOneoff = toNum(pkg?.price_oneoff, 0);
 
-    const maintenancePrice = inferMaintenancePrice(quote, maintenancePlans, toNum);
+    // Maintenance price (monthly unit value)
+    const maintenancePlan = maintenancePlans.find(
+      (m) => String(m.id) === String(quote.maintenance_id)
+    );
+    const maintenanceMonthly = toNum(maintenancePlan?.price, 0);
+const maintenanceAnnual = maintenancePlan?.annual_price
+  ? toNum(maintenancePlan.annual_price, 0)
+  : maintenanceMonthly * 12 * 0.7778; // fallback if not provided
+
 
     let deposit = 0;
+    let balance = 0;
+    const monthlyBreakdown = [];
+
+    /* ===========================
+        BUILD PRICING LOGIC
+    =========================== */
     if (quote.pricing_mode === "monthly") {
-      deposit = packagePrice + maintenancePrice;
+      const buildMonthly = packagePriceMonthly;
+      const buildTotal = buildMonthly * 24;
+      monthlyBreakdown.push({
+        label: "Website Build (24-month term)",
+        monthly: buildMonthly,
+        term: 24,
+        total: buildTotal,
+      });
+      deposit += buildMonthly; // first month up-front
+      balance += buildMonthly * 23;
     } else {
-      deposit = packagePrice * 0.5 + maintenancePrice;
+      // One-off build → 50% deposit / 50% balance (based on item totals equivalence)
+      deposit += packagePriceOneoff * 0.5;
+      balance += Math.max(packagePriceOneoff * 0.5, 0);
     }
 
-    const balance =
-      quote.pricing_mode === "monthly"
-        ? 0
-        : Math.max(afterDiscounts - (packagePrice * 0.5 + maintenancePrice), 0);
+    /* ===========================
+        MAINTENANCE PRICING LOGIC
+    =========================== */
+if (quote.maintenance_id) {
+  if (quote.maintenance_mode === "monthly") {
+    const maintMonthly = maintenanceMonthly;
+    const maintTotal = maintMonthly * 3;
+    monthlyBreakdown.push({
+      label: "Maintenance Plan (3-month minimum)",
+      monthly: maintMonthly,
+      term: 3,
+      total: maintTotal,
+    });
+    deposit += maintMonthly;
+    balance += maintMonthly * 2;
+  } else {
+    // Annual one-off maintenance → charged on quote
+    monthlyBreakdown.push({
+      label: "Maintenance Plan (annual)",
+      monthly: maintenanceAnnual,
+      term: 1,
+      total: maintenanceAnnual,
+    });
+    deposit += maintenanceAnnual;
+  }
+}
 
-    return { subtotal, afterDiscounts, deposit, balance };
+
+    return { subtotal, afterDiscounts, deposit, balance, monthlyBreakdown };
   }, [quote, packages, maintenancePlans]);
 
   /* ============================================================
@@ -249,7 +303,8 @@ export default function AdminQuoteRecord() {
         package_id: quote.package_id ? Number(quote.package_id) : null,
         maintenance_id: quote.maintenance_id ? Number(quote.maintenance_id) : null,
         discount_percent: clampPct(quote.discount_percent),
-        pricing_mode: quote.pricing_mode,
+        pricing_mode: quote.pricing_mode,          // build billing mode
+        maintenance_mode: quote.maintenance_mode,  // maintenance billing mode
         deposit: Number((totals?.deposit ?? 0).toFixed(2)),
       };
 
@@ -292,9 +347,18 @@ export default function AdminQuoteRecord() {
     }
   }
 
+  // Optional: placeholder if you wire Stripe session creation client-side
+  function startMonthlyBilling() {
+    alert("Stripe monthly billing flow not yet implemented on this screen.");
+  }
+
   /* ============================================================
      Render
   ============================================================ */
+
+  // Debug line (safe to remove)
+  // console.log("Quote totals:", totals, "Build mode:", quote?.pricing_mode, "Maint mode:", quote?.maintenance_mode);
+
   if (error)
     return (
       <div className="p-10 text-red-400">
@@ -336,56 +400,51 @@ export default function AdminQuoteRecord() {
         </div>
       </div>
 
-{/* ACTIONS */}
-<div className="mt-6 grid sm:grid-cols-2 gap-4">
-  <button onClick={handleSave} disabled={saving} className="btn-primary">
-    {saving ? "Saving…" : "💾 Save Changes"}
-  </button>
-
-  <div className="flex flex-wrap gap-3">
-    {quote.order_id ? (
-      <>
-        <button
-          onClick={() => navigate(`/admin/orders/${quote.order_id}`)}
-          className="btn-secondary bg-blue-600 hover:bg-blue-500 text-white"
-        >
-          🔗 View Created Order
+      {/* ACTIONS */}
+      <div className="mt-6 grid sm:grid-cols-2 gap-4">
+        <button onClick={handleSave} disabled={saving} className="btn-primary">
+          {saving ? "Saving…" : "💾 Save Changes"}
         </button>
 
+        <div className="flex flex-wrap gap-3">
+          {quote.order_id ? (
+            <button
+              onClick={() => navigate(`/admin/orders/${quote.order_id}`)}
+              className="btn-secondary bg-blue-600 hover:bg-blue-500 text-white"
+            >
+              🔗 View Created Order
+            </button>
+          ) : (
+            <>
+              <button
+                onClick={handleCreateOrder}
+                disabled={working}
+                className="btn-secondary bg-green-600 hover:bg-green-500 text-white"
+              >
+                🪄 Convert to Order
+              </button>
+
+              {(quote.pricing_mode === "monthly" || quote.maintenance_mode === "monthly") && (
+                <button
+                  onClick={async () => {
+                    if (
+                      confirm(
+                        "No order exists yet. Create one and start monthly billing automatically?"
+                      )
+                    ) {
+                      await handleCreateOrder();
+                      setTimeout(() => startMonthlyBilling(), 800);
+                    }
+                  }}
+                  className="btn-primary bg-indigo-600 hover:bg-indigo-500 text-white"
+                >
+                  💳 Start Monthly Billing
+                </button>
+              )}
             </>
-    ) : (
-      <>
-        <button
-          onClick={handleCreateOrder}
-          disabled={working}
-          className="btn-secondary bg-green-600 hover:bg-green-500 text-white"
-        >
-          🪄 Convert to Order
-        </button>
-
-        {/* 💳 Optionally show even before order creation */}
-        {(quote.pricing_mode === "monthly" || quote.maintenance_id) && (
-          <button
-            onClick={async () => {
-              if (
-                confirm(
-                  "No order exists yet. Create one and start billing automatically?"
-                )
-              ) {
-                await handleCreateOrder();
-                setTimeout(() => startMonthlyBilling(), 1200);
-              }
-            }}
-            className="btn-primary bg-indigo-600 hover:bg-indigo-500 text-white"
-          >
-            💳 Start Monthly Billing
-          </button>
-        )}
-      </>
-    )}
-  </div>
-</div>
-
+          )}
+        </div>
+      </div>
 
       {/* FORM FIELDS */}
       <div className="mt-8 space-y-6">
@@ -393,18 +452,18 @@ export default function AdminQuoteRecord() {
           <label className="block text-sm text-pjh-muted mb-1">Title</label>
           <input
             type="text"
-            className="w-full bg-pjh-dark border border-slate-700 rounded p-2"
+            className="w-full bg-white text-black border border-slate-300 rounded p-2"
             value={quote.title}
-            onChange={(e) => setQuote({ ...quote, title: e.target.value })}
+            onChange={(e) => setQuote((q) => ({ ...q, title: e.target.value }))}
           />
         </div>
 
         <div>
           <label className="block text-sm text-pjh-muted mb-1">Description</label>
           <textarea
-            className="w-full bg-pjh-dark border border-slate-700 rounded p-2 min-h-[80px]"
+            className="w-full bg-white text-black border border-slate-300 rounded p-2 min-h-[80px]"
             value={quote.description}
-            onChange={(e) => setQuote({ ...quote, description: e.target.value })}
+            onChange={(e) => setQuote((q) => ({ ...q, description: e.target.value }))}
           />
         </div>
 
@@ -412,10 +471,10 @@ export default function AdminQuoteRecord() {
           <div>
             <label className="block text-sm text-pjh-muted mb-1">Package</label>
             <select
-              className="w-full bg-pjh-dark border border-slate-700 rounded p-2"
+              className="w-full bg-white text-black border border-slate-300 rounded p-2"
               value={quote.package_id}
               onChange={(e) =>
-                setQuote({ ...quote, package_id: e.target.value || "" })
+                setQuote((q) => ({ ...q, package_id: e.target.value || "" }))
               }
             >
               <option value="">— Select Package —</option>
@@ -428,36 +487,63 @@ export default function AdminQuoteRecord() {
           </div>
 
           <div>
-            <label className="block text-sm text-pjh-muted mb-1">
-              Maintenance Plan
-            </label>
-            <select
-              className="w-full bg-pjh-dark border border-slate-700 rounded p-2"
-              value={quote.maintenance_id}
-              onChange={(e) =>
-                setQuote({ ...quote, maintenance_id: e.target.value || "" })
-              }
-            >
-              <option value="">— None —</option>
-              {maintenancePlans.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.name} — £{money(m.price)}/mo
-                </option>
-              ))}
-            </select>
-          </div>
+  <label className="block text-sm text-pjh-muted mb-1">Maintenance Plan</label>
+  <select
+    className="w-full bg-white text-black border border-slate-300 rounded p-2"
+    value={quote.maintenance_id}
+    onChange={(e) =>
+      setQuote((q) => ({ ...q, maintenance_id: e.target.value || "" }))
+    }
+  >
+    <option value="">— None —</option>
+    {maintenancePlans.map((m) => {
+      // derive annual if not stored
+      const monthly = toNum(m.price, 0);
+      const annual = m.annual_price
+        ? toNum(m.annual_price, 0)
+        : Math.round(monthly * 12 * 0.7778); // roughly your pricing pattern (e.g., £45/mo → £420/yr)
+      return (
+        <option key={m.id} value={m.id}>
+          {m.name} — £{money(monthly)}/mo (£{money(annual)}/yr)
+        </option>
+      );
+    })}
+  </select>
+</div>
+
         </div>
 
-        <div>
-          <label className="block text-sm text-pjh-muted mb-1">Pricing Mode</label>
-          <select
-            className="w-full bg-pjh-dark border border-slate-700 rounded p-2"
-            value={quote.pricing_mode}
-            onChange={(e) => setQuote({ ...quote, pricing_mode: e.target.value })}
-          >
-            <option value="oneoff">One-off (50% deposit)</option>
-            <option value="monthly">Monthly Subscription</option>
-          </select>
+        {/* Billing modes */}
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm text-pjh-muted mb-1">Build Billing Mode</label>
+            <select
+              className="w-full bg-white text-black border border-slate-300 rounded p-2"
+              value={quote.pricing_mode}
+              onChange={(e) =>
+                setQuote((q) => ({ ...q, pricing_mode: e.target.value }))
+              }
+            >
+              <option value="oneoff">One-off (50% deposit)</option>
+              <option value="monthly">Monthly (24-month term)</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm text-pjh-muted mb-1">
+              Maintenance Billing Mode
+            </label>
+            <select
+              className="w-full bg-white text-black border border-slate-300 rounded p-2"
+              value={quote.maintenance_mode}
+              onChange={(e) =>
+                setQuote((q) => ({ ...q, maintenance_mode: e.target.value }))
+              }
+            >
+              <option value="oneoff">One-off (annual payment)</option>
+              <option value="monthly">Monthly (3-month minimum)</option>
+            </select>
+          </div>
         </div>
 
         {/* ITEMS TABLE */}
@@ -477,7 +563,7 @@ export default function AdminQuoteRecord() {
                 <tr key={it.id} className="border-b border-slate-800">
                   <td className="p-2">
                     <input
-                      className="w-full bg-transparent"
+                      className="w-full bg-white text-black border border-slate-300 rounded p-1"
                       value={it.name}
                       onChange={(e) =>
                         setQuote((q) => {
@@ -491,7 +577,7 @@ export default function AdminQuoteRecord() {
                   <td className="p-2 text-right">
                     <input
                       type="number"
-                      className="w-16 bg-transparent text-right"
+                      className="w-20 bg-white text-black border border-slate-300 rounded p-1 text-right"
                       value={it.qty}
                       onChange={(e) =>
                         setQuote((q) => {
@@ -505,7 +591,7 @@ export default function AdminQuoteRecord() {
                   <td className="p-2 text-right">
                     <input
                       type="number"
-                      className="w-24 bg-transparent text-right"
+                      className="w-28 bg-white text-black border border-slate-300 rounded p-1 text-right"
                       value={it.unit_price}
                       onChange={(e) =>
                         setQuote((q) => {
@@ -519,7 +605,7 @@ export default function AdminQuoteRecord() {
                   <td className="p-2 text-right">
                     <input
                       type="number"
-                      className="w-16 bg-transparent text-right"
+                      className="w-20 bg-white text-black border border-slate-300 rounded p-1 text-right"
                       value={it.discount_percent}
                       onChange={(e) =>
                         setQuote((q) => {
@@ -540,7 +626,7 @@ export default function AdminQuoteRecord() {
         </div>
 
         {/* TOTALS */}
-        <div className="mt-6 text-sm bg-pjh-dark p-4 rounded-lg border border-slate-800">
+        <div className="mt-6 text-sm bg-pjh-dark p-4 rounded-lg border border-slate-800 space-y-2">
           <div className="flex justify-between mb-1">
             <span>Subtotal:</span>
             <span>£{money(totals?.subtotal)}</span>
@@ -549,22 +635,44 @@ export default function AdminQuoteRecord() {
             <span>After Discounts:</span>
             <span>£{money(totals?.afterDiscounts)}</span>
           </div>
-          <div className="flex justify-between mb-1">
-            <span>Deposit:</span>
+
+          {/* Payment Breakdown (shows if any part uses a term or we want to show annual line) */}
+          {totals?.monthlyBreakdown?.length > 0 && (
+            <div className="mt-3 border-t border-slate-700 pt-3">
+              <p className="font-semibold text-pjh-blue mb-1">Payment Breakdown</p>
+              {totals.monthlyBreakdown.map((b, i) => (
+                <div key={i} className="flex justify-between text-pjh-muted">
+                  <span>{b.label}</span>
+                  <span>
+                    £{money(b.monthly)} × {b.term} {b.term === 1 ? "time" : "months"} = £{money(b.total)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="flex justify-between mb-1 border-t border-slate-700 pt-2">
+            <span>
+              {(quote.pricing_mode === "monthly" || quote.maintenance_mode === "monthly")
+                ? "Deposit (first month + any one-off maintenance):"
+                : "Deposit:"}
+            </span>
             <span>£{money(totals?.deposit)}</span>
           </div>
+
           <div className="flex justify-between font-semibold text-pjh-blue">
-            <span>Balance:</span>
+            <span>Balance Remaining:</span>
             <span>£{money(totals?.balance)}</span>
           </div>
         </div>
 
+        {/* NOTES */}
         <div>
           <label className="block text-sm text-pjh-muted mb-1">Notes</label>
           <textarea
-            className="w-full bg-pjh-dark border border-slate-700 rounded p-2 min-h-[80px]"
+            className="w-full bg-white text-black border border-slate-300 rounded p-2 min-h-[80px]"
             value={quote.notes}
-            onChange={(e) => setQuote({ ...quote, notes: e.target.value })}
+            onChange={(e) => setQuote((q) => ({ ...q, notes: e.target.value }))}
           />
         </div>
       </div>

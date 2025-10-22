@@ -88,12 +88,13 @@ export default function App() {
       <main className="flex-grow">
         {/* HERO SECTION */}
         <section className="relative flex flex-col items-center text-center pt-32 pb-28 px-6">
-          <img
-            src="/pjh-logo-light.png"
-            alt="PJH Web Services logo"
-            className="w-60 sm:w-80 lg:w-96 mb-10 opacity-95"
-            loading="lazy"
-          />
+<img
+  src="/pjh-logo-light.png"
+  alt="PJH Web Services logo"
+  className="w-80 sm:w-96 lg:w-[28rem] mb-10 opacity-95"
+  loading="lazy"
+/>
+
 
           <p className="text-gray-400 uppercase tracking-[0.25em] text-sm mb-8">
             Local Websites • Real Results
@@ -121,8 +122,18 @@ export default function App() {
             <Link to="/maintenance" className={buttonSubtle}>
               Website Care Plans
             </Link>
-          </div>
-        </section>
+  <Link to="/suffolk-business-directory" className={buttonSubtle}>
+    Suffolk Portfolio
+  </Link>
+  <a
+    href="https://www.crowdfunder.co.uk/p/pjh-web-services"
+    target="_blank"
+    rel="noopener noreferrer"
+    className={buttonPrimary}
+  >
+    Support Our Crowdfunder
+  </a>
+</div>  </section>
 
         {/* SERVICES SECTION */}
         <section id="services" className="py-24 px-6 border-t border-white/10">
