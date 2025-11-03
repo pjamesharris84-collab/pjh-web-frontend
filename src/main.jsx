@@ -48,6 +48,7 @@ import MaintenanceThankYou from "./pages/MaintenanceThankYou.jsx";
 import Starter from "./pages/packages/Starter.jsx";
 import Business from "./pages/packages/Business.jsx";
 import Premium from "./pages/packages/Premium.jsx";
+import Essential from "./pages/packages/Essential.jsx";
 
 // =======================
 // 💤 Lazy-Loaded Admin Pages
@@ -109,6 +110,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
             <Route path="/packages/starter" element={<Starter />} />
             <Route path="/packages/business" element={<Business />} />
             <Route path="/packages/premium" element={<Premium />} />
+            <Route path="/packages/essential" element={<Essential />} />
 
             {/* FAQ, Security, Setup, Direct Debit */}
             <Route path="/faq" element={<FAQ />} />

@@ -1,8 +1,8 @@
 // ============================================================
-// PJH Web Services — FAQ Page (Local Focus, Clarity-Driven)
+// PJH Web Services — FAQ Page (Accessible, VAT-Registered 2025)
 // ============================================================
-// Helping local businesses cut through digital noise
-// and stay ahead of trends with modern, honest web design.
+// Updated for VAT transparency, Essential→Premium tiers,
+// and Social Media Management clarity for local Suffolk & UK clients.
 // ============================================================
 
 import React from "react";
@@ -13,39 +13,47 @@ export default function FAQ() {
   const faqs = [
     {
       q: "What makes PJH Web Services different?",
-      a: "We help local businesses cut through the digital noise. Instead of jargon and buzzwords, we give you clear, honest advice that works. Every website and CRM we build is tailored to your business goals, not a one-size-fits-all template. Our focus is results, not trends.",
+      a: "We help local businesses cut through digital noise. Instead of jargon and buzzwords, we give you clear, honest advice that works. Every website and CRM we build is handcrafted to your business goals — no templates or gimmicks. Our focus is results, not trends.",
     },
     {
       q: "Do you work with small or local businesses?",
-      a: "Yes — that’s who we specialise in. From trades and shops to service providers, we help Suffolk and UK-based businesses look professional online and attract real customers. You don’t need to be a tech expert — we handle everything from start to finish.",
+      a: "Yes — that’s exactly who we specialise in. From sole traders and shops to service providers, we help Suffolk and UK-based businesses look professional online and attract real customers. You don’t need to be technical — we handle everything from design to hosting.",
     },
     {
-      q: "Do you keep up with the latest digital trends?",
-      a: "Absolutely. The online world changes fast — AI, algorithms, SEO, design tools. We stay on top of it all, filter out the hype, and apply only what benefits your business. You focus on running your company; we’ll keep your website current and performing.",
+      q: "What website packages do you offer?",
+      a: "We have four tiers to suit every budget and goal: the Essential (3-page starter site), Starter (5-page bespoke site), Business (CRM and quoting tools), and Premium (advanced automation and client portals). All prices are shown exclusive of VAT, with inclusive figures displayed for clarity.",
     },
     {
-      q: "What services do you offer?",
-      a: "We design, build, and maintain modern, SEO-ready websites and custom CRM systems. Our services include local SEO setup, hosting, branding, automation, and ongoing maintenance — everything your business needs to stay visible and secure online.",
+      q: "Are your prices subject to VAT?",
+      a: "Yes. PJH Web Services is VAT-registered under GB503 3476 17. All prices are exclusive of VAT unless stated otherwise, with inclusive totals shown for transparency. Every client receives a full VAT invoice for their records.",
+    },
+    {
+      q: "Do you offer social media management?",
+      a: "Every website package includes **basic social media setup** — we connect and optimise your Facebook, Instagram, and Google Business profiles so customers can find you easily.  \n\nIf you’d like us to **create and post content for you each week**, we also offer rolling monthly Social Media Management plans starting from £295 + VAT per month.  These include branded graphics, captions, scheduling, and monthly performance reporting — all handled for you with clear VAT invoicing.",
     },
     {
       q: "Do you offer website care or maintenance plans?",
-      a: "Yes. Our Website Care Plans keep your site protected, fast, and up-to-date. We handle all updates, security patches, backups, and performance checks — so you can rest easy knowing your site is in safe hands.",
+      a: "Yes. Our WebCare Maintenance Plans keep your site fast, protected, and up-to-date. We handle security patches, software updates, backups, and performance checks — all billed monthly with VAT shown clearly on each invoice.",
     },
     {
-      q: "Can you host my website and emails?",
-      a: "Yes. We provide fast, secure hosting and professional email setup. Every site includes SSL security, daily backups, and managed support — so your business stays online and reliable without technical stress.",
+      q: "Can you host my website and professional email?",
+      a: "Yes. We provide secure UK-based hosting and business email setup. Every site includes SSL security, daily backups, and managed support — so your business stays online reliably without stress.",
     },
     {
       q: "Do you only work locally?",
-      a: "We’re proudly based in Suffolk and love supporting local businesses — but we also work with clients across the UK. Thanks to our modern, remote-friendly setup, we can collaborate seamlessly wherever you are.",
+      a: "We’re proudly based in Suffolk and love supporting local businesses, but we also work with clients across the UK. Our remote-friendly setup allows seamless collaboration wherever you’re located.",
+    },
+    {
+      q: "Do you keep up with digital and AI trends?",
+      a: "Absolutely. The online world evolves quickly — AI tools, SEO, accessibility standards, and design systems change constantly. We stay on top of it all and apply only what genuinely benefits your business. You can focus on your trade while we keep your website ahead of the curve.",
     },
     {
       q: "What’s your design and build process?",
-      a: "We start with a simple discovery session to understand your business and your customers. Then we move through design, development, and testing. The result is a fast, mobile-first, SEO-optimised site that looks great and converts visitors into customers.",
+      a: "We start with a short discovery call to understand your goals. Then we move through design, development, and testing — with accessibility, SEO, and speed built-in. You’ll review every stage, ensuring the final site is fast, mobile-ready, and tailored to your brand.",
     },
     {
       q: "How do I get a quote or start a project?",
-      a: "Just visit our Contact page or email info@pjhwebservices.co.uk. We’ll chat about your goals and ideas, then create a clear, no-obligation proposal focused on what will actually help your business grow online.",
+      a: "Visit our Contact page or email hello@pjhwebservices.co.uk. We’ll discuss your goals, then provide a clear, no-obligation proposal showing ex-VAT and inc-VAT figures so you know exactly what to expect.",
     },
   ];
 
@@ -56,53 +64,87 @@ export default function FAQ() {
     mainEntity: faqs.map((faq) => ({
       "@type": "Question",
       name: faq.q,
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: faq.a,
-      },
+      acceptedAnswer: { "@type": "Answer", text: faq.a },
     })),
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white font-inter">
+    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white font-inter">
       <SEO
-        title="FAQs | PJH Web Services | Suffolk Web Design for Local Businesses"
-        description="Honest, modern web design and CRM systems for Suffolk and UK businesses. Explore PJH Web Services FAQs to see how we cut through the noise and keep your site ahead of digital trends."
+        title="FAQs | PJH Web Services | Suffolk Web Design & Social Media"
+        description="Common questions about PJH Web Services — VAT-registered Suffolk web design and social-media management specialists helping UK businesses grow online."
         url="https://www.pjhwebservices.co.uk/faq"
       />
 
-      <script type="application/ld+json">{JSON.stringify(faqSchema)}</script>
+      {/* Structured data for SEO */}
+      <script type="application/ld+json">
+        {JSON.stringify(faqSchema)}
+      </script>
 
-      <div className="max-w-4xl mx-auto px-6 py-16 space-y-8">
-        <h1 className="text-3xl font-bold text-blue-400 text-center">
-          Frequently Asked Questions
-        </h1>
+      <main
+        id="main-content"
+        role="main"
+        className="max-w-4xl mx-auto px-6 py-16 space-y-8"
+      >
+        <header className="text-center mb-10">
+          <h1 className="text-4xl font-bold text-blue-400 mb-4">
+            Frequently Asked Questions
+          </h1>
+          <p
+            className="text-gray-400 max-w-2xl mx-auto leading-relaxed"
+            aria-describedby="faq-intro"
+          >
+            Honest answers about how PJH Web Services helps small and local
+            businesses succeed online — from web design and hosting to full
+            social-media management. All services are transparent, VAT-compliant,
+            and designed for real-world results.
+          </p>
+        </header>
 
-        <p className="text-center text-gray-400 max-w-2xl mx-auto leading-relaxed">
-          Get straight, no-nonsense answers about how PJH Web Services helps
-          small and local businesses build fast, secure, and effective websites.
-          We believe in clarity, not confusion — and we stay on top of digital
-          trends so you don’t have to. Can’t find what you’re looking for?{" "}
-          <Link to="/contact" className="text-blue-400 hover:underline">
-            Get in touch
-          </Link>{" "}
-          and let’s talk about your goals.
-        </p>
-
-        <div className="mt-10 space-y-6">
+        <section
+          id="faq-list"
+          aria-label="Frequently asked questions"
+          className="space-y-6"
+        >
           {faqs.map((item, index) => (
-            <div
+            <article
               key={index}
-              className="bg-slate-900/70 border border-white/10 p-6 rounded-2xl shadow-lg hover:border-blue-500 hover:shadow-blue-900/30 transition-all duration-300"
+              className="bg-slate-900/70 border border-white/10 p-6 rounded-2xl shadow-lg hover:border-blue-500 hover:shadow-blue-900/30 transition-all duration-300 focus-within:border-blue-500"
             >
-              <h2 className="text-xl font-semibold text-blue-400 mb-2">
+              <h2
+                className="text-xl font-semibold text-blue-400 mb-2"
+                id={`faq-${index}`}
+              >
                 {item.q}
               </h2>
-              <p className="text-gray-300 leading-relaxed">{item.a}</p>
-            </div>
+              <p
+                className="text-gray-300 leading-relaxed whitespace-pre-line"
+                aria-labelledby={`faq-${index}`}
+              >
+                {item.a}
+              </p>
+            </article>
           ))}
-        </div>
-      </div>
+        </section>
+
+        <footer className="text-center pt-10 border-t border-white/10 mt-16">
+          <p className="text-gray-400 leading-relaxed">
+            Still have questions?{" "}
+            <Link
+              to="/contact"
+              className="text-blue-400 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-sm"
+            >
+              Get in touch
+            </Link>{" "}
+            and we’ll respond personally within one business day.
+          </p>
+          <p className="text-xs text-gray-500 mt-4">
+            © {new Date().getFullYear()} PJH Web Services — Suffolk, United Kingdom.
+            VAT No. GB503 3476 17. Prices shown are exclusive of VAT with inclusive
+            figures displayed for clarity.
+          </p>
+        </footer>
+      </main>
     </div>
   );
 }

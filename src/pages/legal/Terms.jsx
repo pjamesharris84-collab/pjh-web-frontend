@@ -1,10 +1,10 @@
 /**
  * ============================================================
- * PJH Web Services — Terms & Conditions (2025)
+ * PJH Web Services — Terms & Conditions (2025, VAT-Registered)
  * ============================================================
  * Applies to website design, CRM systems, digital marketing,
  * and all related PJH Web Services deliverables.
- * Styled with unified blue/white legal design system.
+ * Updated for VAT registration, dual pricing & invoicing compliance.
  * ============================================================
  */
 
@@ -16,7 +16,7 @@ export default function Terms() {
     <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white font-outfit">
       <SEO
         title="Terms & Conditions | PJH Web Services"
-        description="Review the full Terms & Conditions governing PJH Web Services’ website design, CRM, and digital solutions — aligned with UK law and fair business practice."
+        description="Review the full Terms & Conditions governing PJH Web Services’ VAT-inclusive website design, CRM, and digital services — aligned with UK law and fair business practice."
         url="https://www.pjhwebservices.co.uk/legal/terms"
         image="https://www.pjhwebservices.co.uk/pjh-logo-light.png"
       />
@@ -28,10 +28,11 @@ export default function Terms() {
               Terms & Conditions
             </h1>
             <p className="text-sm text-gray-400">
-              Last updated: 28 September 2025 — Version 2025-01
+              Last updated: 3 November 2025 — Version 2025-11
             </p>
           </header>
 
+          {/* 1. INTRODUCTION */}
           <section>
             <h2 className="text-xl font-semibold text-blue-400 mb-2">
               1. Introduction
@@ -39,11 +40,12 @@ export default function Terms() {
             <p className="text-gray-300 leading-relaxed">
               By accessing or engaging with <b>PJH Web Services</b>, you agree
               to these Terms & Conditions. These govern all website design,
-              hosting, CRM, and digital services provided by us.  
+              hosting, CRM, automation, and digital services provided by us.  
               Please read them carefully before commissioning any work.
             </p>
           </section>
 
+          {/* 2. PROPOSALS */}
           <section>
             <h2 className="text-xl font-semibold text-blue-400 mb-2">
               2. Proposals & Client Obligations
@@ -55,27 +57,36 @@ export default function Terms() {
               </li>
               <li>
                 Clients must provide timely feedback, content, and approvals to
-                prevent project delays.
+                avoid unnecessary project delays.
               </li>
               <li>
-                Any delays caused by client inaction may extend delivery dates
-                and affect agreed milestones.
+                Delays caused by client inaction or late responses may extend
+                agreed milestones and delivery timelines.
               </li>
             </ul>
           </section>
 
+          {/* 3. PAYMENT TERMS */}
           <section>
             <h2 className="text-xl font-semibold text-blue-400 mb-2">
-              3. Payment Terms
+              3. Payment Terms & VAT
             </h2>
-            <ul className="list-disc ml-6 text-gray-300 space-y-1 leading-relaxed">
+            <ul className="list-disc ml-6 text-gray-300 space-y-2 leading-relaxed">
               <li>
-                A <b>50% deposit</b> is required before design or development
-                work begins unless otherwise agreed in writing.
+                PJH Web Services is a{" "}
+                <b>VAT-registered business (GB503&nbsp;3476&nbsp;17)</b>. All
+                quoted prices are <b>exclusive of VAT</b> unless clearly stated
+                otherwise.  
+                VAT is charged at the prevailing UK rate (currently 20%) and
+                will be itemised separately on all invoices.
               </li>
               <li>
-                Remaining balances are due prior to website launch or delivery of
-                final assets.
+                A <b>50% deposit</b> (plus VAT) is required before design or
+                development work begins unless otherwise agreed in writing.
+              </li>
+              <li>
+                Remaining balances (plus VAT) are due prior to website launch or
+                delivery of final assets.
               </li>
               <li>
                 Monthly or subscription plans are billed automatically via{" "}
@@ -85,136 +96,162 @@ export default function Terms() {
                 >
                   Direct Debit or Stripe
                 </Link>{" "}
-                under the terms of the client’s selected plan.
+                under the client’s selected plan. A VAT invoice will be issued
+                for every transaction.
               </li>
               <li>
-                Late payments may incur a <b>5% late fee</b> and may result in
-                service suspension until payment is received.
+                Late payments may incur a <b>5% late fee</b> and/or suspension
+                of services until full payment (including VAT) is received.
+              </li>
+              <li>
+                VAT-registered clients may reclaim VAT where eligible in
+                accordance with <i>HMRC VAT Notice&nbsp;700/1</i>.
               </li>
             </ul>
           </section>
 
+          {/* 4. REFUND POLICY */}
           <section>
             <h2 className="text-xl font-semibold text-blue-400 mb-2">
               4. Refund Policy
             </h2>
-            <ul className="list-disc ml-6 text-gray-300 space-y-1 leading-relaxed">
+            <ul className="list-disc ml-6 text-gray-300 space-y-2 leading-relaxed">
               <li>
-                Deposits are non-refundable once any design, planning, or
+                Deposits are non-refundable once design, planning, or
                 development work has commenced.
               </li>
               <li>
-                If a project is cancelled mid-way, the client will be invoiced for
-                all work completed up to that point.
+                If a project is cancelled mid-way, the client will be invoiced
+                for all work completed up to that date, plus applicable VAT.
               </li>
               <li>
-                Approved or delivered projects are considered final and are not
-                eligible for refunds.
+                Completed or delivered projects are deemed final and not
+                eligible for refund.
               </li>
             </ul>
           </section>
 
+          {/* 5. INTELLECTUAL PROPERTY */}
           <section>
             <h2 className="text-xl font-semibold text-blue-400 mb-2">
-              5. Intellectual Property
+              5. Ownership & Intellectual Property
             </h2>
             <p className="text-gray-300 leading-relaxed">
-              All code, designs, and creative content remain the property of{" "}
-              <b>PJH Web Services</b> until full payment has been received.
-              Upon full settlement, ownership of the completed website and
-              associated assets transfers to the client, excluding any
-              third-party or licensed resources.
+              All code, design files, and creative assets remain the property of{" "}
+              <b>PJH Web Services</b> until all invoices (including VAT) have
+              been paid in full.  
+              Upon settlement, ownership of the completed website transfers to
+              the client, excluding any third-party licensed components.
             </p>
           </section>
 
+          {/* 6. REVISIONS */}
           <section>
             <h2 className="text-xl font-semibold text-blue-400 mb-2">
               6. Revisions & Scope Changes
             </h2>
             <p className="text-gray-300 leading-relaxed">
-              Projects include a reasonable number of design revisions as outlined
-              in the proposal. Substantial changes beyond the agreed scope will be
-              quoted separately and may affect delivery timelines.
+              Projects include a reasonable number of revisions as defined in
+              your proposal. Significant changes beyond the agreed scope will be
+              quoted separately (plus VAT) and may affect delivery schedules.
             </p>
           </section>
 
+          {/* 7. MAINTENANCE */}
           <section>
             <h2 className="text-xl font-semibold text-blue-400 mb-2">
               7. Maintenance & Support
             </h2>
             <p className="text-gray-300 leading-relaxed">
-              Ongoing maintenance, hosting, and technical support are not included
-              unless specified in your quote or subscription plan.  
-              Clients may opt into a{" "}
+              Ongoing maintenance, hosting, or technical support are provided
+              only if included in your proposal or{" "}
               <Link
                 to="/maintenance"
                 className="text-blue-400 underline underline-offset-2 hover:text-blue-300"
               >
-                PJH WebCare Maintenance Plan
-              </Link>{" "}
-              for updates, monitoring, and priority support.
+                WebCare plan
+              </Link>
+              .  
+              All maintenance subscriptions are subject to VAT at the prevailing
+              rate.
             </p>
           </section>
 
+          {/* 8. LIABILITY */}
           <section>
             <h2 className="text-xl font-semibold text-blue-400 mb-2">
               8. Limitation of Liability
             </h2>
             <p className="text-gray-300 leading-relaxed">
-              PJH Web Services shall not be liable for indirect, incidental, or
-              consequential damages, including data loss, downtime, or loss of
-              revenue.  
-              Our total liability is limited to the total amount paid for the
-              project or service in the 12 months preceding the claim.
+              PJH Web Services will provide services with reasonable skill and
+              care. We are not liable for indirect or consequential loss,
+              including data loss, downtime, or lost revenue.  
+              Our total liability is limited to the total net fees (exclusive of
+              VAT) paid within the 12 months preceding any claim.
             </p>
           </section>
 
+          {/* 9. TERMINATION */}
           <section>
             <h2 className="text-xl font-semibold text-blue-400 mb-2">
               9. Termination & Suspension
             </h2>
             <p className="text-gray-300 leading-relaxed">
-              PJH Web Services may suspend or terminate any agreement if the
-              client fails to comply with these terms, engage in abusive conduct,
-              or fail to pay due invoices. Clients must provide written notice to
-              terminate ongoing monthly services per the terms of their plan.
+              PJH Web Services reserves the right to suspend or terminate any
+              service if the client breaches these terms, engages in abusive
+              behaviour, or fails to make payment.  
+              Clients may request termination of monthly plans in writing, in
+              accordance with their agreement and{" "}
+              <Link
+                to="/legal/monthly-terms"
+                className="text-blue-400 underline underline-offset-2 hover:text-blue-300"
+              >
+                Monthly Plan Terms
+              </Link>
+              .
             </p>
           </section>
 
+          {/* 10. CONFIDENTIALITY */}
           <section>
             <h2 className="text-xl font-semibold text-blue-400 mb-2">
               10. Confidentiality & Data Protection
             </h2>
             <p className="text-gray-300 leading-relaxed">
-              Both parties agree to treat all project information as confidential.
-              Data will be handled in accordance with the{" "}
+              Both parties agree to handle all project and customer data in
+              accordance with the{" "}
               <Link
                 to="/legal/privacy"
                 className="text-blue-400 underline underline-offset-2 hover:text-blue-300"
               >
                 Privacy Policy
               </Link>{" "}
-              and the <i>UK GDPR</i>.
+              and the <i>UK&nbsp;GDPR</i>.  
+              PJH Web Services operates under strict confidentiality and will
+              not share client data without consent or legal requirement.
             </p>
           </section>
 
+          {/* 11. GOVERNING LAW */}
           <section>
             <h2 className="text-xl font-semibold text-blue-400 mb-2">
               11. Governing Law
             </h2>
             <p className="text-gray-300 leading-relaxed">
               These Terms & Conditions are governed by the laws of{" "}
-              <b>England & Wales</b>.  
-              Disputes will be resolved exclusively in the courts of England.
+              <b>England&nbsp;&amp;&nbsp;Wales</b>.  
+              All disputes will be resolved exclusively through the courts of
+              England.
             </p>
           </section>
 
+          {/* 12. CONTACT */}
           <section>
             <h2 className="text-xl font-semibold text-blue-400 mb-2">
               12. Contact
             </h2>
             <p className="text-gray-300 leading-relaxed">
-              For any questions or disputes relating to these terms:<br />
+              For questions regarding these terms:<br />
               <a
                 href="mailto:hello@pjhwebservices.co.uk"
                 className="text-blue-400 underline underline-offset-2 hover:text-blue-300"
@@ -222,23 +259,28 @@ export default function Terms() {
                 hello@pjhwebservices.co.uk
               </a>
               <br />
-              Phone: 07587 707981
+              Phone: 07587&nbsp;707981
             </p>
           </section>
 
+          {/* FOOTER */}
           <footer className="pt-8 border-t border-white/10 text-center">
             <p className="text-xs text-gray-500 mb-6">
               © {new Date().getFullYear()} PJH Web Services — Suffolk, United
               Kingdom.  
-              Compliant with the <i>Consumer Rights Act 2015</i> and{" "}
-              <i>Supply of Goods and Services Act 1982</i>.
+              VAT Registration No: GB503&nbsp;3476&nbsp;17.  
+              Prices are shown exclusive of VAT with inclusive figures displayed
+              for clarity.  
+              Compliant with the <i>Consumer Rights Act&nbsp;2015</i>,{" "}
+              <i>Supply of Goods and Services Act&nbsp;1982</i>, and{" "}
+              <i>HMRC VAT Notice&nbsp;700/1</i>.
             </p>
 
             <Link
               to="/"
               className="inline-block px-8 py-3 bg-blue-700 hover:bg-blue-800 text-white font-semibold rounded-xl transition-all duration-300 shadow-sm hover:shadow-blue-900/30"
             >
-              🏠 Back to Home
+              Back to Home
             </Link>
           </footer>
         </article>

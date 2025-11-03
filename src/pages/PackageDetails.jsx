@@ -2,10 +2,10 @@
  * ============================================================
  * PJH Web Services — Package Details Page (Enhanced 2025)
  * ============================================================
- * Supports all core offerings (Starter, Business, Premium, Social Media)
- *  • Fetches /api/packages/:id or /api/packages/slug/:slug
- *  • Displays name, tagline, pricing, features, and full description
- *  • Includes full fallback dataset for offline/static usage
+ * Supports all core offerings (Essential, Starter, Business, Premium, Social Media)
+ *  • Dual pricing (ex-VAT + inc-VAT)
+ *  • Aligned with 2025 package structure and tone
+ *  • Includes entry-level Essential package for local startups
  * ============================================================
  */
 
@@ -16,13 +16,13 @@ import SEO from "../components/SEO";
 import CookieBanner from "../components/CookieBanner";
 
 export default function PackageDetails() {
-  const { id } = useParams(); // numeric or slug
+  const { id } = useParams();
   const [pkg, setPkg] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   /* ------------------------------------------------------------
-     Fetch package from backend
+     Fetch package (optional)
   ------------------------------------------------------------ */
   useEffect(() => {
     async function fetchPackage() {
@@ -53,26 +53,49 @@ export default function PackageDetails() {
         setLoading(false);
       }
     }
-
     fetchPackage();
   }, [id]);
 
   /* ------------------------------------------------------------
-     Local fallback (for offline or failed API)
+     Local fallback (offline)
   ------------------------------------------------------------ */
   const fallbackPackages = {
-    starter: {
-      name: "Starter",
+    essential: {
+      name: "Essential",
       tagline:
-        "Perfect for local sole traders and small businesses looking to get online fast.",
-      price_oneoff: 795,
+        "A simple, professional 3-page website — perfect for sole traders, startups, and small Suffolk businesses getting online for the first time.",
+      price_oneoff: 595,
       price_monthly: 49,
       term_months: 24,
       description: `
-The Starter package is designed for tradesmen, small shops, and local sole traders who need a reliable, professional online presence without the complexity. 
-It delivers a modern, SEO-optimised website — tailored to your goals and built for performance.
+The Essential package is designed for local sole traders, new startups, and community businesses who want a clean, professional website — built properly and hosted securely.
 
-Every Starter site also includes basic social media setup: connecting your Facebook, Instagram, and Google Business profiles to your new website, helping you build trust and visibility locally.
+It provides everything you actually need to get started online: a modern, mobile-optimised design, clear contact options, and Google Business integration so local customers can find you easily.
+
+It’s the perfect foundation for those who want something simple now, with room to grow later into our Starter, Business, or Premium tiers.
+      `,
+      features: [
+        "Up to 3 custom-designed pages (e.g. Home, About, Contact)",
+        "Responsive, mobile-friendly design for all devices",
+        "Basic SEO setup with Google indexing & sitemap submission",
+        "Google Business Profile integration (map & contact links)",
+        "Contact form with spam protection & direct email delivery",
+        "Secure UK-based hosting + SSL (first year included)",
+        "3-month WebCare support for updates & minor content edits",
+      ],
+    },
+    starter: {
+      name: "Starter",
+      tagline:
+        "Professional 5-page website — ideal for tradesmen and small businesses who just need a solid online presence done properly.",
+      price_oneoff: 995,
+      price_monthly: 79,
+      term_months: 24,
+      description: `
+The Starter package is perfect for sole traders and small local businesses who simply need a reliable, modern website — built properly and ready to perform. 
+It includes clean design, on-page SEO, and everything you need to get found on Google.
+
+We also connect your Facebook, Instagram, and Google Business profiles to help customers reach you wherever they search. Simple, effective, and built to last.
       `,
       features: [
         "5 bespoke, fully custom-designed pages",
@@ -86,20 +109,20 @@ Every Starter site also includes basic social media setup: connecting your Faceb
     business: {
       name: "Business",
       tagline:
-        "For growing companies ready to scale their systems and brand visibility.",
-      price_oneoff: 1495,
-      price_monthly: 85,
+        "For growing companies who need more than a website — quoting, automation, and CRM tools built in.",
+      price_oneoff: 1995,
+      price_monthly: 129,
       term_months: 24,
       description: `
-The Business package builds on the Starter foundation, introducing automation and management tools that streamline your workflow.
-You’ll gain a custom CRM dashboard, quoting system, and performance insights that make client management effortless.
+The Business package adds serious capability to your online presence. 
+You’ll get a bespoke CRM dashboard, built-in quoting and invoicing, and smart automation that saves time every day.
 
-This package also enhances your social media setup — with branded profile designs, unified visual identity, and ready-to-post templates so your business looks consistent everywhere online.
+It also includes enhanced social media branding — consistent profile design, post templates, and SEO alignment so your business looks professional everywhere it appears online.
       `,
       features: [
         "All Starter features included",
         "Custom CRM dashboard for leads & jobs",
-        "Integrated quoting and invoicing tools",
+        "Integrated quoting & invoicing tools",
         "Enhanced social media setup + content branding",
         "Automated email replies & smart forms",
         "Analytics and local SEO setup",
@@ -108,47 +131,47 @@ This package also enhances your social media setup — with branded profile desi
     premium: {
       name: "Premium",
       tagline:
-        "Complete business automation — website, CRM, client portals, and payment systems.",
-      price_oneoff: 2950,
-      price_monthly: 160,
+        "Complete digital system — bespoke CRM, client portals, automation & recurring payments.",
+      price_oneoff: 3995,
+      price_monthly: 199,
       term_months: 24,
       description: `
-The Premium package is our flagship end-to-end system — designed for ambitious businesses that need their digital ecosystem to work together seamlessly. 
-From web design and automation to bookings, payments, and ongoing support, this is your full digital backbone.
+The Premium package is our flagship, fully-integrated solution for ambitious businesses. 
+It combines design, automation, and client management into one cohesive system — from first enquiry to payment and beyond.
 
-It includes advanced social media automation and integrations, connecting your CRM and marketing tools for smarter scheduling, analytics, and lead tracking — all under one roof.
+This plan includes advanced social media and marketing integrations, automated billing, and dedicated WebCare support for true peace of mind.
       `,
       features: [
         "All Business features included",
         "Fully bespoke CRM & project management system",
-        "Online bookings, payments, and subscriptions",
+        "Online bookings, payments & subscriptions",
         "Advanced social media integration & automation tools",
-        "Automated invoicing and client reminders",
+        "Automated invoicing & client reminders",
         "Priority WebCare support & performance reporting",
       ],
     },
     "social-media": {
       name: "Social Media Management",
       tagline:
-        "Done-for-you content creation, posting, and growth — stay visible while we handle the rest.",
+        "Stay visible online with done-for-you content, scheduling, and reporting — all managed by us.",
       price_oneoff: 0,
-      price_monthly: 95,
-      term_months: 3,
+      price_monthly: 295,
+      term_months: 1,
       description: `
-Our Social Media Management plan is ideal for busy business owners who want to stay active online without the time drain.
+Our Social Media Management plans are ideal for busy owners who want consistent, professional content without the hassle.
 
-We handle your content strategy, design, captions, and scheduling across Facebook, Instagram, and Google Business — ensuring your brand stays professional and consistent.
-You'll receive three custom-branded posts per week plus monthly performance reports to track engagement and reach.
+We manage your Facebook, Instagram, and Google Business accounts — creating branded posts, writing captions, optimising hashtags, and scheduling weekly content. 
+You’ll receive monthly engagement reports and can add paid ad management or video content as optional extras.
 
-Optional add-ons include paid ad management, follower growth strategies, and content calendars to align your campaigns with your website and SEO.
+All plans run on a flexible monthly basis — no long contracts, cancel anytime.
       `,
       features: [
-        "3 custom branded posts per week",
-        "Facebook, Instagram, and Google Business management",
+        "3+ custom branded posts per week",
+        "Facebook, Instagram & Google Business management",
         "Hashtag and caption optimisation",
         "Monthly engagement and reach reporting",
-        "Optional ad management and growth strategy add-ons",
-        "Rolling monthly plan — cancel anytime after 3 months",
+        "Optional ad management & video content add-ons",
+        "Rolling monthly plan — cancel anytime",
       ],
     },
   };
@@ -157,14 +180,18 @@ Optional add-ons include paid ad management, follower growth strategies, and con
   const displayPkg =
     pkg ||
     fallbackPackages[slug] ||
-    Object.values(fallbackPackages).find(
-      (p) => p.name.toLowerCase() === slug
-    );
+    Object.values(fallbackPackages).find((p) => p.name.toLowerCase() === slug);
 
   const buttonPrimary =
     "inline-block px-8 py-3 bg-blue-700 hover:bg-blue-800 text-white font-semibold rounded-xl transition-all duration-300 shadow-sm hover:shadow-blue-900/30";
   const buttonOutline =
     "inline-block px-8 py-3 border border-blue-600 text-white hover:bg-blue-700 rounded-xl font-medium transition-all duration-300";
+
+  const renderDual = (net) => (
+    <>
+      £{net.toLocaleString()} + VAT (£{(net * 1.2).toLocaleString()} inc. VAT)
+    </>
+  );
 
   /* ------------------------------------------------------------
      Render
@@ -213,17 +240,17 @@ Optional add-ons include paid ad management, follower growth strategies, and con
 
               <div className="text-gray-300 text-lg mb-10">
                 {displayPkg.price_oneoff > 0 && (
-                  <p className="font-semibold">
-                    £{displayPkg.price_oneoff.toLocaleString()} one-off setup
+                  <p className="font-semibold mb-1">
+                    {renderDual(displayPkg.price_oneoff)} one-off setup
                   </p>
                 )}
                 {displayPkg.price_monthly && (
                   <p>
-                    {displayPkg.price_oneoff > 0 ? "or " : ""}£
-                    {displayPkg.price_monthly.toLocaleString()}/month
-                    {displayPkg.term_months && (
-                      <> for {displayPkg.term_months} months</>
-                    )}
+                    {displayPkg.price_oneoff > 0 ? "or " : ""}
+                    {renderDual(displayPkg.price_monthly)} / month{" "}
+                    {displayPkg.term_months > 1
+                      ? `for ${displayPkg.term_months} months`
+                      : "(rolling monthly plan)"}
                   </p>
                 )}
               </div>
@@ -261,7 +288,14 @@ Optional add-ons include paid ad management, follower growth strategies, and con
       <footer className="border-t border-white/10 py-10 text-center text-sm text-gray-500 bg-slate-950">
         <p>
           © {new Date().getFullYear()} PJH Web Services — All rights reserved.
+          <br />
+          PJH Web Services is a VAT-registered business (VAT No. GB503 3476 17).
         </p>
+        <p className="text-xs text-gray-600 mt-2">
+          Prices shown are exclusive of VAT with inclusive figures shown for
+          clarity.
+        </p>
+
         <div className="flex justify-center flex-wrap gap-4 text-xs uppercase tracking-wide mt-3">
           <Link to="/legal/privacy" className="hover:text-blue-400 transition">
             Privacy
