@@ -43,12 +43,14 @@ import PaymentFailed from "./pages/PaymentFailed.jsx";
 import Maintenance from "./pages/Maintenance.jsx";
 import MaintenanceCompare from "./pages/MaintenanceCompare.jsx";
 import MaintenanceThankYou from "./pages/MaintenanceThankYou.jsx";
+import BuildCompare from "./pages/BuildCompare.jsx";
 
 // 📦 Static Package Pages
 import Starter from "./pages/packages/Starter.jsx";
 import Business from "./pages/packages/Business.jsx";
 import Premium from "./pages/packages/Premium.jsx";
 import Essential from "./pages/packages/Essential.jsx";
+
 
 // =======================
 // 💤 Lazy-Loaded Admin Pages
@@ -111,6 +113,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
             <Route path="/packages/business" element={<Business />} />
             <Route path="/packages/premium" element={<Premium />} />
             <Route path="/packages/essential" element={<Essential />} />
+            <Route path="/compare-builds" element={<BuildCompare />} />
 
             {/* FAQ, Security, Setup, Direct Debit */}
             <Route path="/faq" element={<FAQ />} />

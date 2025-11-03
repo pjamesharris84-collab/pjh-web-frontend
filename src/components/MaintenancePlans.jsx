@@ -1,9 +1,10 @@
 /**
  * ============================================================
- * PJH Web Services — Maintenance Plans Component (2025)
+ * PJH Web Services — Maintenance Plans Component (2025-11)
  * ============================================================
- * Fully aligned, accessibility-compliant, and visually balanced.
- * Includes improved button contrast for bright-highlight cards.
+ * Fully aligned with VAT-registered 2025 pricing
+ * (Essential, WebCare Plus, WebCare Premium)
+ * Accessible, balanced visuals, consistent dual pricing display
  * ============================================================
  */
 
@@ -15,63 +16,65 @@ export default function MaintenancePlans() {
   const plans = [
     {
       name: "Essential Care",
-      price: "£45/mo (ex VAT)",
-      annual: "£420/yr (£35/mo eq.)",
-      tagline: "Perfect for small business websites",
+      price: "£45/mo + VAT (£54 inc.)",
+      annual: "£420/yr + VAT (£504 inc.)",
+      tagline: "Perfect for small brochure or starter websites",
       features: [
-        "Weekly backups",
-        "CMS & plugin updates",
-        "Uptime & security monitoring",
-        "Malware scans",
+        "Monthly plugin & core updates",
+        "Daily backups (7-day retention)",
+        "Basic uptime & security monitoring",
+        "Email support within 2 business days",
       ],
       highlight: false,
     },
     {
-      name: "Performance Care",
-      price: "£95/mo (ex VAT)",
-      annual: "£1,020/yr (£85/mo eq.)",
-      tagline: "For growing businesses and online stores",
+      name: "WebCare Plus",
+      price: "£85/mo + VAT (£102 inc.)",
+      annual: "£900/yr + VAT (£1,080 inc.)",
+      tagline: "Ideal for growing sites needing regular updates and reports",
       features: [
-        "Everything in Essential",
-        "Website speed checks",
-        "Monthly SEO health report",
-        "1 hr of content updates",
-        "Priority support (48h response)",
+        "Bi-weekly updates & security scans",
+        "Daily backups (14-day retention)",
+        "Monthly performance report",
+        "Priority same-day email support",
       ],
       highlight: true,
     },
     {
-      name: "Total WebCare",
-      price: "£195/mo (ex VAT)",
-      annual: "£2,100/yr (£175/mo eq.)",
-      tagline: "For high-traffic or mission-critical websites",
+      name: "WebCare Premium",
+      price: "£145/mo + VAT (£174 inc.)",
+      annual: "£1,560/yr + VAT (£1,872 inc.)",
+      tagline: "For ecommerce or CRM-driven websites needing full coverage",
       features: [
-        "Everything in Performance",
-        "24h priority support",
-        "3 hrs of monthly updates",
-        "Emergency fixes included",
-        "Quarterly strategy call",
+        "Weekly updates & deep security scans",
+        "Real-time uptime monitoring",
+        "Monthly performance & SEO audit",
+        "Priority phone & email support",
       ],
       highlight: false,
     },
   ];
 
   return (
-    <section className="py-20 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white border-t border-slate-800">
+    <section
+      className="py-20 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white border-t border-slate-800"
+      aria-labelledby="maintenance-plans-heading"
+    >
       <div className="max-w-7xl mx-auto px-6">
         <motion.h2
+          id="maintenance-plans-heading"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="text-4xl font-bold text-center mb-4"
+          className="text-4xl font-bold text-center mb-4 text-blue-400"
         >
-          Maintenance Packages
+          Website Care Plans
         </motion.h2>
 
-        <p className="text-center text-gray-300 mb-12 max-w-2xl mx-auto">
-          Keep your PJH-built website running smoothly, securely, and at top
-          speed — 24/7. Our WebCare packages are exclusive add-ons for existing
-          PJH Web Services clients.
+        <p className="text-center text-gray-300 mb-12 max-w-2xl mx-auto leading-relaxed">
+          Keep your PJH-built website fast, secure, and performing at its best —
+          24/7. Our WebCare plans are designed for long-term reliability and
+          peace of mind, with transparent VAT-inclusive pricing.
         </p>
 
         {/* Equal Height Grid */}
@@ -106,7 +109,10 @@ export default function MaintenancePlans() {
                 <ul className="space-y-3">
                   {plan.features.map((f, j) => (
                     <li key={j} className="flex items-start gap-2">
-                      <Check className="w-5 h-5 text-blue-400 mt-1 shrink-0" />
+                      <Check
+                        className="w-5 h-5 text-blue-400 mt-1 shrink-0"
+                        aria-hidden="true"
+                      />
                       <span>{f}</span>
                     </li>
                   ))}
@@ -140,6 +146,12 @@ export default function MaintenancePlans() {
             </motion.div>
           ))}
         </div>
+
+        <p className="text-center text-gray-500 text-xs mt-10">
+          All prices shown are exclusive of VAT with inclusive figures displayed
+          for clarity. © {new Date().getFullYear()} PJH Web Services — VAT No.
+          GB503 3476 17
+        </p>
       </div>
     </section>
   );

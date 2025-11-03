@@ -235,38 +235,48 @@ export default function App() {
             Whether you’re a startup, a family-run shop, or a growing company —
             we’ve got a package that fits your needs and your budget.
           </p>
-          <div className="max-w-6xl mx-auto grid md:grid-cols-4 gap-10 items-stretch">
-            {packages.map((pkg) => (
-              <div
-                key={pkg.id}
-                className="flex flex-col justify-between bg-slate-900/70 rounded-2xl border border-white/10 p-8 hover:border-blue-500 transition-all duration-300 hover:-translate-y-1 shadow-sm hover:shadow-blue-900/20 h-full"
-              >
-                <div>
-                  <h3 className="text-xl font-semibold text-blue-400 mb-1">
-                    {pkg.name}
-                  </h3>
-                  <p className="text-gray-400 mb-3 text-sm min-h-[50px]">
-                    {pkg.tagline}
-                  </p>
-                  <p className="text-gray-300 text-lg font-semibold mb-4">
-                    {renderDual(pkg.price_oneoff)} one-off <br />
-                    or {renderDual(pkg.price_monthly)} / month
-                  </p>
-                  <ul className="text-gray-500 text-sm mb-6 list-disc list-inside leading-relaxed">
-                    {pkg.features.map((f, i) => (
-                      <li key={i}>{f}</li>
-                    ))}
-                  </ul>
-                </div>
-                <Link
-                  to={`/packages/${pkg.id}`}
-                  className="mt-auto inline-block w-full text-center px-6 py-3 bg-blue-700 hover:bg-blue-800 text-white font-semibold rounded-xl transition-all duration-300 shadow-sm hover:shadow-blue-900/30"
-                >
-                  View Details →
-                </Link>
-              </div>
-            ))}
-          </div>
+<div className="max-w-6xl mx-auto grid md:grid-cols-4 gap-10 items-stretch">
+  {packages.map((pkg) => (
+    <div
+      key={pkg.id}
+      className="flex flex-col justify-between bg-slate-900/70 rounded-2xl border border-white/10 p-8 hover:border-blue-500 transition-all duration-300 hover:-translate-y-1 shadow-sm hover:shadow-blue-900/20 h-full"
+    >
+      <div>
+        <h3 className="text-xl font-semibold text-blue-400 mb-1">
+          {pkg.name}
+        </h3>
+        <p className="text-gray-400 mb-3 text-sm min-h-[50px]">
+          {pkg.tagline}
+        </p>
+        <p className="text-gray-300 text-lg font-semibold mb-4">
+          {renderDual(pkg.price_oneoff)} one-off <br />
+          or {renderDual(pkg.price_monthly)} / month
+        </p>
+        <ul className="text-gray-500 text-sm mb-6 list-disc list-inside leading-relaxed">
+          {pkg.features.map((f, i) => (
+            <li key={i}>{f}</li>
+          ))}
+        </ul>
+      </div>
+      <Link
+        to={`/packages/${pkg.id}`}
+        className="mt-auto inline-block w-full text-center px-6 py-3 bg-blue-700 hover:bg-blue-800 text-white font-semibold rounded-xl transition-all duration-300 shadow-sm hover:shadow-blue-900/30"
+      >
+        View Details →
+      </Link>
+    </div>
+  ))}
+</div>
+
+{/* Compare Button (added beneath packages) */}
+<div className="text-center mt-12">
+  <Link
+    to="/compare-builds"
+    className="inline-block px-8 py-3 border border-blue-600 text-white hover:bg-blue-700 rounded-xl font-medium transition-all duration-300"
+  >
+    Compare Packages Side-by-Side →
+  </Link>
+</div>
         </section>
 
         {/* ============================================================

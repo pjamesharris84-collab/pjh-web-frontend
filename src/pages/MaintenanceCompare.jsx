@@ -1,39 +1,57 @@
+/**
+ * ============================================================
+ * PJH Web Services — Maintenance Plan Comparison (VAT 2025)
+ * ============================================================
+ * Updated with East Anglia market-aligned pricing:
+ *  • Essential Care £45 + VAT (£54 inc)
+ *  • WebCare Plus £85 + VAT (£102 inc)
+ *  • WebCare Premium £145 + VAT (£174 inc)
+ * Annual billing includes a small discount.
+ * ============================================================
+ */
+
 import { Link } from "react-router-dom";
 
 export default function MaintenanceCompare() {
+  const renderDual = (net) => (
+    <>
+      £{net.toLocaleString()} + VAT (£{(net * 1.2).toLocaleString()} inc. VAT)
+    </>
+  );
+
   const features = [
-    { name: "Weekly Backups", essential: "✅", performance: "✅", total: "✅" },
-    { name: "Core / Plugin / CMS Updates", essential: "✅", performance: "✅", total: "✅" },
-    { name: "Uptime & Security Monitoring", essential: "✅", performance: "✅", total: "✅" },
-    { name: "Malware / Vulnerability Scans", essential: "✅", performance: "✅", total: "✅" },
-    { name: "Speed / Performance Checks", essential: "❌", performance: "✅", total: "✅" },
-    { name: "Monthly SEO / Health Audit", essential: "❌", performance: "✅", total: "✅" },
-    { name: "Monthly Performance Report", essential: "❌", performance: "✅", total: "✅" },
-    { name: "Content Updates (hrs/month)", essential: "❌", performance: "1 hr", total: "3 hrs" },
-    { name: "Priority Support", essential: "❌", performance: "48h", total: "24h" },
-    { name: "Emergency Fixes Included", essential: "❌", performance: "Optional", total: "✅" },
-    { name: "Analytics / Dashboard Access", essential: "❌", performance: "Optional", total: "✅" },
-    { name: "Strategy / Review Call (quarterly)", essential: "❌", performance: "❌", total: "✅" },
+    { name: "Daily Backups", essential: "✅", plus: "✅", premium: "✅" },
+    { name: "Core / Plugin / CMS Updates", essential: "✅", plus: "✅", premium: "✅" },
+    { name: "Uptime & Security Monitoring", essential: "✅", plus: "✅", premium: "✅" },
+    { name: "Malware / Vulnerability Scans", essential: "✅", plus: "✅", premium: "✅" },
+    { name: "Speed / Performance Checks", essential: "❌", plus: "✅", premium: "✅" },
+    { name: "Monthly SEO / Health Audit", essential: "❌", plus: "✅", premium: "✅" },
+    { name: "Monthly Performance Report", essential: "❌", plus: "✅", premium: "✅" },
+    { name: "Content Updates (hrs / month)", essential: "❌", plus: "1 hr", premium: "3 hrs" },
+    { name: "Priority Support Response", essential: "❌", plus: "Same Day", premium: "24 Hours" },
+    { name: "Emergency Fixes Included", essential: "❌", plus: "Optional", premium: "✅" },
+    { name: "Analytics / Dashboard Access", essential: "❌", plus: "Optional", premium: "✅" },
+    { name: "Quarterly Strategy Review Call", essential: "❌", plus: "❌", premium: "✅" },
   ];
 
   const plans = [
     {
       key: "essential",
       label: "Essential Care",
-      price: "£45 / mo",
-      sub: "or £420 / yr",
+      price: renderDual(45),
+      sub: "or £420 + VAT / yr (£504 inc. VAT)",
     },
     {
-      key: "performance",
-      label: "Performance Care",
-      price: "£95 / mo",
-      sub: "or £1,020 / yr",
+      key: "plus",
+      label: "WebCare Plus",
+      price: renderDual(85),
+      sub: "or £900 + VAT / yr (£1,080 inc. VAT)",
     },
     {
-      key: "total",
-      label: "Total WebCare",
-      price: "£195 / mo",
-      sub: "or £2,100 / yr",
+      key: "premium",
+      label: "WebCare Premium",
+      price: renderDual(145),
+      sub: "or £1,560 + VAT / yr (£1,872 inc. VAT)",
     },
   ];
 
@@ -45,32 +63,54 @@ export default function MaintenanceCompare() {
     "inline-block px-8 py-3 border border-white/20 text-gray-300 hover:bg-blue-700/20 rounded-xl text-sm font-medium transition-all duration-300";
 
   return (
-    <main className="bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white py-20 px-4">
+    <main
+      className="bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white py-20 px-4 font-inter"
+      role="main"
+    >
       <div className="max-w-6xl mx-auto">
         {/* Heading */}
-        <h1 className="text-4xl sm:text-5xl font-bold text-center mb-6 tracking-tight">
+        <h1
+          className="text-4xl sm:text-5xl font-bold text-center mb-6 tracking-tight text-blue-400"
+          id="comparison-heading"
+        >
           Compare Website Care Plans
         </h1>
 
-        <p className="text-center text-gray-400 mb-4 max-w-2xl mx-auto leading-relaxed">
-          Pick the level of ongoing care that’s right for your business. All plans exclude VAT; yearly plans include a discount.
+        <p
+          className="text-center text-gray-400 mb-4 max-w-2xl mx-auto leading-relaxed"
+          aria-describedby="comparison-heading"
+        >
+          Choose the level of ongoing website care that fits your business.  
+          Prices shown are exclusive of VAT, with inclusive figures displayed
+          for clarity. Annual billing includes a small discount.
         </p>
 
         <p className="text-center text-gray-500 text-sm italic mb-12 max-w-2xl mx-auto">
-          *Care plans are available for websites built or actively managed by PJH Web Services.*
+          *Care plans are available only for websites built or actively managed by PJH Web Services.*
         </p>
 
         {/* Comparison Table */}
-        <div className="overflow-x-auto border border-white/10 rounded-2xl shadow-lg bg-slate-900/60">
-          <table className="w-full border-collapse text-sm sm:text-base">
+        <div
+          className="overflow-x-auto border border-white/10 rounded-2xl shadow-lg bg-slate-900/60"
+          role="region"
+          aria-labelledby="comparison-heading"
+        >
+          <table
+            className="w-full border-collapse text-sm sm:text-base"
+            aria-label="Website Care Plan Comparison Table"
+          >
             <thead className="bg-slate-900/80 border-b border-white/10">
               <tr>
-                <th className="p-4 text-left text-gray-300 font-semibold uppercase tracking-wide">
+                <th
+                  scope="col"
+                  className="p-4 text-left text-gray-300 font-semibold uppercase tracking-wide"
+                >
                   Feature
                 </th>
                 {plans.map((p) => (
                   <th
                     key={p.key}
+                    scope="col"
                     className="p-4 text-center font-semibold text-blue-400"
                   >
                     {p.label}
@@ -89,13 +129,9 @@ export default function MaintenanceCompare() {
                   }`}
                 >
                   <td className="p-4 font-medium text-gray-300">{row.name}</td>
-                  <td className="p-4 text-center text-gray-100">
-                    {row.essential}
-                  </td>
-                  <td className="p-4 text-center text-gray-100">
-                    {row.performance}
-                  </td>
-                  <td className="p-4 text-center text-gray-100">{row.total}</td>
+                  <td className="p-4 text-center text-gray-100">{row.essential}</td>
+                  <td className="p-4 text-center text-gray-100">{row.plus}</td>
+                  <td className="p-4 text-center text-gray-100">{row.premium}</td>
                 </tr>
               ))}
             </tbody>
@@ -111,9 +147,14 @@ export default function MaintenanceCompare() {
             Get Started
           </Link>
           <Link to="/" className={buttonSubtle}>
-            🏠 Back to Home
+            Back to Home
           </Link>
         </div>
+
+        <p className="text-xs text-gray-500 mt-8 text-center">
+          © {new Date().getFullYear()} PJH Web Services — VAT No. GB503 3476 17.  
+          Prices shown are exclusive of VAT, with inclusive figures displayed for clarity.
+        </p>
       </div>
     </main>
   );
