@@ -2,9 +2,10 @@
  * ============================================================
  * PJH Web Services — Main App (Static Frontend, Local Focused)
  * ============================================================
- * Frontend now fully decoupled from backend APIs.
+ * Frontend fully decoupled from backend APIs.
  *  • Static, hardcoded package info (no fetch)
  *  • Direct links to /packages/starter, /packages/business, /packages/premium
+ *  • Includes Social Media Management add-on section
  *  • Cleaner, faster, simpler to maintain
  * ============================================================
  */
@@ -22,7 +23,9 @@ export default function App() {
   const buttonSubtle =
     "inline-block px-8 py-3 bg-blue-800/50 hover:bg-blue-800 text-white rounded-xl font-medium transition-all duration-300";
 
-  // Updated static package definitions (refined 2025)
+  // ============================================================
+  // STATIC PACKAGES (Refined 2025)
+  // ============================================================
   const packages = [
     {
       id: "starter",
@@ -35,6 +38,7 @@ export default function App() {
       features: [
         "5 bespoke, fully custom-designed pages",
         "Mobile responsive & SEO-optimised",
+        "Basic social media setup (Facebook, Instagram, Google Business)",
         "Google Maps & Business Profile integration",
         "Secure UK-based hosting + SSL (1 year included)",
         "Basic WebCare maintenance & support",
@@ -52,6 +56,7 @@ export default function App() {
         "All Starter features included",
         "Custom CRM dashboard for leads & jobs",
         "Integrated quoting and invoicing tools",
+        "Enhanced social media setup + content branding",
         "Automated email replies & smart forms",
         "Analytics and local SEO setup",
       ],
@@ -68,6 +73,7 @@ export default function App() {
         "All Business features included",
         "Fully bespoke CRM & project management system",
         "Online bookings, payments, and subscriptions",
+        "Advanced social media integration & automation tools",
         "Automated invoicing and client reminders",
         "Priority WebCare support & performance reporting",
       ],
@@ -86,15 +92,16 @@ export default function App() {
       <Navbar />
 
       <main className="flex-grow">
-        {/* HERO SECTION */}
+        {/* ============================================================
+            HERO SECTION
+        ============================================================ */}
         <section className="relative flex flex-col items-center text-center pt-32 pb-28 px-6">
-<img
-  src="/pjh-logo-light.png"
-  alt="PJH Web Services logo"
-  className="w-80 sm:w-96 lg:w-[28rem] mb-10 opacity-95"
-  loading="lazy"
-/>
-
+          <img
+            src="/pjh-logo-light.png"
+            alt="PJH Web Services logo"
+            className="w-80 sm:w-96 lg:w-[28rem] mb-10 opacity-95"
+            loading="lazy"
+          />
 
           <p className="text-gray-400 uppercase tracking-[0.25em] text-sm mb-8">
             Local Websites • Real Results
@@ -106,8 +113,8 @@ export default function App() {
           </h1>
 
           <p className="max-w-2xl text-gray-300 text-lg mb-12 leading-relaxed">
-            At <span className="text-blue-400 font-semibold">PJH Web Services</span>, we
-            design and build fully bespoke websites — no templates, no jargon.
+            At <span className="text-blue-400 font-semibold">PJH Web Services</span>,
+            we design and build fully bespoke websites — no templates, no jargon.
             Every project is tailored to your goals, built for performance, and
             ready for the future.
           </p>
@@ -119,23 +126,21 @@ export default function App() {
             <a href="#packages" className={buttonPrimary}>
               View Packages
             </a>
+            <a href="#social-media" className={buttonOutline}>
+              Social Media Management
+            </a>
             <Link to="/maintenance" className={buttonSubtle}>
               Website Care Plans
             </Link>
-  <Link to="/suffolk-business-directory" className={buttonSubtle}>
-    Suffolk Portfolio
-  </Link>
-  <a
-    href="https://www.crowdfunder.co.uk/p/pjh-web-services"
-    target="_blank"
-    rel="noopener noreferrer"
-    className={buttonPrimary}
-  >
-    Support Our Crowdfunder
-  </a>
-</div>  </section>
+            <Link to="/suffolk-business-directory" className={buttonSubtle}>
+              Suffolk Portfolio
+            </Link>
+          </div>
+        </section>
 
-        {/* SERVICES SECTION */}
+        {/* ============================================================
+            SERVICES SECTION
+        ============================================================ */}
         <section id="services" className="py-24 px-6 border-t border-white/10">
           <h2 className="text-3xl sm:text-4xl font-bold text-center mb-16">
             What We Do for Local Businesses
@@ -175,7 +180,9 @@ export default function App() {
           </div>
         </section>
 
-        {/* PACKAGES SECTION */}
+        {/* ============================================================
+            PACKAGES SECTION
+        ============================================================ */}
         <section
           id="packages"
           className="py-24 px-6 border-t border-white/10 bg-slate-900/50"
@@ -189,47 +196,94 @@ export default function App() {
             package that fits your goals.
           </p>
 
-<div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-10 items-stretch">
-  {packages.map((pkg) => (
-    <div
-      key={pkg.id}
-      className="flex flex-col justify-between bg-slate-900/70 rounded-2xl border border-white/10 p-8 hover:border-blue-500 transition-all duration-300 hover:-translate-y-1 shadow-sm hover:shadow-blue-900/20 h-full"
-    >
-      <div>
-        <h3 className="text-xl font-semibold text-blue-400 mb-1">
-          {pkg.name}
-        </h3>
+          <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-10 items-stretch">
+            {packages.map((pkg) => (
+              <div
+                key={pkg.id}
+                className="flex flex-col justify-between bg-slate-900/70 rounded-2xl border border-white/10 p-8 hover:border-blue-500 transition-all duration-300 hover:-translate-y-1 shadow-sm hover:shadow-blue-900/20 h-full"
+              >
+                <div>
+                  <h3 className="text-xl font-semibold text-blue-400 mb-1">
+                    {pkg.name}
+                  </h3>
 
-        <p className="text-gray-400 mb-3 text-sm min-h-[50px]">
-          {pkg.tagline}
-        </p>
+                  <p className="text-gray-400 mb-3 text-sm min-h-[50px]">
+                    {pkg.tagline}
+                  </p>
 
-        <p className="text-gray-300 text-lg font-semibold mb-4">
-          £{pkg.price_oneoff} one-off <br />
-          or £{pkg.price_monthly}/month
-        </p>
+                  {/* Show ALL features now */}
+                  <ul className="text-gray-500 text-sm mb-6 list-disc list-inside leading-relaxed">
+                    {pkg.features.map((f, i) => (
+                      <li key={i}>{f}</li>
+                    ))}
+                  </ul>
+                </div>
 
-        <ul className="text-gray-500 text-sm mb-6 list-disc list-inside leading-relaxed">
-          {pkg.features.slice(0, 3).map((f, i) => (
-            <li key={i}>{f}</li>
-          ))}
-        </ul>
-      </div>
-
-      <Link
-        to={`/packages/${pkg.id}`}
-        className="mt-auto inline-block w-full text-center px-6 py-3 bg-blue-700 hover:bg-blue-800 text-white font-semibold rounded-xl transition-all duration-300 shadow-sm hover:shadow-blue-900/30"
-      >
-        View Details →
-      </Link>
-    </div>
-  ))}
-</div>
-
+                <Link
+                  to={`/packages/${pkg.id}`}
+                  className="mt-auto inline-block w-full text-center px-6 py-3 bg-blue-700 hover:bg-blue-800 text-white font-semibold rounded-xl transition-all duration-300 shadow-sm hover:shadow-blue-900/30"
+                >
+                  View Details →
+                </Link>
+              </div>
+            ))}
+          </div>
         </section>
 
-        {/* ABOUT SECTION */}
-        <section id="about" className="py-24 px-6 text-center border-t border-white/10">
+        {/* ============================================================
+            SOCIAL MEDIA MANAGEMENT ADD-ON
+        ============================================================ */}
+        <section
+          id="social-media"
+          className="py-24 px-6 border-t border-white/10 bg-slate-900/60"
+        >
+          <h2 className="text-3xl sm:text-4xl font-bold text-center mb-10">
+            Full Social Media Management
+          </h2>
+          <p className="text-center text-gray-400 mb-12 max-w-2xl mx-auto">
+            Every website package includes basic social media setup — but if you
+            want us to manage your accounts, post regularly, and grow your
+            audience, this plan is for you.
+          </p>
+
+          <div className="max-w-4xl mx-auto bg-slate-900/70 rounded-2xl border border-white/10 p-10 text-center hover:border-blue-600 transition-all duration-300 hover:-translate-y-1 shadow-sm hover:shadow-blue-900/20">
+            <h3 className="text-2xl font-semibold text-blue-400 mb-3">
+              Social Media Management Plan
+            </h3>
+            <p className="text-gray-400 mb-6 leading-relaxed">
+              We handle your posting strategy, visuals, captions, and scheduling
+              across Facebook, Instagram, and Google Business — helping your
+              business stay visible and consistent online.
+            </p>
+
+            <ul className="text-gray-500 text-sm mb-6 list-disc list-inside leading-relaxed text-left inline-block">
+              <li>3 custom branded posts per week</li>
+              <li>Facebook, Instagram, and Google Business management</li>
+              <li>Hashtag and caption optimisation</li>
+              <li>Monthly engagement and reach reporting</li>
+              <li>Optional paid ads and growth strategy add-ons</li>
+            </ul>
+
+            <p className="text-gray-300 font-semibold mb-4">
+              From £95/month (rolling monthly plan)
+            </p>
+
+            <Link
+              to="/contact"
+              className="inline-block px-8 py-3 bg-blue-700 hover:bg-blue-800 text-white font-semibold rounded-xl transition-all duration-300 shadow-sm hover:shadow-blue-900/30"
+            >
+              Enquire About Social Media →
+            </Link>
+          </div>
+        </section>
+
+        {/* ============================================================
+            ABOUT SECTION
+        ============================================================ */}
+        <section
+          id="about"
+          className="py-24 px-6 text-center border-t border-white/10"
+        >
           <h2 className="text-3xl sm:text-4xl font-bold mb-8">
             About PJH Web Services
           </h2>
@@ -245,7 +299,9 @@ export default function App() {
           </p>
         </section>
 
-        {/* CONTACT CTA */}
+        {/* ============================================================
+            CONTACT CTA
+        ============================================================ */}
         <section className="py-24 text-center border-t border-white/10 bg-slate-900/60">
           <h2 className="text-3xl sm:text-4xl font-bold mb-6">
             Ready to Stand Out Online?
@@ -258,6 +314,9 @@ export default function App() {
             <Link to="/contact" className={buttonPrimary}>
               Contact Us
             </Link>
+            <a href="#social-media" className={buttonOutline}>
+              Social Media Management
+            </a>
             <Link to="/maintenance" className={buttonOutline}>
               View Maintenance Plans
             </Link>
@@ -267,9 +326,13 @@ export default function App() {
 
       <CookieBanner />
 
-      {/* FOOTER */}
+      {/* ============================================================
+          FOOTER
+      ============================================================ */}
       <footer className="border-t border-white/10 py-10 text-center text-sm text-gray-500 space-y-4 bg-slate-950">
-        <p>© {new Date().getFullYear()} PJH Web Services — All rights reserved.</p>
+        <p>
+          © {new Date().getFullYear()} PJH Web Services — All rights reserved.
+        </p>
 
         <div className="flex justify-center flex-wrap gap-4 text-xs uppercase tracking-wide">
           <Link to="/legal/privacy" className="hover:text-blue-400 transition">

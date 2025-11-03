@@ -9,7 +9,6 @@ export default function Navbar() {
     { name: "Services", href: "#services", internal: false },
     { name: "About", href: "#about", internal: false },
     { name: "Maintenance", href: "/maintenance", internal: true },
-    { name: "Pricing", href: "/pricing", internal: true },
     { name: "FAQ", href: "/faq", internal: true },
     { name: "Recommended", href: "/recommended-services", internal: true },
     { name: "Contact", href: "/contact", internal: true, highlight: true },

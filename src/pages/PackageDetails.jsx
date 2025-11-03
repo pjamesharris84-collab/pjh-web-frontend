@@ -2,10 +2,10 @@
  * ============================================================
  * PJH Web Services — Package Details Page (Enhanced 2025)
  * ============================================================
- * Works with seeded packages (Starter, Business, Premium)
+ * Supports all core offerings (Starter, Business, Premium, Social Media)
  *  • Fetches /api/packages/:id or /api/packages/slug/:slug
  *  • Displays name, tagline, pricing, features, and full description
- *  • Includes local fallback data if API unavailable
+ *  • Includes full fallback dataset for offline/static usage
  * ============================================================
  */
 
@@ -16,7 +16,7 @@ import SEO from "../components/SEO";
 import CookieBanner from "../components/CookieBanner";
 
 export default function PackageDetails() {
-  const { id } = useParams(); // can be numeric ID or slug
+  const { id } = useParams(); // numeric or slug
   const [pkg, setPkg] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -31,7 +31,6 @@ export default function PackageDetails() {
       try {
         const apiBase = import.meta.env.VITE_API_URL;
         const isNumeric = /^\d+$/.test(id);
-
         const endpoint = isNumeric
           ? `${apiBase}/api/packages/${id}`
           : `${apiBase}/api/packages/slug/${encodeURIComponent(id)}`;
@@ -40,7 +39,6 @@ export default function PackageDetails() {
         if (!res.ok) throw new Error(`Server returned ${res.status}`);
         const data = await res.json();
 
-        // Backend structure = { success: true, data: [...] or data: {...} }
         const found =
           Array.isArray(data.data) && data.data.length > 0
             ? data.data[0]
@@ -65,78 +63,92 @@ export default function PackageDetails() {
   const fallbackPackages = {
     starter: {
       name: "Starter",
-      tagline: "Perfect for local sole traders and small businesses",
-      price_oneoff: 900,
-      price_monthly: 60,
+      tagline:
+        "Perfect for local sole traders and small businesses looking to get online fast.",
+      price_oneoff: 795,
+      price_monthly: 49,
       term_months: 24,
       description: `
-        The Starter package is perfect for tradesmen, small shops, and local sole traders
-        who simply want a professional, modern website that works. No buzzwords, no gimmicks —
-        just clean design, real SEO, and a trusted online presence that helps customers find you.
+The Starter package is designed for tradesmen, small shops, and local sole traders who need a reliable, professional online presence without the complexity. 
+It delivers a modern, SEO-optimised website — tailored to your goals and built for performance.
 
-        We cut through the marketing noise that tells small businesses they “need a funnel”,
-        “need daily ads”, or “need to go viral”. You don’t. You need a reliable,
-        Google-friendly website that actually converts local enquiries into paying customers —
-        and we deliver exactly that.
+Every Starter site also includes basic social media setup: connecting your Facebook, Instagram, and Google Business profiles to your new website, helping you build trust and visibility locally.
       `,
       features: [
-        "5-page custom-built website",
-        "Mobile responsive and lightning-fast performance",
-        "Local SEO setup and Google optimisation",
-        "Integrated contact form, maps, and social links",
-        "Domain registration and managed hosting",
-        "Ongoing updates available via WebCare",
+        "5 bespoke, fully custom-designed pages",
+        "Mobile responsive & SEO-optimised",
+        "Basic social media setup (Facebook, Instagram, Google Business)",
+        "Google Maps & Business Profile integration",
+        "Secure UK-based hosting + SSL (1 year included)",
+        "Basic WebCare maintenance & support",
       ],
     },
     business: {
       name: "Business",
-      tagline: "For growing companies ready to scale",
-      price_oneoff: 2600,
-      price_monthly: 140,
+      tagline:
+        "For growing companies ready to scale their systems and brand visibility.",
+      price_oneoff: 1495,
+      price_monthly: 85,
       term_months: 24,
       description: `
-        The Business package is built for companies that are outgrowing “just a website”.
-        You need proper tools — quoting, booking, tracking, and automating the things
-        that eat into your time. We build custom CRM systems that fit your business
-        (not the other way around) so you can manage everything from one place.
+The Business package builds on the Starter foundation, introducing automation and management tools that streamline your workflow.
+You’ll gain a custom CRM dashboard, quoting system, and performance insights that make client management effortless.
 
-        While everyone else is chasing social-media trends and overcomplicated marketing,
-        we focus on what actually builds your business: visibility, credibility, and trust.
-        Our job is to handle the digital side — so you can keep doing what you do best.
+This package also enhances your social media setup — with branded profile designs, unified visual identity, and ready-to-post templates so your business looks consistent everywhere online.
       `,
       features: [
-        "All Starter features",
-        "Custom CRM core with quoting, booking & invoicing",
-        "Online scheduling system with automated emails",
-        "Advanced on-page SEO & Google Business integration",
-        "Optional blog and content modules",
-        "Real-time dashboard & reporting tools",
+        "All Starter features included",
+        "Custom CRM dashboard for leads & jobs",
+        "Integrated quoting and invoicing tools",
+        "Enhanced social media setup + content branding",
+        "Automated email replies & smart forms",
+        "Analytics and local SEO setup",
       ],
     },
     premium: {
       name: "Premium",
-      tagline: "Complete digital systems — websites, CRMs, automation & care",
-      price_oneoff: 6000,
-      price_monthly: 300,
+      tagline:
+        "Complete business automation — website, CRM, client portals, and payment systems.",
+      price_oneoff: 2950,
+      price_monthly: 160,
       term_months: 24,
       description: `
-        The Premium package is for serious operators who want their digital presence
-        to do more than look good — it should work hard. This is a complete custom
-        business platform built around your daily operations: from first enquiry
-        to payment, automation, and follow-up.
+The Premium package is our flagship end-to-end system — designed for ambitious businesses that need their digital ecosystem to work together seamlessly. 
+From web design and automation to bookings, payments, and ongoing support, this is your full digital backbone.
 
-        We combine design, CRM, automation, and ongoing strategy under one roof.
-        No outsourcing, no “we’ll get back to you next week” support.
-        Just a single team that keeps your system secure, compliant, and up-to-date —
-        so you don’t have to.
+It includes advanced social media automation and integrations, connecting your CRM and marketing tools for smarter scheduling, analytics, and lead tracking — all under one roof.
       `,
       features: [
-        "All Business features",
-        "Bespoke CRM and workflow automation suite",
-        "Online payments and recurring billing",
-        "Customer portals with secure login",
-        "Automated email & SMS notifications",
-        "Priority support and active maintenance",
+        "All Business features included",
+        "Fully bespoke CRM & project management system",
+        "Online bookings, payments, and subscriptions",
+        "Advanced social media integration & automation tools",
+        "Automated invoicing and client reminders",
+        "Priority WebCare support & performance reporting",
+      ],
+    },
+    "social-media": {
+      name: "Social Media Management",
+      tagline:
+        "Done-for-you content creation, posting, and growth — stay visible while we handle the rest.",
+      price_oneoff: 0,
+      price_monthly: 95,
+      term_months: 3,
+      description: `
+Our Social Media Management plan is ideal for busy business owners who want to stay active online without the time drain.
+
+We handle your content strategy, design, captions, and scheduling across Facebook, Instagram, and Google Business — ensuring your brand stays professional and consistent.
+You'll receive three custom-branded posts per week plus monthly performance reports to track engagement and reach.
+
+Optional add-ons include paid ad management, follower growth strategies, and content calendars to align your campaigns with your website and SEO.
+      `,
+      features: [
+        "3 custom branded posts per week",
+        "Facebook, Instagram, and Google Business management",
+        "Hashtag and caption optimisation",
+        "Monthly engagement and reach reporting",
+        "Optional ad management and growth strategy add-ons",
+        "Rolling monthly plan — cancel anytime after 3 months",
       ],
     },
   };
@@ -200,13 +212,18 @@ export default function PackageDetails() {
               </p>
 
               <div className="text-gray-300 text-lg mb-10">
-                <p className="font-semibold">
-                  £{displayPkg.price_oneoff?.toLocaleString()} one-off setup
-                </p>
+                {displayPkg.price_oneoff > 0 && (
+                  <p className="font-semibold">
+                    £{displayPkg.price_oneoff.toLocaleString()} one-off setup
+                  </p>
+                )}
                 {displayPkg.price_monthly && (
                   <p>
-                    or £{displayPkg.price_monthly?.toLocaleString()}/month for{" "}
-                    {displayPkg.term_months || 24} months
+                    {displayPkg.price_oneoff > 0 ? "or " : ""}£
+                    {displayPkg.price_monthly.toLocaleString()}/month
+                    {displayPkg.term_months && (
+                      <> for {displayPkg.term_months} months</>
+                    )}
                   </p>
                 )}
               </div>
