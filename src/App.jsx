@@ -18,10 +18,12 @@ import { Link } from "react-router-dom";
 export default function App() {
   const buttonPrimary =
     "inline-block px-8 py-3 bg-blue-700 hover:bg-blue-800 text-white font-semibold rounded-xl transition-all duration-300 shadow-sm hover:shadow-blue-900/30";
+
   const buttonOutline =
-    "inline-block px-8 py-3 border border-blue-600 text-white hover:bg-blue-700 rounded-xl font-medium transition-all duration-300";
+    "inline-block px-8 py-3 bg-blue-700 hover:bg-blue-800 text-white font-medium rounded-xl transition-all duration-300 shadow-sm hover:shadow-blue-900/30";
+
   const buttonSubtle =
-    "inline-block px-8 py-3 bg-blue-800/50 hover:bg-blue-800 text-white rounded-xl font-medium transition-all duration-300";
+    "inline-block px-8 py-3 bg-blue-700 hover:bg-blue-800 text-white font-medium rounded-xl transition-all duration-300 shadow-sm hover:shadow-blue-900/30";
 
   // ============================================================
   // STATIC PACKAGES (Dual pricing inc. VAT)
